@@ -1,7 +1,6 @@
 ---
 title: "Urobme niečo s `make`"
 date: 2019-01-04T14:57:45+01:00
-draft: true
 ---
 
 O `make` a `makefile` súboroch
