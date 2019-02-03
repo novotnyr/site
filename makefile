@@ -15,3 +15,6 @@ public:
 	git commit -m "Deploy website" && \
 	git push && \
 	cd ..
+clean:
+	rm -rf public/*	
+.PHONY: clean
