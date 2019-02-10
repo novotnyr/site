@@ -1,4 +1,7 @@
-
+---
+title: "Nahrádzanie premenných v stringu v Springu"
+date: 2019-02-10T14:06:56+01:00
+---
 
 Spring má geniálne vymyslený systém *properties*, kde možno ukladať rozličné konfiguračné nastavenia v *prostredí* (`Environment`) a robiť s tým kdejaké finty. Čo keď však potrebujeme úplne hlúpu vec: nahradiť premenné v reťazci konkrétnymi namapovanými hodnotami?
 
