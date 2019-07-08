@@ -3,3 +3,6 @@ languageCode = "en-us"
 title = "robonovotny"
 
 theme = "hugo-classic"
+
+pygmentsCodeFences = true
+pygmentsStyle = "murphy"
