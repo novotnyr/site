@@ -1480,7 +1480,7 @@ import kotlin.coroutines.resume
 
 object Http {
     suspend fun run(url: String): String = withContext(Dispatchers.IO) {
-        suspendCancellableCoroutine { continuation ->
+        suspendCancellableCoroutine<String> { continuation ->
             val request = Request.Builder()
                 .url(url)
                 .get()
