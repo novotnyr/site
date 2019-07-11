@@ -1512,6 +1512,223 @@ fun main() = runBlocking {
 }
 ```
 
+## Supervízia korutin: `supervisorScope`
+
+Vyššie sme videli, že bežné správanie štruktúrovanej konkurentnosti tvorí obojsmerný vzťah medzi rodičom a potomkami. Ak potomok zhavaruje, zruší rodiča i naopak, zrušený rodič automaticky zruší svojich potomkov.
+
+Niekedy však chceme len jednosmerný vzťah: nech sa deti postarajú samé o seba, bez vplyvu na rodiča. Opačný smer však ostane: ak rodič zhavaruje, deti sa zrušia a samozrejme, rodič vždy počká na ich korektné dobehnutie.
+
+Na tento účel máme špecifický builder `supervisorScope`.
+
+Tento príklad je dobre známy: s prvou výnimkou v potomkovi `launch` sa zrušia aj deti:
+
+```kotlin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
+fun main() = runBlocking {
+    repeat(10) {
+        launch {
+            println(Thread.currentThread().name + " " + it)
+            if (it % 2 == 0) {
+                throw IllegalStateException("Random failure")
+            }
+        }
+    }
+}
+```
+
+Ak obalíme blok do `coroutineScope`, správanie sa zmení:
+
+```kotlin
+fun main() = runBlocking {
+    supervisorScope {
+        repeat(10) {
+            launch {
+                println(Thread.currentThread().name + " " + it)
+                if (it % 2 == 0) {
+                    throw IllegalStateException("Random failure")
+                }
+            }
+        }
+    }
+}
+
+```
+
+S týmto scopom uvidíme päť *stack traceov* (z desiatich behov spadne každý druhý), pretože potomkovia v `launch` , u ktorých nastane výnimka už nevyvolajú zrušenie rodiča.
+
+### `SuperVisor` a výnimky
+
+Pre výnimky platia bežné zásady:
+
+- `launch` výnimky hlce, resp. posiela do  *globálnej obsluhy výnimiek* (*coroutine exception handler*)
+- `async` výnimky vyberá v `await()`e.
+
+#### Supervízia a `launch`
+
+Keďže máme prvý príklad, hľadá sa v kontexte *handler* a keďže sa žiadny explicitný nenašiel, použije sa bežný výpis na chybový výstup *stderr*.
+
+Skúsme si zaregistrovať vlastný handler. Samotný `supervisorScope` nepodporuje žiadne parametre, ale *handler* môžeme registrovať u rodiča, teda v `runBlocking`.
+
+```kotlin
+
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
+
+fun main() {
+    val errorHandler = CoroutineExceptionHandler { _, t -> println("${t.message}") }
+
+    runBlocking(errorHandler) {
+        supervisorScope {
+            repeat(10) {
+                launch {
+                    println(Thread.currentThread().name + " " + it)
+                    if (it % 2 == 0) {
+                        throw IllegalStateException("Random failure")
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+ Vidíme, že výnimky sa teraz vypisujú v zjednodušenom formáte.
+
+Alternatívne riešenie zaregistruje `errorHandler` v samotnej sekcii `launch`:
+
+```kotlin
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
+
+fun main() = runBlocking {
+    val errorHandler = CoroutineExceptionHandler { _, t -> println("${t.message}") }
+    supervisorScope {
+        repeat(10) {
+            launch(errorHandler) {
+                println(Thread.currentThread().name + " " + it)
+                if (it % 2 == 0) {
+                    throw IllegalStateException("Random failure")
+                }
+            }
+        }
+    }
+}
+```
+
+### Supervízia a `async`
+
+V prípade `async` a supervízie sa očakáva, že potomkovia sa o chybové stavy postarajú sami. Dajme si analogický príklad:
+
+```kotlin
+
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
+
+fun main() = runBlocking {
+    supervisorScope {
+        val deferreds = ArrayList<Deferred<Unit>>()
+        repeat(10) {
+            val deferred = async(Dispatchers.Default) {
+                println(Thread.currentThread().name + " " + it)
+                if (it % 2 == 0) {
+                    throw IllegalStateException("Random failure at $it")
+                }
+            }
+            deferreds.add(deferred)
+        }
+        deferreds.awaitAll()
+        Unit
+    }
+}
+
+```
+
+V príklade použijeme paralelizovateľnú dekompozíciu. Sekcia `supervisorScope` sa postará o rovnakú funkcionalitu ako `coroutineScope`, a vo vnútri tak môžeme spustiť viacero korutín typu `async`, na separátnom vlákne. Všetky výsledky následne pozbierame do zoznamu `deferreds` a na konci si počkáme na hromadný výsledok.
+
+Výpis bude elegantný:
+
+```
+DefaultDispatcher-worker-1 0
+DefaultDispatcher-worker-1 1
+DefaultDispatcher-worker-1 2
+DefaultDispatcher-worker-5 3
+DefaultDispatcher-worker-5 4
+DefaultDispatcher-worker-5 5
+DefaultDispatcher-worker-5 6
+DefaultDispatcher-worker-5 7
+DefaultDispatcher-worker-8 8
+DefaultDispatcher-worker-5 9
+Exception in thread "main" java.lang.IllegalStateException: Random failure at 0
+	at Supervisor3Kt$main$1$1$1$deferred$1.invokeSuspend(Supervisor3.kt:16)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(Dispatched.kt:238)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:594)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.access$runSafely(CoroutineScheduler.kt:60)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:742)
+```
+
+Správanie môže vyzerať záhadne, ale má zmysel. Vidíme, že všetky podkorutiny sa spustili, niektoré zlyhali, ale dozvedeli sme sa len o páde prvej z nich. To je vlastnosť `awaitAll()`, ktorá spadne vo chvíli, keď ktorýkoľvek prvý z deferredov vyhodí výnimku.
+
+Toto môžeme ošetriť pomocou `try`/`catch` bloku. Pozor však na to, že `CoroutineExceptionHandler` nebude fungovať! (Ten totiž pre `async` nie je podporovaný.)
+
+Jedna z možností, ako to opraviť, je nasledovná:
+
+```kotlin
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
+
+fun main() = runBlocking {
+    supervisorScope {
+        try {
+            (1..10).map {
+                async(Dispatchers.Default) {
+                    println(Thread.currentThread().name + " " + it)
+                    if (it % 2 == 0) {
+                        throw IllegalStateException("Random failure at $it")
+                    }
+                }
+            }
+                .awaitAll()
+            Unit
+        } catch (e: Exception) {
+            println(e.message)
+        }
+    }
+}
+```
+
+Následne uvidíme:
+
+```
+DefaultDispatcher-worker-1 1
+DefaultDispatcher-worker-3 2
+DefaultDispatcher-worker-3 3
+DefaultDispatcher-worker-3 4
+DefaultDispatcher-worker-3 5
+DefaultDispatcher-worker-5 6
+DefaultDispatcher-worker-7 7
+DefaultDispatcher-worker-6 9
+DefaultDispatcher-worker-7 10
+DefaultDispatcher-worker-5 8
+Random failure at 2
+```
+
+s
+
 # Literatúra
 
 ## Tutoriály
