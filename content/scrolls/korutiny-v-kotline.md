@@ -1727,8 +1727,6 @@ DefaultDispatcher-worker-5 8
 Random failure at 2
 ```
 
-s
-
 # Literatúra
 
 ## Tutoriály
