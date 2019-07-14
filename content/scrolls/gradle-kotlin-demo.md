@@ -1,20 +1,14 @@
-#  Inštalácia Gradle
+# Prečo Gradle a prečo Kotlin?
 
-Na MacOS:
+**Gradle** je rokmi overený nástroj na zostavovanie projektov v Java ekosystéme. Samotné príkazy pre zostavenie boli od nepamätí písané v jazyku Gradle. Novým hitom je však Kotlin! Ukážme si, ako môžeme využiť tento jazyk na zostavovanie projektov.
 
-```shell
-brew install gradle
-```
+## Prvý skript v Kotline
 
-## Prvý projekt
-
-Založme kotlinovský *build script*
+Predpokladajme, že máme k dispozícii posledný Gradle, napríklad 5.5.1. V nejakom adresári si založme kotlinovský *build script*:
 
 ```shell
 touch build.gradle.kts
 ```
-
-### Prvá úloha
 
 Vytvorme prvý **task**, teda príkaz, ktorý sa bude dať pomocou Gradle vykonať. Task je podobný *targetu* z nástroja `make`, či `ant`.
 
@@ -56,7 +50,7 @@ gradle -q hello
 
 Následne uvidíme len samotnú správu.
 
-### Elegantný pomenovaný task
+## Elegantný pomenovaný task
 
 Task môžeme zaradiť do logickej skupiny (**group**) a môžeme mu priradiť popis (**description**):
 
@@ -85,6 +79,23 @@ Greetings tasks
 ---------------
 hello - Say hello
 ```
+
+Tasky založené na existujúcich taskoch
+======================================
+
+Niekedy máme šťastie a vieme využiť tasky, ktoré sú k dispozícii buď automaticky, alebo z niektorých pluginov. Gradle ponúka [viacero zabudovaných taskov](https://docs.gradle.org/current/dsl/#N10437), napr. task `Exec` na spúšťanie programov. 
+
+```
+tasks {
+    register<Exec>("workdir") {
+        executable = "pwd"
+    }
+}
+```
+
+V tomto prípade sme zaregistrovali task s názvom `workdir`, ktorý využíva zabudovanú predlohu (*task type*) s názvom `Exec`. Vysvetlenie tohto zápisu je zatiaľ zložité, ale povedzme si len, že predloha *task type* sa udáva do lomených zátvoriek.
+
+V rámci tasku sme nastavili vlastnosť (*property*) `executable`, ktorá berie reťazec s názvom systémového programu.
 
 # Kotlin, OOP a Gradle
 
@@ -272,13 +283,7 @@ val doPrint = { f: File -> println(f) }
 children.forEach(doPrint)
 ```
 
-Tento zápis je síce správny, ale takmer nikto ho v praxi nepoužije. Pri upratovaní by sme dostali:
-
-```
-children.forEach({ file: File -> println(file) })
-```
-
-Kotlin má však skvelú syntaktickú vlastnosť (prevzatú z Groovy): funkcia druhého rádu môže vynechať guľaté zátvorky. Kód funkcie v parametri sa dá uviesť medzi zložené zátvorky, čo pripomína klasický *blok*:
+Tento zápis je síce správny, ale takmer nikto ho v praxi nepoužije. Kotlin má totiž skvelú syntaktickú vlastnosť (prevzatú z Groovy): funkcia druhého rádu môže vynechať guľaté zátvorky. Kód funkcie v parametri sa dá uviesť medzi zložené zátvorky, čo pripomína klasický *blok*:
 
 ```kotlin
 val children = project.projectDir.listFiles()
@@ -329,6 +334,7 @@ Do triedy `LsTask` sme dodali inštančnú premennú `directory`. Platia pre ňu
 
 - Ide o premennú len na čítanie, teda *read-only*, teda premennú s getterom, ale bez settera.
 - Premenná je rovno inicializovaná a to tým, že sme vytvorili objekt typu `File`. Na rozdiel od Javy pri vytváraní objektov nepoužívame kľúčové slovo `new`, jednoducho sa tvárime, že voláme funkciu `File()`, ktorá vytvorí objekt. Pre jednoduchosť povieme, že chceme vypisovať obsah adresára `/tmp`.
+- Premenná musí byť inicializovaná niečím, čo nie je `null`, pretože takto to má Kotlin rád.
 - Používame inferenciu dátového typu, kde Kotlin *vie*, že premenná `directory` bude typu `File`.
 
 Samozrejme, upravíme aj funkciu pre výpis:
@@ -397,7 +403,62 @@ Premenná `directory` sa zmení na reťazec `String`, pretože automatický prev
  gradle help --task ls
 ```
 
+Budovanie kotlinovských projektov
+=================================
 
+Dosiaľ sme písali *build script* v Kotline. Čo ak chceme vybudovať projekt, ktorého zdrojáky sú v Kotline a gradloidný *build script* je v Kotline? Poďme na to!
+
+V prvom rade potrebujeme deklarovať *plugin*, ktorý zapne podporu pre zostavovanie zdrojových kódov napísaných v Kotline. Do nového *build scriptu* uvedieme tri sekcie.
+
+```kotlin
+plugins {
+    kotlin("jvm") version "1.3.41"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+}
+```
+
+* **plugins**: sekcia `plugins` slúži na zavádzanie pluginov. A keďže kotlinovský *build script* je skvelý, použijeme špecifický zápis pre kotlinovské projekty.
+* **repositories**: uvedie repozitáre pre artefakty (závislosti a pluginy), ktoré sa majú stiahnuť do projektu. Uviedli sme povestný centrálny repozitár Mavenu.
+* **dependencies**: uvedie závislosti, teda knižnice, ktoré sú nutné na beh projektu. Kotlinovský projekt závisí na štandardnej knižnici Kotlinu, ktorú musíme zaviesť do projektu.
+
+Teraz sa môžeme pokúsiť zbuildovať projekt:
+
+```bash
+gradle assemble
+```
+
+Samozrejme, nestane sa nič užitočné, lebo nemáme žiadne zdrojáky!
+
+## Zdrojáky v Kotline
+
+Kotlin očakáva zdrojáky v adresári `src/main/kotlin`, vytvorme ho teda.
+
+```shell
+ mkdir -p src/main/kotlin
+```
+
+V tomto adresári si môžeme veselo programovať. Môžeme vytvoriť `Hello.kt` s hlúpym obsahom:
+
+```kotlin
+fun main() {
+    println("Hello!")
+}
+```
+
+A veselo buildujme:
+
+```
+gradle assemble
+```
+
+V adresári `build/libs` sa objaví súbor JAR s výsledkom!
 
 # Prílepky
 
@@ -416,4 +477,16 @@ Keďže funkcia `println()` je automaticky k dispozícii, a objekt, na ktorom ju
 ```
 children.forEach(::println)
 ```
+
+## Hardcore: syntax Kotlinu v *script file*
+
+Syntax *build scriptov* využíva naplno vymoženosti Kotlinu. Napríklad nasledovný kód:
+
+```
+repositories {
+    mavenCentral()
+}
+```
+
+*Build script* je v skutočnosti nastavovanie vlastností na objekte typu `KotlinBuildScript`. Sekcia `repositories` prakticky volá metódu `repositories()`, ktorej parametrom je lambda. Keďže guľaté zátvorky okolo volania funkcie s lambdou možno vynechať, zrazu je zápis elegantný!
 
