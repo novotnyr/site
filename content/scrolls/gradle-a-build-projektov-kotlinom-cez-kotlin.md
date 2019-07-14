@@ -1,3 +1,8 @@
+---
+title: "Gradle a build projektov Kotlinom cez Kotlin"
+date: 2019-07-14T09:09:39+01:00
+---
+
 # Prečo Gradle a prečo Kotlin?
 
 **Gradle** je rokmi overený nástroj na zostavovanie projektov v Java ekosystéme. Samotné príkazy pre zostavenie boli od nepamätí písané v jazyku Gradle. Novým hitom je však Kotlin! Ukážme si, ako môžeme využiť tento jazyk na zostavovanie projektov.
@@ -85,7 +90,7 @@ Tasky založené na existujúcich taskoch
 
 Niekedy máme šťastie a vieme využiť tasky, ktoré sú k dispozícii buď automaticky, alebo z niektorých pluginov. Gradle ponúka [viacero zabudovaných taskov](https://docs.gradle.org/current/dsl/#N10437), napr. task `Exec` na spúšťanie programov. 
 
-```
+```kotlin
 tasks {
     register<Exec>("workdir") {
         executable = "pwd"
@@ -173,7 +178,7 @@ Obe vlastnosti, `group` i `description` sme zdedili od rodiča, a pokojne by sme
 
 Task si môžeme spustiť obvyklým spôsobom:
 
-```
+```bash
 gradle -q hello
 ```
 
@@ -299,7 +304,7 @@ Vďaka skracovacej mánii môžeme pokračovať:
 
 Výsledok je:
 
-```
+```kotlin
 children.forEach { println(it) }
 ```
 
@@ -374,7 +379,7 @@ V našom prípade to urobíme ale inak, keďže v Gradle môžeme parametrizova�
 
 Tasky možno parametrizovať, napríklad chceme volať:
 
-```
+```bash
  gradle ls --directory=/Users
 ```
 
@@ -399,7 +404,7 @@ Premenná `directory` sa zmení na reťazec `String`, pretože automatický prev
 
 Úplne zadarmo dostaneme aj pomocníka, ktorý vypíše podporované parametre.
 
-```
+```bash
  gradle help --task ls
 ```
 
@@ -454,7 +459,7 @@ fun main() {
 
 A veselo buildujme:
 
-```
+```bash
 gradle assemble
 ```
 
@@ -474,7 +479,7 @@ children.forEach(this::println)
 
 Keďže funkcia `println()` je automaticky k dispozícii, a objekt, na ktorom ju voláme, je `this`, môžeme i toto zjednodušiť a `this` vynechať:
 
-```
+```kotlin
 children.forEach(::println)
 ```
 
@@ -482,7 +487,7 @@ children.forEach(::println)
 
 Syntax *build scriptov* využíva naplno vymoženosti Kotlinu. Napríklad nasledovný kód:
 
-```
+```kotlin
 repositories {
     mavenCentral()
 }
