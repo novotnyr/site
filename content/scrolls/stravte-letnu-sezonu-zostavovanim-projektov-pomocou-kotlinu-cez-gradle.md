@@ -1,13 +1,13 @@
 ---
-title: "Gradle a build projektov Kotlinom cez Kotlin"
-date: 2019-07-14T09:09:39+01:00
+title: "Strávte letnú sezónu zostavovaním projektov pomocou Kotlinu cez Gradle"
+date: 2019-07-15T09:09:39+01:00
 ---
 
 # Prečo Gradle a prečo Kotlin?
 
 **Gradle** je rokmi overený nástroj na zostavovanie projektov v Java ekosystéme. Samotné príkazy pre zostavenie boli od nepamätí písané v jazyku Gradle. Novým hitom je však Kotlin! Ukážme si, ako môžeme využiť tento jazyk na zostavovanie projektov.
 
-## Prvý skript v Kotline
+## Prvý gradlovský skript v Kotline
 
 Predpokladajme, že máme k dispozícii posledný Gradle, napríklad 5.5.1. V nejakom adresári si založme kotlinovský *build script*:
 
@@ -408,62 +408,7 @@ Premenná `directory` sa zmení na reťazec `String`, pretože automatický prev
  gradle help --task ls
 ```
 
-Budovanie kotlinovských projektov
-=================================
 
-Dosiaľ sme písali *build script* v Kotline. Čo ak chceme vybudovať projekt, ktorého zdrojáky sú v Kotline a gradloidný *build script* je v Kotline? Poďme na to!
-
-V prvom rade potrebujeme deklarovať *plugin*, ktorý zapne podporu pre zostavovanie zdrojových kódov napísaných v Kotline. Do nového *build scriptu* uvedieme tri sekcie.
-
-```kotlin
-plugins {
-    kotlin("jvm") version "1.3.41"
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-}
-```
-
-* **plugins**: sekcia `plugins` slúži na zavádzanie pluginov. A keďže kotlinovský *build script* je skvelý, použijeme špecifický zápis pre kotlinovské projekty.
-* **repositories**: uvedie repozitáre pre artefakty (závislosti a pluginy), ktoré sa majú stiahnuť do projektu. Uviedli sme povestný centrálny repozitár Mavenu.
-* **dependencies**: uvedie závislosti, teda knižnice, ktoré sú nutné na beh projektu. Kotlinovský projekt závisí na štandardnej knižnici Kotlinu, ktorú musíme zaviesť do projektu.
-
-Teraz sa môžeme pokúsiť zbuildovať projekt:
-
-```bash
-gradle assemble
-```
-
-Samozrejme, nestane sa nič užitočné, lebo nemáme žiadne zdrojáky!
-
-## Zdrojáky v Kotline
-
-Kotlin očakáva zdrojáky v adresári `src/main/kotlin`, vytvorme ho teda.
-
-```shell
- mkdir -p src/main/kotlin
-```
-
-V tomto adresári si môžeme veselo programovať. Môžeme vytvoriť `Hello.kt` s hlúpym obsahom:
-
-```kotlin
-fun main() {
-    println("Hello!")
-}
-```
-
-A veselo buildujme:
-
-```bash
-gradle assemble
-```
-
-V adresári `build/libs` sa objaví súbor JAR s výsledkom!
 
 # Prílepky
 
