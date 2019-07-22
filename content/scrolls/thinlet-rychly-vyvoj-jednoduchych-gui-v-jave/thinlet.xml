@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<article lang="sk">
+  <articleinfo>
+    <title>Thinlet - rýchly vývoj jednoduchých GUI v Jave</title>
+  </articleinfo>
+
+  <section>
+    <title>Úvod</title>
+
+    <para><quote>Okienkové</quote> aplikácie síce netvoria dominantu
+    javovských projektov. Klasickou voľbou je použitie knižnice Swing
+    (zabudovanej v Jave) či SWT (od IBM). Obe knižnice sú dostatočne stabilné
+    a tešia sa širokej podpore a používaniu.</para>
+
+    <para>Jednou z ich typických charakteristík je definícia používateľského
+    rozhrania priamo v kóde. Niekedy v roku 2005 však vznikla vlna projektov,
+    ktorá pristupovala k implementácii grafických rozhraní odlišným spôsobom.
+    Samotné používateľské rozhranie je definované v XML súboroch, a Java kód
+    len definuje samotnú funkcionalitu a príslušnú obslužnú logiku. Filozofia
+    je teda podobná situácii z webových aplikačných rámcov, kde je výzor
+    používateľského rozhrania je definovaný v HTML, čím je možné oddeliť
+    zodpovednosti jednotlivých vývojárov (webový dizajnér nemusí ovládať Javu
+    a vývojár zase nemusí pamätať na nuansy návrhu). V prípade grafických
+    aplikácii stráca táto výhoda svoj význam. I tak však zostáva jedna
+    pozitívna vlastnosť: odčlenením výzoru od kódu je možné zmeniť vzhľad
+    používateľského rozhrania bez rekompilácie aplikácie. Navyše, XML je
+    všeobecnejšia štruktúra ako kód, čím lepší potenciál pre vývoj
+    <quote>vizuálnych klikátiek</quote> grafických rozhraní.<note>
+        <para>Inšpiráciou pre túto módnu vlnu bola Mozilla (v dnešnej
+        inkarnácii Firefoxu), ktorá používa na definíciu GUI kombináciu
+        XML+JavaScript, známu pod skratkou <acronym>XUL</acronym>
+        (<foreignphrase>XML User Interface Language</foreignphrase>). Java
+        projekty, ktoré sa ňou inšpirovali, boli školským príkladom módnej
+        vlny, ktorá zmizla rovnako rýchlo ako odišla. Z niekdajšieho celkového
+        počtu 10 a viac projektov dnes v súčasnosti nie je aktívny ani jeden.
+        Vo svete .NET však táto vlna pretrvala -- jazyk XAML možno použiť na
+        definíciu GUI windowsovských aplikácií.</para>
+      </note></para>
+
+    <para>Jedným z mnohých projektov, ktorých životnosť bola o niečo dlhšia,
+    je <productname>Thinlet</productname>. Okrem vízie XML definície rozhraní
+    si dával za primárny cieľ minimálnu veľkosť knižnice a beh na čo najväčšom
+    počte platforiem. V tomto článku si ukážeme niekoľko jednoduchých
+    príkladov použitia tejto knižnice (či skôr triedy, keďže
+    <productname>Thinlet</productname> je tvorený jednou obrovskou
+    triedou).</para>
+  </section>
+
+  <section>
+    <title>Stiahnutie</title>
+
+    <para>Nájsť správnu verziu <productname>Thinlet</productname>u nie je
+    napodiv až také jednoduché. Možno nájsť projekt na <ulink
+    url="http://thinlet.sourceforge.net/home.html">SourceForge.net</ulink>,
+    kde je posledná verzia pod názvom
+    <filename>thinlet-2005-03-28.zip</filename>. <note>
+        <para>Ak zamierite na portál Thinlet.com, ukáže sa, že existuje ešte
+        novšia verzia 0.75beta. Tá je však kompletným prepisom pôvodnej
+        verzie, ktorá síce ponúka viac možností, ale vyžaduje vyššiu verziu
+        Javy, a neobsahuje niektorú dôležitú funkcionalitu. (Absentuje
+        napríklad layout manager, ktorý funguje aj pri zmene veľkosti
+        okna.)</para>
+      </note></para>
+
+    <para>Do projektu si následne pridáme <filename>thinlet.jar</filename> (38
+    kB) a môžeme začať vyvíjať.</para>
+  </section>
+
+  <section>
+    <title>Vytváranie aplikácie</title>
+
+    <para>Naša aplikácia bude jednoduchá: z internetu zistí aktuálny kurz
+    dolára v Európskej centrálnej banke. Najprv však spravme primitívne okno,
+    ktoré bude obsahovať jediný popisok <foreignphrase>label</foreignphrase> a
+    jedno textové políčko. Predovšetkým budeme potrebovať definíciu
+    používateľského rozhrania.</para>
+
+    <para>Vytvorme súbor <filename>ExchangeRateForm.xml</filename> a uložme ho
+    do vhodného adresára, najlepšie do zdrojového adresára zodpovedajúceho
+    balíčku <package>exchangerates</package>.<programlisting>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+
+&lt;!DOCTYPE panel PUBLIC '-//Thinlets 1.0//EN' 'https://thinlet.dev.java.net/thinlet.dtd'&gt;
+
+&lt;panel&gt;
+	&lt;label text="Current Exchange Rate for USD:" /&gt;
+	&lt;textfield text="[unknown]"  /&gt;
+&lt;/panel&gt;</programlisting>Samotné okno zodpovedá panelu (všeobecnému
+    kontajneru pre komponenty), do ktorého umiestnime popisok
+    <foreignphrase>label</foreignphrase> a textové políčko
+    <foreignphrase>textfield</foreignphrase>. Nadpis v políčku, resp. text
+    obsiahnutý v textovom poli nastavíme pomocou atribútu
+    <token>name</token>.</para>
+
+    <para>Prejdime teraz k samotnej triede s názvom
+    <package>exchangerates.ExchangeRateForm</package>. <programlisting>package exchangerates;
+
+import java.io.IOException;
+
+import thinlet.FrameLauncher;
+import thinlet.Thinlet;
+
+public class ExchangeRateForm extends Thinlet {
+	public ExchangeRateForm() {
+		try {
+			add(parse(getClass().getSimpleName() + ".xml"));
+		} catch (IOException e) {
+			throw new IllegalStateException("Illegal or missing form definition.", e);
+		}
+	}
+	
+	public static void main(String[] args) {
+		FrameLauncher frameLauncher = new FrameLauncher("Exchange Rate", new ExchangeRateForm(), 320, 200);
+		frameLauncher.pack();
+	}
+}
+</programlisting>Trieda dedí od triedy <classname>thinlet.Thinlet</classname>
+    a v rámci konštruktora načíta svoju definíciu z XML súboru, ktorý má
+    rovnaké meno ako ona a nachádza sa v rovnakom balíčku. Samozrejme, možno
+    zvoliť ľubovoľnú inú konvenciu, dôležité je, aby bol definičný súbor XML k
+    dispozícii.<warning>
+        <para>Jednou z očividných nevýhod <productname>Thinlet</productname>u
+        sú absolútne nepomáhajúce chybové hlášky. V prípade, že načítavate
+        súbor z <envar>CLASSPATH</envar> a ten sa nenájde, získate len
+        ničnehovoriacu
+        <exceptionname>NullPointerException</exceptionname>.</para>
+      </warning></para>
+
+    <para>Pre jednoduchosť sme tiež dodali metódu
+    <methodname>main()</methodname>, v ktorej využijeme na zobrazenie nášho
+    formulára triedu <classname>FrameLauncher</classname>. V jeho konštruktore
+    uvedieme postupne text, ktorý sa zobrazí v záhlaví okna, našu inštanciu
+    <classname>Thinlet</classname>u a odporúčané rozmery hlavného okna.</para>
+
+    <para><classname>FrameLauncher</classname> je zároveň inštanciou triedy
+    <classname>java.awt.Frame</classname> a v prípade, že rozmery nevieme
+    vhodne umiestniť, môžeme sa spoľahnúť na implicitné rozmery ovládacích
+    prvkov a zavolaním metódy <methodname>pack()</methodname> nastaviť veľkosť
+    okna automaticky.</para>
+
+    <para>Po vytvorení inštancie <classname>FrameLaunchera</classname> sa
+    automaticky zobrazí nové okno s dvoma komponentami. Thinlet automaticky
+    rozloží komponenty vedľa seba a nastaví im preferované (implicitné)
+    rozmery<figure>
+        <title>Prvé okno</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="thinlet-first-window.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Ak sa zdá, že sú komponenty príliš <quote>nahusto</quote>, stačí
+    upraviť okraje: atribúty <token>left</token>, <token>right</token>,
+    <token>bottom</token>, <token>right</token> udávajú šírku príslušného
+    okraja a element <token>gap</token> udáva veľkosť medzery medzi
+    komponentami.<programlisting>&lt;panel top="5" left="5" bottom="5" right="5" gap="5"&gt;
+...</programlisting><figure>
+        <title>Okno s päťpixelovým okrajom a rovnakým rozpalom</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="thinlet-second-window.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Naše okno je zatiaľ pasívne - nenačítavajú sa žiadne údaje a dokonca
+    aj používateľova interakcia je obmedzená na obdivovanie obsahu formulára.
+    Skúsme to napraviť -- a začneme tým, že pri inicializácii okna načítame
+    príslušný výmenný kurz zo stránok ECB.<note>
+        <para>Európska centrálna banka poskytuje údaje v rozličných formátoch,
+        z ktorých je pre programové spracovanie najefektívnejší XML. Aktuálne
+        údaje možno nájsť na <ulink
+        url="http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml">http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml</ulink>.</para>
+      </note>Stiahnime si triedu <ulink
+    url="???"><classname>exchangerates.ExchangeRateService</classname></ulink>
+    a pridajme si ju do projektu. Táto trieda obsahuje jedinú metódu
+    <methodname>getCurrentExchange()</methodname>, do ktorej uvedieme kód
+    meny.<programlisting>package exchangerates;
+
+public class ExchangeRateService {
+	public BigDecimal getCurrentExchange(String currencyCode) throws CurrencyException {
+		String urlString = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml";
+		try {
+			InputStream in = new URL(urlString).openStream();
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			Document document = documentBuilderFactory.newDocumentBuilder().parse(in);
+			
+			NodeList cubeElements = document.getElementsByTagName("Cube");
+			BigDecimal result = null;
+			for(int i = 0; i &lt; cubeElements.getLength(); i++) {
+				Element cubeElement = (Element) cubeElements.item(i);
+				if(currencyCode.equals(cubeElement.getAttribute("currency"))) {
+					result = new BigDecimal(cubeElement.getAttribute("rate"));
+					return result;
+				}
+			}
+			return result;
+		} catch (MalformedURLException e) {
+			throw new CurrencyException("Illegal URL for currency service: " + urlString, e);
+		} catch (IOException e) {
+			throw new CurrencyException("I/O error while retrieving currency rates data " + e.getMessage(), e);
+		} catch (SAXException e) {
+			throw new CurrencyException("Error while parsing XML response from server: " + e.getMessage(), e);
+		} catch (ParserConfigurationException e) {
+			throw new CurrencyException("Error while configuring response parser from server: " + e.getMessage(), e);
+		} catch (NumberFormatException e) {
+			throw new CurrencyException("Exchange rate is not a string.");
+		}
+	}
+}
+</programlisting>Ďalej dodáme do triedy
+    <classname>ExchangeRateForm</classname> príslušnú metódu s hlavičkou
+    <token>public void loadExchangeRates()</token>. Prvotný nástrel vyzerá
+    nasledovne:<programlisting>public void loadExchangeRates() {
+	try {
+		ExchangeRateService service = new ExchangeRateService();
+		BigDecimal currentExchange = service.getCurrentExchange("USD");
+		if(currentExchange != null) {
+		}
+	} catch (CurrencyException e) {
+		e.printStackTrace();
+	}
+}</programlisting></para>
+
+    <para>Ako uvedieme získaný kurz do požadovaného textového políčka? Každý
+    ovládací prvok v Thinlete môže byť v XML definícii pomenovaný pomocou
+    atribútu <token>name</token>, ktorý slúži v Java kóde ako jeho
+    identifikátor. Dodajme teda do textového políčka <token>token</token>
+    atribút <token>name</token> s hodnotou
+    <token>exchangeRate</token>:<programlisting>&lt;textfield text="[unknown]" <emphasis>name="exchangeRate"</emphasis> /&gt;</programlisting></para>
+
+    <para>Pomocou metódy <methodname>find()</methodname> vieme nájsť ovládací
+    komponent podľa mena, a využitím metódy
+    <methodname>setStringValue()</methodname> programovo nastaviť hodnotu
+    konkrétneho ovládacieho prvku.<programlisting>BigDecimal currentExchange = service.getCurrentExchange("USD");
+if(currentExchange != null) {
+	setString(find("exchangeRate"), "text", currentExchange.toString());
+}</programlisting>Metóda <methodname>find()</methodname> vracia prekvapivo
+    inštanciu typu <classname>Object</classname>. To zodpovedá implementačnej
+    filozofii Thinletu, kde je prvotnou ideou jednoduchosť a minimalistickosť
+    kódu (hoci na úkor rozumného návrhu). Ovládacie prvky nie sú
+    reprezentované žiadnymi špeciálnymi triedami -- všetko sú to všeobecné
+    <classname>Object</classname>y. Z toho vyplýva, že samotný komponent nemá
+    žiadne metódy, a akékoľvek nastavenia ich vlastností sú riešené pomocou
+    metód samotného <classname>Thinlet</classname>u -- príkladom je metóda
+    <methodname>setString()</methodname>, ktorá berie parameter zodpovedajúci
+    komponentu, ďalej názov vlastnosti
+    (<foreignphrase>property</foreignphrase>), ktorá sa má zmeniť a nakoniec
+    jej hodnota.</para>
+
+    <para>Samotné volanie metódy <methodname>loadExchangeRates()</methodname>
+    môžeme vykonať v konštruktore:<programlisting>public ExchangeRateForm() {
+	try {
+		add(parse(getClass().getSimpleName() + ".xml"));
+		<emphasis>loadExchangeRates();</emphasis>
+		
+	} catch (IOException e) {
+		throw new IllegalStateException("Illegal or missing form definition.", e);
+	}
+}
+</programlisting>Upravme si teraz formulár tak, aby mal používateľ možnosť
+    zadať vlastný kód meny, pre ktorý sa má zistiť aktuálny kurz. Dodajme teda
+    dva komponenty: textové políčko pre zadanie kódu (s menom
+    <token>currency</token>) a tlačidlo <token>button</token>, ktorým môže
+    získať nové dáta.<programlisting>&lt;panel top="5" left="5" bottom="5" right="5" gap="5"&gt;
+	&lt;label text="Current Exchange Rate for:" /&gt;
+	&lt;textfield text="USD" name="currency" /&gt;	
+	<emphasis>&lt;label text="[unknown]" name="exchangeRate" /&gt;</emphasis>
+	<emphasis>&lt;button text="Refresh" action="loadExchangeRates" /&gt;</emphasis>
+&lt;/panel&gt;
+</programlisting></para>
+
+    <para>Všimnime si ešte tlačidlo <token>button</token>, ktoré má špeciálny
+    atribút <token>action</token>. Jeho hodnota udáva metódu v inštancii
+    <classname>Thinlet</classname>u, ktorá sa má zavolať po kliknutí. V našom
+    prípade zavoláme metódu <methodname>loadExchangeRates()</methodname>, čiže
+    znovu načítame informácie z Európskej centrálnej banky a vyhľadáme
+    príslušný kurz.</para>
+
+    <para>V tomto prípade sme ešte zmenili textové políčko s výsledným kurzom
+    na komponent typu <foreignphrase>label</foreignphrase>, čo lepšie
+    zodpovedá statickému textu. Keďže jeho obsah je reprezentovaný atribútom
+    <token>text</token>, ktorý je rovnaký ako v prípade textového políčka, v
+    kóde nemusíme nič zmeniť.</para>
+
+    <para>Ak si spustíme upravené okno, uvidíme nasledovný výzor:<figure>
+        <title>Upravené okno s možnosťou zadania meny</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="thinlet-third-window.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Samozrejme, ešte stále nemáme možnosť vidieť kurz inej meny než
+    dolára. V tomto prípade máme viacero možností. Prvá je nasledovná: Metóda
+    <methodname>loadExchangeRates()</methodname> si sama nájde komponent s
+    menom <token>currency</token> (teda textové políčko), vytiahne z neho
+    hodnotu a získa údaje zo servera.</para>
+
+    <para>Skúsme upraviť metódu
+    <methodname>loadExchangeRates()</methodname>.<programlisting>public void loadExchangeRates() {
+	try {
+		String currencyCode = getString(find("currency"), "text");
+		
+		ExchangeRateService service = new ExchangeRateService();
+		BigDecimal currentExchange = service.getCurrentExchange(currencyCode);
+		if(currentExchange != null) {
+			setString(find("exchangeRate"), "text", currentExchange.toString());
+		}
+	} catch (CurrencyException e) {
+		e.printStackTrace();
+	}
+}</programlisting></para>
+
+    <para>Metódou <methodname>find()</methodname> vieme nájsť komponent s
+    menom <token>currency</token>. Metóda <methodname>getString()</methodname>
+    je protipólom metódy <methodname>setString()</methodname>, ktorou možno
+    získať hodnotu danej vlastnosti špecifikovaného komponentu.</para>
+
+    <para>Alternatívnou možnosťou je vytvoriť metódu, ktorá bude mať argument
+    typu <classname>String</classname> reprezentujúci kód, a o samotné
+    naplnenie parametra sa postará niekto iný. (Inak povedané, metóda nebude
+    vyhľadávať obsah textových políčiek sama, ale získa ho z parametra.) V
+    tomto prípade však musíme prerobiť definíciu v XML súbore:<programlisting>&lt;panel top="5" left="5" bottom="5" right="5" gap="5"&gt;
+	&lt;label text="Current Exchange Rate for:" /&gt;
+	&lt;textfield text="USD" name="currency" /&gt;	
+	&lt;label text="[unknown]" name="exchangeRate" /&gt;
+	&lt;button text="Refresh" action="<emphasis role="bold">loadExchangeRates(currency.text)</emphasis>" /&gt;
+&lt;/panel&gt;</programlisting>Akcia
+    <token>loadExchangeRates(currency.text)</token> zavolá rovnomennú metódu a
+    do jej parametra vloží aktuálnu hodnotu atribútu <token>text</token>
+    ovládacieho prvka s identifikátorom <token>currency</token>. Inak
+    povedané, metóda získa do parametra hodnotu textového políčka s kódom
+    meny.</para>
+
+    <para><note>
+        <para>Existuje ešte jedno miesto, kde sa dá sprehľadniť kód. Namiesto
+        explicitného volania metód <methodname>setString(find())</methodname>
+        je možné vytvoriť sadu getterov a setterov.<programlisting>public void setExchangeRateText(String exchangeRate) {
+	setString(find("exchangeRate"), "text", exchangeRate);
+}</programlisting></para>
+      </note>Prvotná funkcionalita je už hotová, a teraz je zrejme vhodný čas
+    na úpravu vizuálu.</para>
+
+    <para>Všimnime si, že všetky komponenty boli do formulára ukladané vedľa
+    seba, smerom zľava doprava. Po rozložení sa ich veľkosť už nikdy nezmení
+    -- po zmene rozmerov formulára ostáva rovnaká. Skúsme to napraviť.</para>
+
+    <para>Panel si možno predstaviť ako mriežku, do ktorej Thinlet rozkladá
+    komponenty. V základnom nastavení sa predpokladá, že mriežka má jeden
+    riadok a neobmedzený počet sĺpcov. Ak však nastavíme<programlisting>&lt;panel <emphasis
+          role="bold">columns="1"</emphasis> top="5" left="5" bottom="5" right="5" gap="5"&gt;</programlisting>rozloženie
+    sa zmení na jednostĺpcové (s neobmedzeným počtom riadkov).<figure>
+        <title>Jednostĺpcový výzor</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="thinlet-single-column.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Skúsme umierniť label a textové políčko vedľa seba, pod ne umiestniť
+    výsledok a na spodok dať tlačidlo <guibutton>Refresh</guibutton>. Pri tom
+    môžeme využiť vnáranie panelov. Prvý vnorený panel bude obsahovať label a
+    textové políčko (rozkladané zľava doprava, teda v rozložení 1 riadok krát
+    neobmedzený počet stĺpcov), a pod ním bude ďalší panel s troma statickými
+    labelmi vedľa seba (prostredný s názvom <token>exchangeRate</token>
+    obsiahne výsledok). Oba panely majú päťpixelovú medzeru medzi vnútornými
+    komponentami.<programlisting>&lt;panel columns="1" top="5" left="5" bottom="5" right="5" gap="5"&gt;
+	&lt;panel gap="5"&gt;
+		&lt;label text="Current Exchange Rate for:" /&gt;
+		&lt;textfield text="USD" name="currency" /&gt;
+	&lt;/panel&gt;
+	&lt;panel halign="center" gap="5"&gt;	
+		&lt;label text="1€ ="/&gt;
+		&lt;label text="[unknown]" name="exchangeRate" /&gt;
+		&lt;label name="currencyCode" text="USD"/&gt;
+	&lt;/panel&gt;
+	&lt;button text="Refresh" action="loadExchangeRates(currency.text)" /&gt;
+&lt;/panel&gt;
+</programlisting>Atribút <token>halign="center"</token> na vnorenom paneli
+    spôsobí vycentrovanie labelov.<figure>
+        <title>Vnorené panely</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="thinlet-layout.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Stále nám však chýba dôležitá vlastnosť: automatická zmena veľkosti
+    (<quote>naťahovanie</quote> komponentov) pri zväčšovaní či zmenšovaní
+    okna. To sa dá vyriešiť jednoducho. Pri zmene veľkosti kontajnera (okna,
+    panela) možno každému vnorenému komponentu priradiť percentuálnu váhu, o
+    ktorú sa má natiahnuť či zmenšiť pri úprave veľkosti rodičovského
+    kontajnera.</para>
+
+    <para>V našom okne máme jeden stĺpec. Ak priradíme vnoreným panelom a
+    tlačidlu váhu 1, znamená to, že pri zmene veľkosti okna sa im priradí 100%
+    rozdielu medzi novou a pôvodnou veľkosťou rodičovského panela. Váha sa
+    nastavuje samostatne v horizontále (atribút <token>weightx</token>) a vo
+    vertikále (atribút <token>weighty</token>).<programlisting>&lt;panel columns="1" top="5" left="5" bottom="5" right="5" gap="5"&gt;
+	&lt;panel gap="5" <emphasis role="bold">weightx="1"</emphasis>&gt;
+		&lt;label text="Current Exchange Rate for:" /&gt;
+		&lt;textfield text="USD" name="currency" /&gt;
+	&lt;/panel&gt;
+	&lt;panel halign="center" gap="5" <emphasis role="bold">weightx="1"</emphasis>&gt;	
+		&lt;label text="1€ ="/&gt;
+		&lt;label text="[unknown]" name="exchangeRate" /&gt;
+		&lt;label name="currencyCode" text="USD"/&gt;
+	&lt;/panel&gt;
+	&lt;button text="Refresh" action="loadExchangeRates(currency.text)" <emphasis
+          role="bold">weightx="1"</emphasis>/&gt;
+&lt;/panel&gt;</programlisting>Všimnime si, že prostredný panel má roztiahnutý
+    obsah, a stále si zachováva centrovanie komponentov, ktoré sú v ňom
+    obsiahnuté.</para>
+
+    <para>Vyriešme ešte rozťahovanie labelu a textového políčka. Ich
+    rodičovský panel má síce váhu 1, ale keďže ani label, ani textové pole
+    nemajú svoju vlastnú váhu, nebudú sa vôbec rozťahovať. Všetko nadbytočné
+    miesto sa prejaví ako prázdne miesto napravo od nich. Skúsme
+    nastaviť:<programlisting>&lt;label <emphasis role="bold">weightx="50"</emphasis> text="Current Exchange Rate for:" /&gt;
+&lt;textfield <emphasis role="bold">weightx="50"</emphasis> text="USD" name="currency" /&gt;</programlisting>Znamená
+    to, že pri zmene veľkosti rodičovského panelu sa label natiahne či zmenší
+    o 150% rozdielu medzi pôvodnou a novou veľkosťou tohto panelu. To isté sa
+    týka aj textového políčka. Ak chceme, aby sa label rozťahoval menej a
+    textové políčko viac, stačí im inak prerozdeliť váhy. Ak chceme zabrániť
+    rozťahovaniu labelu, stačí mu nastaviť váhu na 0.</para>
+
+    <para>Ak ešte nastavíme<programlisting>&lt;panel gap="5" halign="center" <emphasis
+          role="bold">weighty="50" valign="center"</emphasis>&gt;
+		&lt;label text="1€ ="/&gt;
+		&lt;label text="[unknown]" name="exchangeRate"/&gt;
+		&lt;label name="currencyCode" text="USD"/&gt;
+	&lt;/panel&gt;</programlisting></para>
+
+    <para>dosiahneme tým vertikálne rozťahovanie panelu (ostatné komponenty si
+    ponechajú pôvodnú výšku) a vnútorné komponenty budú vertikálne centrované
+    na šírku.</para>
+
+    <para>Textové políčko nezabraňuje používateľovi vyhľadávať kurz pre menu,
+    ktorá neexistuje, alebo ktorej kurzy ECB neuvádza. Ak by sme však
+    nahradili textové políčko rozbaľovacím zoznamom (<foreignphrase>combo
+    boxom</foreignphrase>), tento problém by vymizol.<programlisting>&lt;panel gap="5" weightx="1"&gt;
+	&lt;label weightx="0" text="Current Exchange Rate for:" alignment="right"/&gt;
+	&lt;combobox name="currency" editable="false" text="[ choose currency ]"&gt;
+		&lt;choice text="USD"/&gt;
+		&lt;choice text="CZK"/&gt;
+		&lt;choice text="GBP"/&gt;
+		&lt;choice text="RUB"/&gt;
+	&lt;/combobox&gt;
+&lt;/panel&gt;</programlisting>Rozbaľovaciemu zoznamu zodpovedá element
+    <token>&lt;combobox&gt;</token> a jeho jednotlivým položkám
+    <token>&lt;choice&gt;</token>. Atribút <token>editable</token> určuje, či
+    je rozbaľovací zoznam kombinovaný s textovým políčkom. V našom prípade
+    chceme zabrániť, aby používateľ zadal vlastný kód, preto túto možnosť
+    vypneme.</para>
+
+    <para>Ak chceme zistiť text vybranej položky, opäť nemusíme v kóde meniť
+    nič -- objaví sa v atribúte <token>text</token> rozbaľovacieho
+    zoznamu.</para>
+
+    <section>
+      <title>Zobrazovanie a skrývanie okien</title>
+
+      <para>Zatiaľ sme pracovali len s jediným oknom. Niekedy sa však stane,
+      že chcem používateľovi zobraziť dodatočné okno -- buď jednoduché
+      hlásenie (<foreignphrase>message box</foreignphrase>) alebo
+      rozšírenejšie okno s podrobnejšími informáciami.<important>
+          <para>Thinlet je primárne stavaný na aplikácie, ktoré pracujú s
+          jediným oknom. Inak povedané, všetky okná, ktoré thinletová
+          aplikácia môže otvárať, sa musia nachádzať v hlavnom okne. To je
+          rozdiel oproti Swingu či AWT, ktoré v tomto ohľade nie sú obmedzené.
+          Limitácia pochádza z dizajnérskej filozofie, ktorá umožňovala beh aj
+          na mobiloch, u ktorých sa predpokladá, že aplikácia zaberá celú
+          veľkosť displeja.</para>
+        </important></para>
+
+      <para>V našej aplikácii to môžeme demonštrovať na okno s informáciami o
+      aplikácii (<foreignphrase>about box</foreignphrase>). Predovšetkým
+      musíme vytvoriť nový XML súbor -- každé okno musí mať svoju vlastnú
+      definíciu. Na rozdiel od hlavného okna, ktorého obsah je tvorený panelom
+      (a teda definovaný elementom <token>&lt;panel&gt;</token>, sú vnorené
+      okná (dialógy) definované v rámci rovnomenného elementu
+      <token>&lt;dialog&gt;</token>. Vytvorme teda súbor
+      <filename>AboutBox.xml</filename> s nasledovným obsahom:<programlisting>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+
+&lt;!DOCTYPE dialog PUBLIC '-//Thinlets 1.0//EN' 'https://thinlet.dev.java.net/thinlet.dtd'&gt;
+
+&lt;dialog text="About" top="5" left="5" bottom="5" right="5" gap="5" columns="1" modal="true"&gt;
+	&lt;label text="Currency Exchange Rate Monitor" font="bold"/&gt;
+	&lt;button text="Close" action="closeAboutBox" /&gt;
+&lt;/dialog&gt;</programlisting>V definícii nie je nič prekvapivé: používame
+      jeden <foreignphrase>label</foreignphrase> a jedno tlačidlo, ktoré sú
+      rozložené pod sebou (layout je v jednom stĺpci). Drobnosťou je akurát
+      atribút <token>font</token>, ktorým zvýrazníme label a atribút
+      <token>text</token>, kde uvedieme titulok okna.</para>
+
+      <para>Všimnime si ale atribút <token>modal="true"</token> v elemente
+      <token>&lt;dialog&gt;</token>. Týmto zaistíme modalitu dialógu, teda po
+      jeho zobrazení nebude možné pristupovať ku komponentom, ktoré sa
+      nachádzajú <quote>za</quote> ním. Užívateľ bude môcť ďalej pracovať s
+      aplikáciou až po zavretí modálneho okna.</para>
+
+      <para>Zobrazenie tohto okna potom pozostáva z dvoch fáz: v prvej
+      načítame definíciu zo XML súboru pomocou metódy
+      <methodname>parse()</methodname>. Pridaním okna do rodičovského
+      kontajnera ho zobrazíme (zavolaním metódy
+      <methodname>add()</methodname>). Ak chceme okno skryť, musíme ho z
+      rodičovského okna odobrať, t. j. zavolať metódu
+      <methodname>remove()</methodname>.</para>
+
+      <para>Načítavanie sa môže udiať v konštruktore a načítané okno si
+      uložíme do inštančnej premennej.<programlisting>private Object aboutBox;
+
+public ExchangeRateForm() {
+	try {
+		add(parse(getClass().getSimpleName() + ".xml"));
+		aboutBox = parse("AboutBox.xml");
+		
+		loadExchangeRates("USD");
+		
+	} catch (IOException e) {
+		throw new IllegalStateException("Illegal or missing form definition.", e);
+	}
+}</programlisting>To však nie je všetko: potrebujeme ešte dodať ovládací
+      prvok, ktorým toto okno zobrazíme. Zabezpečíme to dodaním tlačidla do
+      hlavného okna:<programlisting>&lt;panel&gt;
+	&lt;button text="Refresh" action="loadExchangeRates(currency.text)" weightx="1"/&gt;
+	<emphasis role="bold">&lt;button text="?" action="showAboutBox" /&gt;</emphasis>
+&lt;/panel&gt;</programlisting>Poslednou vecou je dodanie dvoch metód, ktoré
+      budú obsluhovať kód: jednou z nich zobrazíme okno (metóda
+      <methodname>showAboutBox()</methodname>) a druhou ho zase schováme
+      (metóda <methodname>closeAboutBox()</methodname>).<programlisting>public void showAboutBox() {
+	add(aboutBox);
+}
+
+public void closeAboutBox() {
+	remove(aboutBox);
+}</programlisting> Po spustení aplikácie a zobrazení okna budeme vidieť
+      nasledovný stav:<figure>
+          <title>Modálne okno</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="thinlet-modal-dialog.png" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Implementačné detaily a porovnanie s inými knižnicami</title>
+
+    <para>Samotný Thinlet je postavený ako jednoduchá nadstavba nad AWT. Hoci
+    samotné AWT použije dnes už len máloktorý vývojár, jeho výhodou je
+    jednoduchosť, podpora v starých verziách Javy a na mobilných zariadeniach.
+    Jeho ďalším hlavným pozitívom je rýchly vývoj rozhrania pre jednoduché
+    aplikácie, samozrejme za predpokladu, že si uvedomíme
+    obmedzenia:<variablelist>
+        <varlistentry>
+          <term>obmedzenie na jediné okno</term>
+
+          <listitem>
+            <para>Aplikácia môže mať jediné hlavné okno, všetky vnorené okná
+            musia byť v rámci hlavného okna.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>jediný layout manager</term>
+
+          <listitem>
+            <para>Ak ste zvyknutí na plejádu rôznorodých manažérov, v Thinlete
+            máte k dispozícii len jediný -- tabuľkový. Ten je však dostatočne
+            flexibilný a dokážete ním realizovať množstvo rozličných
+            prípadov.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>žiadne modely komponentov</term>
+
+          <listitem>
+            <para>v Swingu a SWT je štandardom oddelenie dát od spôsobu ich
+            zobrazovania. Dáta bývajú obvykle uložené v modeli (modelovom
+            objekte) a samotný komponent sa len stará o zobrazenie
+            (prezentáciu modelu). Thinletovské komponenty však modely
+            nepodporujú, inak povedané, komponent je zároveň modelom.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>komponent môže mať len jediný listener danej udalosti</term>
+
+          <listitem>
+            <para>na rozdiel od Swingu, kde môže mať komponent viacero
+            listenerov, sú tuto listenery skryté. V tomto prípade je
+            listenerom verejná metóda, ktorá sa však musí nachádzať v hlavnej
+            triede.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>občasné obskúrne chybové hlášky</term>
+
+          <listitem>
+            <para>Kód Thinletu je stelesnením programovania na výkon a
+            efektivitu, ale na úkor prehľadnosti. Čo je horšie, chybové hlášky
+            často vonkoncom nezodpovedajú realite a je treba chvíľu pátrať (či
+            krokovať) po pravej príčine problému.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>obmedzené vláknové programovanie</term>
+
+          <listitem>
+            <para>V Swingu platí zásada, že dlhotrvajúce operácie by mali
+            bežať v separátnom vlákne. V tomto prípade však žiadny takýto
+            mechanizmus nie je k dispozícii a teda tiahle operácie spôsobia
+            vytuhnutie používateľského rozhrania.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>obmedzená tvorba vlastných komponentov</term>
+
+          <listitem>
+            <para>Tvorba vlastných komponentov je obmedzená na pasívne
+            komponenty dediace od <classname>java.awt.Component</classname>.
+            Takého komponenty nebudú prijímať žiadne udalosti.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>nefunkčnosť niektorých vlastností</term>
+
+          <listitem>
+            <para>Niektoré vlastnosti, ktoré komponenty ponúkajú, nie sú
+            funkčné. V praxi sme sa stretli s nefunkčnosťou zatváracích,
+            maximalizujúcich a minimalizujúcich tlačidiel vo vnorených
+            dialógoch (tlačidlá sa vykreslia, ale sú pasívne), teda o atribúty
+            <token>closable</token>, <token>maximalizable</token> a
+            <token>minimalizable</token>.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+  </section>
+
+  <section>
+    <title>Ďalšie pramene</title>
+
+    <para><variablelist>
+        <varlistentry>
+          <term><ulink
+          url="http://ics.upjs.sk/~novotnyr/wiki/uploads/Java/Thinlet/exchange-rates-thinlet.zip">http://ics.upjs.sk/~novotnyr/wiki/uploads/Java/Thinlet/exchange-rates-thinlet.zip</ulink></term>
+
+          <listitem>
+            <para>Zdrojové kódy s ukážkovým projektom</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><ulink
+          url="http://thinlet.sourceforge.net/home.html">http://thinlet.sourceforge.net/home.html</ulink></term>
+
+          <listitem>
+            <para>Hlavná stránka verzie Thinletu, ktorá je používaná v tomto
+            článku</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><ulink
+          url="http://thinlet.com">http://thinlet.com</ulink></term>
+
+          <listitem>
+            <para>Posledná verzia kompletne prepísanej verzie Thinletu,
+            chýbajú jej však niektoré dôležité vlastnosti.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><ulink
+          url="http://thinlet.blog-city.com/frequently_asked_questions.htm">Thinlet
+          FAQ</ulink></term>
+
+          <listitem>
+            <para>Často kladené otázky k Thinletu.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><ulink
+          url="http://www.zee.ch/thinlet/">Thinlet-ZEE</ulink></term>
+
+          <listitem>
+            <para>Zbierka patchov a dodatočnej funkcionality k pôvodnej verzii
+            Thinletu</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+  </section>
+</article>
