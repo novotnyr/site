@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<article lang="sk">
+  <articleinfo>
+    <title>Automatická kontrola pravopisu v textovom poli v Swingu</title>
+  </articleinfo>
+
+  <section>
+    <title>Úvod</title>
+
+    <para>Na príklade automatickej kontroly pravopisu v swingovskom textovom
+    políčku sa dá ukázať množstvo zaujímavých vecí: automatické vyhľadávanie
+    medzier medzi slovami, vlákna v Swingu ba i podporu pre zvýrazňovanie
+    textu. Vytvorme si teda jednoduchú aplikáciu s textovým políčkom, kde môže
+    používateľ zadávať text, a v prípade, že je nekorektný, mu ho aplikácia
+    zvýrazní červenou farbou.</para>
+
+    <section>
+      <title>Delenie textu na slová</title>
+
+      <para>Mnohokrát sa stáva, že pre daný reťazec potrebujeme nájsť pozície
+      medzier (hraníc) medzi slovami. Samozrejme, jednou z možností by bola
+      implementácia vlastného algoritmu. Ale načo, keď existuje elegantná
+      trieda <ulink
+      url="http://java.sun.com/javase/6/docs/api/java/text/BreakIterator.html"><classname>java.text.BreakIterator</classname></ulink>,
+      ktorá to umožňuje realizovať bez akýchkoľvek problémov.</para>
+
+      <para>Ukážme si príklad jednoduchého kódu, ktorý nájde medzery medzi
+      slovami:<programlisting>BreakIterator iterator = BreakIterator.getWordInstance();
+iterator.setText(" 1  23 4");
+
+int pos = iterator.first();
+while(pos != BreakIterator.DONE) {
+	System.out.println(iterator.current());
+	pos = iterator.next();
+}</programlisting>Trieda, ako už naznačuje jej názov, je založená na princípe
+      iterátora. Inštanciu však nezískavame použitím konštruktora, ale cez
+      statickú metódu <methodname>getWordInstance()</methodname>. To je zámer,
+      ktorý zväčšuje jej flexibilitu, <classname>BreakIterator</classname>
+      totiž umožňuje nachádzať dokonca aj zlomy riadkov, či iterovať
+      jednotlivé znaky. Iterátor si možno predstaviť ako kurzor, ktorý je
+      postupne posúvaný v slove zľava doprava. V každej chvíli kurzor ukazuje
+      na jednu z medzislovných hraníc. Metódou
+      <methodname>first()</methodname> nájdeme prvý výskyt hranice, metóda
+      <methodname>current()</methodname> vráti index aktuálnej pozície kurzora
+      a nakoniec metóda <methodname>next()</methodname> posúva kurzor na
+      ďalšiu hranicu a zároveň vracia novú pozíciu.<figure>
+          <title>Postupné indexy a posúvanie kurzora</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="breakiterator.png" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>V príklade je prvou hranicou začiatok textu, teda index 0. Po
+      prvom posune sa kurzor premiestni pred písmeno <token>A</token>, po
+      druhom zase zaňho. Tretie volanie metódy <methodname>next()</methodname>
+      preskočí obe medzery a posunie sa pred písmeno <token>B</token>. Ďalšie
+      volanie sa nastaví za písmeno <token>Y</token> (teda na index 6) a
+      posledné volania vrátia hranicu pred a za jednoslovným
+      <quote>slovom</quote> tvoreným znakom výkričníka.</para>
+
+      <para>V našom príklade nás však nezaujímajú samotné hranice medzi
+      slovami, ako skôr indexy udávajúce začiatky a konce slov. V našom
+      príklade potrebujeme extrahovať indexy pre všetky tri
+      slová:<informaltable>
+          <tgroup cols="3">
+            <thead>
+              <row>
+                <entry align="center">Slovo</entry>
+
+                <entry align="center">Počiatočný index</entry>
+
+                <entry align="center">Koncový index</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>A</entry>
+
+                <entry>1</entry>
+
+                <entry>2</entry>
+              </row>
+
+              <row>
+                <entry>BY</entry>
+
+                <entry>4</entry>
+
+                <entry>6</entry>
+              </row>
+
+              <row>
+                <entry>!</entry>
+
+                <entry>7</entry>
+
+                <entry>8</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Kód, ktorý získa všetky slová, vyzerá nasledovne:<programlisting>BreakIterator iterator = BreakIterator.getWordInstance();
+iterator.setText(text);
+
+int start = iterator.first();
+int end = iterator.next();
+
+while (end != BreakIterator.DONE) {
+	writeWord(text, start, end);
+	start = end;
+	end = iterator.next();
+}
+// spracujme aj posledné slovo
+writeWord(text, start, end);</programlisting>Metóda
+      <methodname>writeWord()</methodname> vypíšte časť slova medzi danými
+      indexami. Najdôležitejšie je ignorovať tie slová, ktoré sú buď prázdne
+      (teda predstavujú medzery či iné biele miesto) alebo zodpovedajú číslam
+      či interpunkcii. To zaistíme skontrolovaním prvého znaku metódou <ulink
+      url="http://java.sun.com/j2se/1.5.0/docs/api/java/lang/Character.html"><methodname>Character.isLetterOrDigit()</methodname></ulink>.</para>
+
+      <programlisting>public void writeWord(String text, int startIndex, int endIndex) {
+	String word = text.substring(start, end);
+	if (Character.isLetterOrDigit(word.charAt(0))) {
+		System.out.println(word);
+	
+}</programlisting>
+    </section>
+
+    <section>
+      <title>Kontrola pravopisu</title>
+
+      <para>Vo chvíli, keď vieme deliť text na slová, kontrola pravopisu je
+      jednoduchá. Stačí si urobiť triedu
+      <classname>KontrolaPravopisu</classname>, ktorá v jednoduchej verzii
+      skontroluje, či je každé slovo textu v zozname povolených slov.</para>
+
+      <programlisting>package kontrolapravopisu;
+
+import java.text.BreakIterator;
+import java.util.*;
+
+public class KontrolaPravopisu {
+	/** zoznam korektných slov **/
+	private List&lt;String&gt; korektneSlova = new ArrayList&lt;String&gt;();
+	
+	public KontrolaPravopisu(String... korektneSlova) {
+		korektneSlova.addAll(Arrays.asList(korektneSlova));
+	}
+	
+	public List&lt;WordCoordinate&gt; skontroluj(String text) {
+		List&lt;WordCoordinate&gt; errors = new ArrayList&lt;WordCoordinate&gt;();
+		
+		BreakIterator iterator = BreakIterator.getWordInstance();
+		iterator.setText(text);
+
+		int start = iterator.first();
+		int end = iterator.next();
+
+		while (end != BreakIterator.DONE) {
+			skontrolujSlovo(text, start, end, errors);
+			
+			start = end;
+			end = iterator.next();
+		}
+		skontrolujSlovo(text, start, end, errors);
+	
+		return errors;
+	}
+	
+	private void skontrolujSlovo(String text, int start, int end, List&lt;WordCoordinate&gt; errors) {
+		String word = "";
+		if(end == -1) {
+			word = text.substring(start);
+		} else {
+			word = text.substring(start, end);
+		}
+		if (!word.isEmpty() &amp;&amp; Character.isLetterOrDigit(word.charAt(0))) {
+			if(!spellCheck(word)) {
+				errors.add(new WordCoordinate(start, end));
+			}
+		}	
+		return errors;
+	}
+}</programlisting>
+
+      <para>Metóda <methodname>skontrolujSlovo()</methodname> eviduje
+      nekorektné slová v zozname objektov typu
+      <classname>WordCoordinate</classname>, čo je jednoduchá dvojica
+      udávajúca začiatočnú a koncovú pozíciu slova v texte:<programlisting>public static class WordCoordinate {
+	private int start;
+	
+	private int end;
+
+	public WordCoordinate(int start, int end) {
+		this.start = start;
+		this.end = end;
+	}
+
+	// gettre a settre vynechané	
+}</programlisting></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Zvýrazňovanie textu v textových políčkach</title>
+
+    <para>Komponent <classname>JTextArea</classname> podporuje pohodlné
+    zvýrazňovanie textu. V našej aplikácii budeme chcieť zvýrazniť nekorektné
+    slová, napr. tak, že ich zobrazíme ako text na červenom pozadí. </para>
+
+    <para>Pomocou metódy <methodname>getHighlighter()</methodname> na
+    inštancii triedy <classname>JTextArea</classname> vieme získať inštanciu
+    triedy <ulink
+    url="???"><classname>java.swing.text.Highlighter</classname></ulink>,
+    ktorá dokáže zvýrazňovať konkrétnu časť textu zobrazenú v textovom
+    políčku. <classname>Highlighter</classname> má základnú
+    metódu<programlisting>addHighlight(int počiatočnýOffset, int koncovýOffset, Highlighter.HighlightPainter painter)</programlisting>Do
+    nej vieme uviesť počiatočný a koncový index do reťazca v textovom poli,
+    ktorý sa má zvýrazniť. Parameter typu <ulink
+    url="http://java.sun.com/javase/6/docs/api/javax/swing/text/Highlighter.HighlightPainter.html"><classname>Highlighter.HighlightPainter</classname></ulink>
+    (je to interfejs) indikuje objekt, ktorý sa postará o samotný vzhľad
+    zvýraznenia. Pre jednoduché situácie môžeme použiť objekt
+    <classname>DefaultHighlighter.DefaultHighlightPainter</classname>, ktorý
+    implementuje požadovaný interfejs a umožňuje zvýrazniť text konkrétnou
+    farbou.</para>
+
+    <figure>
+      <title>Diagram tried pre zvýrazňovače</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="class-diagram.png" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para>Nasledovný <foreignphrase>highlight painter</foreignphrase> zobrazí
+    text na červenom pozadí:</para>
+
+    <programlisting>Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.RED);</programlisting>
+
+    <para>Nasledovný text zvýrazní prvý znak červenou, pričom použije
+    <foreignphrase>painter</foreignphrase> definovaný na predošlom
+    riadku.<programlisting>textArea.getHighlighter().addHighlight(0, 1, painter);</programlisting></para>
+
+    <para>Ak chceme zrušiť zvýraznenia, stačí zavolať metódu
+    <code>highlighter.removeAllHighlights()</code>.</para>
+  </section>
+
+  <section>
+    <title>Vlákno kontrolujúce pravopis</title>
+
+    <para>V aplikácii ďalej budeme mať vlákno, ktoré bude periodicky
+    kontrolovať korektnosť textu v danom textovom políčku typu
+    <classname>JTextArea</classname>. Namiesto špinavej práce s vláknami však
+    vieme elegantne využiť triedu <classname>SwingWorker</classname>.<note>
+        <para>Podrobnosti o práci so <classname>SwingWorker</classname>om
+        možno nájsť v článku <ulink
+        url="http://ics.upjs.sk/~novotnyr/wiki/Java/SwingThreads">Swing a
+        vláknové programovanie</ulink>.</para>
+      </note><programlisting>public class SpellCheckSwingWorker extends SwingWorker&lt;Void, List&lt;WordCoordinate&gt;&gt; {
+	
+	private KontrolaPravopisu spellCheck = new KontrolaPravopisu();
+	private final JTextArea textArea;
+	
+	public SpellCheckSwingWorker(JTextArea textArea) {
+		this.textArea = textArea;
+
+	}
+ ...</programlisting></para>
+
+    <para>Trieda vytvorí inštanciu kontroly pravopisu a do konštruktora vezme
+    <classname>JTextArea</classname>, teda inštanciu, ktorú mieni
+    kontrolovať.</para>
+
+    <para>Metóda <methodname>doInBackground()</methodname> je jednoduchá: v
+    nekonečnom cykle vezmeme text z textového poľa, skontrolujeme ho a uspíme
+    sa na 500 milisekúnd (aby sme zbytočne nevyťažovali procesor; navyše
+    používateľ mení text tiež s prestávkami.)</para>
+
+    <programlisting>@Override
+protected Void doInBackground() throws Exception {
+	while(true) {
+		String text = textArea.getText();
+		
+		List&lt;WordCoordinate&gt; kontrola = spellCheck.skontroluj(text);
+		
+		publish(kontrola);
+		TimeUnit.MILLISECONDS.sleep(500);
+	}
+}</programlisting>
+
+    <para>Pomocou metódy <methodname>publish()</methodname> odošleme do vlákna
+    EDT výsledky kontroly.</para>
+
+    <para>V rámci metódy <methodname>process()</methodname> zase vyzdvihneme
+    odoslané výsledky a na ich základe upravíme stav komponentu
+    <classname>JTextArea</classname>.<programlisting>@Override
+protected void process(List&lt;List&lt;WordCoordinate&gt;&gt; chunks) {
+	List&lt;WordCoordinate&gt; errors = chunks.get(chunks.size() - 1);
+	textArea.getHighlighter().removeAllHighlights();
+	for (WordCoordinate wordCoordinate : errors) {
+		try {
+			textArea.getHighlighter().addHighlight(wordCoordinate.getStart(), wordCoordinate.getEnd(), HIGHLIGHT_PAINTER);
+		} catch (BadLocationException e) {
+			e.printStackTrace();
+		}
+	}
+}</programlisting></para>
+
+    <para>Podotknime, že <varname>HIGHLIGHT_PAINTER</varname> je inštancia
+    typu
+    <classname>DefaultHighlighter.DefaultHighlightPainter</classname>.</para>
+  </section>
+
+  <section>
+    <title>Záver</title>
+
+    <para>Hotová aplikácia vyzerá nasledovne:<figure>
+        <title>Výsledná aplikácia</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="screenshot.png" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>Počas písania sa automaticky zvýrazňujú slová, ktoré nie sú v
+    slovníku korektných slov. Drobným nedostatkom je zvýrazňovanie slov, ktoré
+    neboli ešte dopísané (napríklad <quote>typo</quote> je nesprávne, ak
+    používateľ nedopíše zvyšok slova, teda <quote>grafia</quote>), ale v tejto
+    jednoduchej aplikácii sa s tým musíme zmieriť.</para>
+
+    <para>Ukázali sme teda tri vlastnosti:<itemizedlist>
+        <listitem>
+          <para>vyhľadávanie hraníc medzi slovami, teda triedu
+          <classname>BreakIterator</classname></para>
+        </listitem>
+
+        <listitem>
+          <para>zvýrazňovanie slov, teda triedu
+          <classname>Highlighter</classname></para>
+        </listitem>
+
+        <listitem>
+          <para>a nakoniec vláknové programovanie v Swingu pomocou triedy
+          <classname>SwingWorker.</classname></para>
+        </listitem>
+      </itemizedlist></para>
+  </section>
+</article>

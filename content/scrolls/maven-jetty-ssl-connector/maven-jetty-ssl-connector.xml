@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article version="4.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns42="http://www.w3.org/1999/xhtml"
+         xmlns:ns4="http://www.w3.org/1999/xlink"
+         xmlns:ns3="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <info>
+    <title>Maven, Jetty plug-in a spustenie SSL konektora</title>
+  </info>
+
+  <section>
+    <title>Problém</title>
+
+    <para>Cieľ <token>maven jetty:run</token> v Mavene je veľmi užitočný na
+    rýchle nasadenie webovej aplikácie do servletového kontajnera Jetty. V
+    štandardom nastavení počúva Jetty na porte 8080... ale nepodporuje
+    SSL.</para>
+  </section>
+
+  <section>
+    <title>Ako nastaviť <token>pom.xml?</token></title>
+
+    <para>Jetty v Mavene používa štandardne klasický konektor určený pre bežné
+    nezabezpečené HTTP a SSL konektor ponecháva vypnutý. Ak chceme používať
+    SSL, musíme v <filename>pom.xml</filename> explicitne zapnúť SSL
+    konektor.<programlisting language="myxml">&lt;plugin&gt;
+  &lt;groupId&gt;org.mortbay.jetty&lt;/groupId&gt;
+  &lt;artifactId&gt;jetty-maven-plugin&lt;/artifactId&gt;
+  &lt;version&gt;7.4.2.v20110526&lt;/version&gt;
+    &lt;configuration&gt;
+        &lt;connectors&gt;
+            &lt;connector implementation="org.eclipse.jetty.server.ssl.SslSocketConnector"&gt;
+                &lt;port&gt;8443&lt;/port&gt;
+                &lt;maxIdleTime&gt;60000&lt;/maxIdleTime&gt;
+                &lt;keystore&gt;etc/jetty-ssl.keystore&lt;/keystore&gt;
+                &lt;password&gt;jetty6&lt;/password&gt;
+                &lt;keyPassword&gt;jetty6&lt;/keyPassword&gt;
+            &lt;/connector&gt;
+        &lt;/connectors&gt;
+    &lt;/configuration&gt;        
+&lt;/plugin&gt;</programlisting></para>
+
+    <para>Na to, aby sme mohli používať SSL, potrebujeme definovať úložisko
+    (<foreignphrase>keystore</foreignphrase>) pre certifikáty a kľúče
+    používané v komunikácii. Vytvoríme ho klasickým Java nástrojom
+    <command>keytool</command>.<programlisting>keytool -genkey -alias jetty6 -keyalg RSA -keystore etc/jetty-ssl.keystore -storepass jetty6 -keypass jetty6 -dname "CN=vaša doména"</programlisting></para>
+  </section>
+
+  <section>
+    <title>Záverečné poznámky</title>
+
+    <para>Tieto nastavenia platia pre "novú" verziu Jetty pluginu, ktorá
+    zodpovedá implementácii Jetty z projektu Eclipse. Návod pre staršie verzie
+    možno nájsť na
+    <ulink>http://mrhaki.blogspot.com/2009/05/configure-maven-jetty-plugin-for-ssl.html</ulink>.</para>
+
+    <para>V tejto ukážke sme explicitne zakázali bežný HTTP konektor.</para>
+  </section>
+</article>
