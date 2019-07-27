@@ -1,0 +1,499 @@
+(:title Od WSDL k webovej službe - Glassfish Metro:)
+(:#toc-float:)
+V predošlom dieli sme si ukázali príklad popisovača webovej služby v podobe WSDL súboru. Ak máme tento súbor, môžeme použiť niektoré z existujúcich nástrojov na vygenerovanie zdrojového kódu pre serverovskú časť služby i pre klienta, ktorý k nej bude pristupovať.
+
+Tento spôsob je k dispozícii vo všetkých významných Java frameworkoch pre webové služby - teda aj v [[http://cxf.apache.org/ | Apache CXF]], [[http://ws.apache.org/axis/ | Axis1]] / [[http://ws.apache.org/axis/ | Axis2]], [[https://metro.dev.java.net/ | Glassfish Metro]]. 
+
+Samotná Java poskytuje na prístup k webovým službám viacero API združených pod rôznymi špecifikáciami. Najnovšou je v súčasnosti [[http://jcp.org/en/jsr/detail?id=224 | JAX-WS 2.0]] (JSR-224), ktorá je už súčasťou JEE 5 a pri návrhu a implementácii webových služieb používa všetky vymoženosti Javy 5. Aplikačný rámec Glassfish Metro, ktorá bude pracovať nad triedami a interfejsmi JAX-WS budeme demonštrovať práve v tejto časti.
+
+! Inštalácia
+Z [[https://metro.dev.java.net/ | domovskej stránky Metra]] si stiahneme príslušný JAR, rozbalíme na vhodné miesto, vytvoríme systémovú premennú @@METRO_HOME@@ ukazujúcu na adresár inštalácie a voliteľne si dodáme cestu k skriptom do @@PATH@@u.
+
+! Generovanie serverovskej časti
+Predpokladajme, že máme k dispozícii WSDL súbor z predošlej časti seriálu. Java triedy vygenerujeme nasledovným spôsobom:
+(:codeio:)
+SET METRO_HOME=C:/java/metro
+SET PATH=%PATH%;%METRO_HOME%/bin
+wsimport -keep -s src -d bin movie.wsdl
+(:codeioend:)
+Ak by sme vynechali všetky parametre, vygenerovali by sa priamo @@CLASS@@ súbory do aktuálneho adresára. @@-keep@@ ponechá po generovaní zdrojové súbory, @@-s@@ určí adresár pre vygenerované zdrojové súbory a @@-d@@ určí, kam pôjdu skompilované @@CLASS@@y.
+
+Vygenerujú sa nasledovné súbory:
+* @@sk\novotnyr\movie\ws\types@@
+** MovieReservationRequest.java
+** MovieReservationResponse.java
+** ObjectFactory.java
+** package-info.java 
+* @@sk\novotnyr\movie\wsdl@@
+** MovieReservationPortType.java 
+** MovieReservationService.java 
+
+Balíček @@sk.novotnyr.movie.ws.types@@ obsahuje triedy, ktoré zodpovedajú elementom a typom definovaným v XML schéme. Názov tohto balíčka je odvodený od cieľového menného priestoru (targetNamespace) v schéme. V schéme sme mali @@[=http://movie.novotnyr.sk/ws/=]@@, čo  sa priamo namapuje na názov balíčka.
+
+Na mapovanie medzi inštanciami XML schémy a objektami v Jave sa v Metre používa technológia JAXB 2.0. Vygenerované triedy presne zodpovedajú tomu, čo by sme získali použitím kompilátora @@xjc@@ z implementácie JAXB. Príkladom triedy je:
+(:java:)
+package sk.novotnyr.movie.ws.types;
+
+import java.util.*;
+import java.util.List;
+import javax.xml.bind.annotation.*;
+
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "", propOrder = {
+    "id",
+    "reservedSeats"
+})
+@XmlRootElement(name = "movieReservationResponse")
+public class MovieReservationResponse {
+
+    protected int id;
+    @XmlElement(type = Integer.class)
+    protected List<Integer> reservedSeats;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int value) {
+        this.id = value;
+    }
+
+    public List<Integer> getReservedSeats() {
+        if (reservedSeats == null) {
+            reservedSeats = new ArrayList<Integer>();
+        }
+        return this.reservedSeats;
+    }
+
+}
+(:javaend:)
+Všimnite si, že je to klasické POJO, kde atribúty elementu zodpovedajú inštančným premenným a anotácie určujú prepis na XML.
+
+V balíčku @@sk.novotnyr.movie.wsdl@@ sa nachádzajú interfejsy a triedy, ktoré súvisia s elementom @@service@@, resp. @@portType@@ vo WSDL. Každý @@service@@ sa namapuje na samostatnú triedu a každý @@portType@@ tiež. Názov balíčka sa odvodí od cieľového menného priestoru WSDL súboru.
+
+Ako sme spomínali, abstraktný port vo WSDL predstavuje množinu operácií, ktoré je možné volať. Jeho analógiou je interfejs v Jave. @@wsimport@@ vygeneruje nasledovnú triedu:
+(:java:)
+package sk.novotnyr.movie.wsdl;
+
+import javax.jws.*;
+import javax.jws.soap.´*;
+import javax.xml.bind.annotation.*;
+import sk.novotnyr.movie.ws.types.*;
+
+@WebService(name = "movieReservationPortType", 
+            targetNamespace = "http://movie.novotnyr.sk/wsdl")
+@SOAPBinding(parameterStyle = SOAPBinding.ParameterStyle.BARE)
+@XmlSeeAlso({
+    ObjectFactory.class
+})
+public interface MovieReservationPortType {
+  @WebMethod
+  @WebResult(name = "movieReservationResponse", 
+             targetNamespace = "http://movie.novotnyr.sk/ws/types", 
+             partName = "part1")
+  public MovieReservationResponse movieReservation(
+        @WebParam(name = "movieReservationRequest", 
+                  targetNamespace = "http://movie.novotnyr.sk/ws/types", 
+                  partName = "part1")
+        MovieReservationRequest part1);
+
+}
+(:javaend:)
+Máme teda interfejs webovej služby, potrebujeme však aj jeho implementáciu. V princípe máme dve možnosti: 
+# vytvoriť triedu, ktorá implementuje interfejs @@MovieReservationType@@ a dopísať príslušný kód
+# vytvoriť triedu s príslušnými metódami a anotovať tu tak, aby ukazovala na interfej, ktorá má anotáciu @@@WebService@@.
+Zvolíme si druhú možnosť:
+(:java:)
+package sk.novotnyr.movie.ws;
+
+import java.util.Arrays;
+
+import javax.jws.WebService;
+
+import sk.novotnyr.movie.ws.types.MovieReservationRequest;
+import sk.novotnyr.movie.ws.types.MovieReservationResponse;
+
+@WebService(
+  endpointInterface="sk.novotnyr.movie.wsdl.MovieReservationPortType",
+)
+public class DefaultMovieReservationService {
+  public MovieReservationResponse movieReservation
+    (MovieReservationRequest part1) 
+  {
+    MovieReservationResponse confirmation 
+      = new MovieReservationResponse();
+    confirmation.setId(23456674);
+    confirmation.getReservedSeats().addAll(Arrays.asList(2, 3, 2));
+    
+    return confirmation;
+  }
+}
+(:javaend:)
+Týmto máme všetky potrebné komponenty na to, aby sme mohli spustiť a naštartovať webovú službu. V Metre je k dispozícii trieda @@Endpoint@@, ktorá dokáže naštartovať interný HTTP server a spustiť v ňom príslušnú triedu tak, že na to postačí jediný riadok:
+(:java:)
+package sk.novotnyr.movie;
+
+import javax.xml.ws.Endpoint;
+
+import sk.novotnyr.movie.ws.DefaultMovieReservationService;
+
+public class Server {
+  public static void main(String[] args) {
+    Endpoint.publish("http://localhost:8080/movies/ws", 
+                     new DefaultMovieReservationService());
+   }
+}
+(:javaend:)
+Navštívením adresy @@[=http://localhost:8080/movies/ws?wsdl=]@@ môžeme vidieť WSDL súbor tejto služby. Tu si však všimneme jednu dôležitú vec - WSDL nie je identický s tým, z ktorého sme generovali službu! Metro totiž k publikovanej službe poskytne automaticky generované WSDL, ktorého parametre sa odvodia na základe anotácií portu, tried, metód a parametrov.
+
+Výsek z WSDL vyzerá potom nasledovne:
+(:xml:)
+<binding xmlns:ns1="http://movie.novotnyr.sk/wsdl" 
+         name="DefaultMovieReservationServicePortBinding" 
+         type="ns1:movieReservationPortType">
+  <soap:binding transport="http://schemas.xmlsoap.org/soap/http" 
+                style="document" /> 
+  <operation name="movieReservation">
+  <soap:operation soapAction="" /> 
+  <input>
+    <soap:body use="literal" /> 
+  </input>
+  <output>
+    <soap:body use="literal" /> 
+  </output>
+  </operation>
+</binding>
+<service name="DefaultMovieReservationServiceService">
+  <port name="DefaultMovieReservationServicePort" 
+        binding="tns:DefaultMovieReservationServicePortBinding">
+    <soap:address location="http://localhost:8080/movies/ws" /> 
+  </port>
+</service>
+(:xmlend:)
+Všimnime si automaticky odvodené pomenovania:
+* služba sa volá @@DefaultMovieReservationServiceService@@
+* port @@DefaultMovieReservationServicePort@@
+* binding @@DefaultMovieReservationServicePortBinding@@
+* abstraktný port @@movieReservationPortType@@
+To by za normálnych okolností stačilo, ale keďže by sme chceli klientom zverejniť to WSDL, ktoré sme si ručne navrhli, automatické WSDL nie je to správne.
+
+Špecifikovať zverejnené WSDL môžeme v anotácii @@@WebService@@ na implementačnej triede. Použijeme na to atribút @@wsdlLocation@@. Popri tom však musíme uviesť ďalšie veci:
+* presný názov služby, ktorý sa musí zhodovať s tým, ktorý je uvedený vo WSDL (inak sa použije vygenerovaný názov, a dostaneme výnimku o nekonzistencii WSDL a implementačnej triedy)
+* cieľový menný priestor (inak sa odvodí z názvu balíčka implementačnej triedy)
+* názov portu (inak sa odvodí z názvu interfejsu)
+V tomto prípade budeme doťahovať WSDL súbor z @@CLASSPATH@@.
+(:java:)
+@WebService(
+ endpointInterface="sk.novotnyr.movie.wsdl.MovieReservationPortType",
+ targetNamespace="http://movie.novotnyr.sk/wsdl",
+ serviceName="movieReservationService",
+ portName="movieReservationPort",
+ wsdlLocation="META-INF/movie.wsdl"
+)
+public class DefaultMovieReservationService {
+//...
+(:javaend:)
+! Generovanie klientskej časti
+Generovanie klientskej časti je jednoduché. Použitím @@wsimport@@ na WSDL dostaneme nielen serverovské triedy, ale aj klientské. Klientská časť je predstavovaná triedou @@MovieReservationService@@ (tá dedí od @@javax.xml.Service@@), ktorá je okorenená mnohými anotáciami.
+(:java:)
+
+package sk.novotnyr.movie.wsdl;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.logging.Logger;
+import javax.xml.namespace.QName;
+import javax.xml.ws.*;
+
+@WebServiceClient(name = "movieReservationService", 
+                  targetNamespace = "http://movie.novotnyr.sk/wsdl", 
+                  wsdlLocation = "file:/D:/Projects/metro/movie.wsdl")
+public class MovieReservationService extends Service
+{
+
+    // .. vygenerovaný kód vynechaný
+    
+    public MovieReservationService(URL wsdlLocation,
+                                   QName serviceName) {
+        // .. vygenerovaný kód vynechaný
+    }
+
+    public MovieReservationService() {
+        // .. vygenerovaný kód vynechaný
+    }
+
+    @WebEndpoint(name = "movieReservationPort")
+    public MovieReservationPortType getMovieReservationPort() {
+        // .. vygenerovaný kód vynechaný
+    }
+
+    @WebEndpoint(name = "movieReservationPort")
+    public MovieReservationPortType getMovieReservationPort(
+                WebServiceFeature... features) {
+       // .. vygenerovaný kód vynechaný
+    }
+}
+(:javaend:)
+Možno nám udrie do očí atribút @@wsdlLocation@@, ktorý uvádza cestu k WSDL v súborovom systéme. To nie je ktoviečo. Napraviť to môžeme troma spôsobmi:
+* buď budeme používať @@wsimport@@ nad internetovou URL adresou
+* alebo použijeme pri @@wsimport@@e parameter @@-wsdllocation@@, kde nastavíme URL používanú u klienta. 
+(:codeio:)
+wsimport -keep -wsdllocation http://ics.upjs.sk/~novotnyr/java/web-services/movies/movie.wsdl movie.wsdl
+(:codeioend:)
+* alebo sa zmierime s týmto faktom, ale budeme musieť URL k WSDL zadávať pri konštruovaní tejto triedy
+!!Použitie klienta
+Použitie klienta webovej služby je potom priamočiare. Jediným problémom je šaškovanie s dátumom. V tomto prípade @@wsimport@@ nevygeneroval inštančné premenné s klasickými @@java.util.Date@@, ale s triedami zodpovedajúcimi XML typom. (Dôvodom je to, že XML typy pre prácu s dátumom a časom môžu niekedy reprezentovať väčší rozsah hodnôt než @@java.util.Date@@).
+(:java:)
+package sk.novotnyr.movie;
+
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeConstants;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.XMLGregorianCalendar;
+
+import sk.novotnyr.movie.ws.types.MovieReservationRequest;
+import sk.novotnyr.movie.ws.types.MovieReservationResponse;
+import sk.novotnyr.movie.wsdl.MovieReservationPortType;
+import sk.novotnyr.movie.wsdl.MovieReservationService;
+
+public class Client {
+  public static void main(String[] args) 
+    throws DatatypeConfigurationException 
+  {
+    MovieReservationService service = new MovieReservationService();
+    MovieReservationPortType port = service.getMovieReservationPort();
+    
+    MovieReservationRequest request = new MovieReservationRequest();
+    request.setTitle("Godzilla");
+    request.setNumberOfTickets(2);
+    
+    XMLGregorianCalendar date 
+      = DatatypeFactory
+        .newInstance()
+        .newXMLGregorianCalendarDate(
+            2008, 12, 12, 
+            DatatypeConstants.FIELD_UNDEFINED);
+    request.setDate(date);
+    
+    MovieReservationResponse response
+      = port.movieReservation(request);
+    System.out.println(
+      response.getId() 
+      + " " 
+      + response.getReservedSeats());
+  }
+}
+(:javaend:)
+
+!Mapovanie WSDL elementov na Java elementy
+!! @@wsdl:service@@
+* mapovaný na implementačnú triedu (@@DefaultMovieService@@)
+* anotácia @@@WebService@@
+* @@name@@ namapovaný na @@serviceName@@
+* menný priestor namapovaný cez @@targetNamespace@@ má vplyv na balíček triedy
+!! @@wsdl:port@@
+* @@name@@ namapovaný na @@portName@@ vo @@@WebService@@ na implementačnej triede
+* referencia na abstraktný port cez atribút @@endpointInterface@@
+!! @@wsdl:portType@@
+* mapovaný na interfejs (@@MovieReservationPortType@@)
+* anotácia @@WebService@@
+* @@name@@ namapovaný na @@name@@ v anotácii
+* menný priestor namapovaný cez @@targetNamespace@@ má vplyv na balíček
+!! @@wsdl:operation@@
+* mapovaný na metódu interfejsu
+* anotácia @@@WebMethod@@
+!! @@wsdl:binding@@
+* mapovaný na interfejsi
+* anotácia @@SOAPBinding@@
+* možnosť špecifikovať štýl (document/rpc, literal/encoded, wrapped/bare)
+!! @@wsdl:message@@
+* mapovaný na návratové hodnoty, resp. parametre metód v interfejse
+* anotácia @@@WebResult@@ (pre návratové hodnoty)
+* anotácia @@@WebParam@@ (pre parametre metód)
+* @@name@@ mapovaný na parameter @@name@@ v anotácii
+* menný priestor namapovaný cez @@targetNamespace@@ 
+
+!! @@wsdl:part@@
+* možnosť pomenovať parametre v metódach interfejsu
+* @@name@@ mapovaný na atribút @@partName@@ v anotácii @@@WebResult@@ / @@@WebParam@@
+
+!! @@wsdl:types@@
+* anotácia @@XmlSeeAlso@@ na interfejsi
+* elementy XML schémy mapované cez anotácie JAXB 2.0
+
+!!Prehľadová schéma:
+Nasledovná schéma zobrazuje prepojenie medzi WSDL elementami a triedami grafickým spôsobom:
+[[Attach:wsdl.png | Attach:wsdl-small.png]]
+
+!Komentáre
+[[#comments]]
+
+[[#comment28]](:nl:)>>messagehead<<
+!!!!![[~FastinOnline]]  &mdash;  [-25 October 2016, 06:54-]  
+>>messageitem<<
+gary gottlieb partners healthcare  sports medicine residency programs  history of prescription drug abuse  overdose on caffeine pills  mississippi department of health 
+>><<
+
+[[#comment27]](:nl:)>>messagehead<<
+!!!!![[~lananal]]  &mdash;  [-04 August 2016, 06:01-]  
+>>messageitem<<
+xAfexF It as going to be end of mine day, however before end I am reading this wonderful piece of writing to improve my know-how.
+>><<
+
+[[#comment26]](:nl:)>>messagehead<<
+!!!!![[~big dilbos]]  &mdash;  [-06 July 2016, 09:49-]  
+>>messageitem<<
+YYtDa5 It as hard to seek out knowledgeable folks on this matter, however you sound like you realize what you are speaking about! Thanks
+>><<
+
+[[#comment25]](:nl:)>>messagehead<<
+!!!!![[~fuck your mom]]  &mdash;  [-13 May 2016, 16:44-]  
+>>messageitem<<
+There is certainly a lot to know about this issue. I like all of the points you have made.
+>><<
+
+[[#comment24]](:nl:)>>messagehead<<
+!!!!![[~sophie fiverr]]  &mdash;  [-05 April 2016, 18:31-]  
+>>messageitem<<
+xYqrMD Major thanks for the article post.Much thanks again. Much obliged.
+>><<
+
+[[#comment23]](:nl:)>>messagehead<<
+!!!!![[~coco service fiverr]]  &mdash;  [-31 March 2016, 16:53-]  
+>>messageitem<<
+HKgnCd Im obliged for the blog post.Much thanks again. Much obliged.
+>><<
+
+[[#comment22]](:nl:)>>messagehead<<
+!!!!![[~cocoservice on fiverr]]  &mdash;  [-01 March 2016, 01:27-]  
+>>messageitem<<
+E7HJK3 I truly appreciate this post.Really thank you!
+>><<
+
+[[#comment21]](:nl:)>>messagehead<<
+!!!!![[~WUhEuKzgPqUdtGggAyc]]  &mdash;  [-01 January 2016, 07:28-]  
+>>messageitem<<
+WaWnUY 
+>><<
+
+[[#comment20]](:nl:)>>messagehead<<
+!!!!![[~crork fiverr]]  &mdash;  [-28 November 2015, 22:12-]  
+>>messageitem<<
+K5kUeJ Wow! This could be one particular of the most beneficial blogs We have ever arrive across on this subject. Basically Excellent. I am also a specialist in this topic so I can understand your hard work.
+>><<
+
+[[#comment19]](:nl:)>>messagehead<<
+!!!!![[~crork]]  &mdash;  [-09 November 2015, 18:39-]  
+>>messageitem<<
+Cdk0j0 Of course, what a magnificent website and educative posts, I will bookmark your site.All the Best!
+>><<
+
+[[#comment18]](:nl:)>>messagehead<<
+!!!!![[~fiverr seo]]  &mdash;  [-16 October 2015, 13:30-]  
+>>messageitem<<
+UoJtxp Thanks so much for the post.Thanks Again. Want more.
+>><<
+
+[[#comment17]](:nl:)>>messagehead<<
+!!!!![[~crorkservice fiverr]]  &mdash;  [-16 October 2015, 10:22-]  
+>>messageitem<<
+7lhYCT wow, awesome article.Really thank you! Cool.
+>><<
+
+[[#comment16]](:nl:)>>messagehead<<
+!!!!![[~crorkzz]]  &mdash;  [-03 September 2015, 01:31-]  
+>>messageitem<<
+5wFTyT You hevw broughr up e vwry wxcwkkwnr dwreikd , rhenkyou for rhw podr.
+>><<
+
+[[#comment15]](:nl:)>>messagehead<<
+!!!!![[~matt crorkzz]]  &mdash;  [-03 August 2015, 23:36-]  
+>>messageitem<<
+2dTn5Q I truly appreciate this blog post.Really thank you! Awesome.
+>><<
+
+[[#comment14]](:nl:)>>messagehead<<
+!!!!![[~crorkzz]]  &mdash;  [-10 June 2015, 18:03-]  
+>>messageitem<<
+Tb9Qtp Thank you ever so for you blog article.Thanks Again. Fantastic.
+>><<
+
+[[#comment13]](:nl:)>>messagehead<<
+!!!!![[~crorkservice]]  &mdash;  [-06 May 2015, 00:17-]  
+>>messageitem<<
+GfNNIl My brother recommended I may like this web site. He was once entirely right. This submit actually made my day. You can not believe just how so much time I had spent for this info! Thanks!
+>><<
+
+[[#comment12]](:nl:)>>messagehead<<
+!!!!![[~crorkz mattz]]  &mdash;  [-16 January 2015, 00:45-]  
+>>messageitem<<
+qZPmJL It's actually a great and helpful piece of information. I am glad that you simply shared this helpful info with us. Please stay us informed like this. Thanks for sharing.
+>><<
+
+[[#comment11]](:nl:)>>messagehead<<
+!!!!![[~matzcrorkz]]  &mdash;  [-06 August 2014, 12:45-]  
+>>messageitem<<
+XE422p Thank you ever so for you post.Thanks Again. Will read on...
+>><<
+
+[[#comment10]](:nl:)>>messagehead<<
+!!!!![[~cheap backlinks]]  &mdash;  [-17 July 2014, 13:43-]  
+>>messageitem<<
+Fo92Wj Wow, great article.Really thank you! Fantastic.
+>><<
+
+[[#comment9]](:nl:)>>messagehead<<
+!!!!![[~good backlinks]]  &mdash;  [-04 July 2014, 06:34-]  
+>>messageitem<<
+3F6LFr Really informative blog post.Thanks Again.
+>><<
+
+[[#comment8]](:nl:)>>messagehead<<
+!!!!![[~seo cheap]]  &mdash;  [-04 June 2014, 18:16-]  
+>>messageitem<<
+jZu6s2 Great, thanks for sharing this blog.Really thank you! Fantastic.
+>><<
+
+[[#comment7]](:nl:)>>messagehead<<
+!!!!![[~stunning seo guys]]  &mdash;  [-20 April 2014, 05:29-]  
+>>messageitem<<
+kOeo62 Fantastic post.Much thanks again. Awesome.
+>><<
+
+[[#comment6]](:nl:)>>messagehead<<
+!!!!![[~best prices]]  &mdash;  [-01 April 2014, 18:02-]  
+>>messageitem<<
+qGOIiI Great, thanks for sharing this blog.Really looking forward to read more. Will read on...
+>><<
+
+[[#comment5]](:nl:)>>messagehead<<
+!!!!![[~seo for cheap]]  &mdash;  [-01 April 2014, 14:19-]  
+>>messageitem<<
+KG2xqZ Thanks a lot for the blog post.Much thanks again. Will read on...
+>><<
+
+[[#comment4]](:nl:)>>messagehead<<
+!!!!![[~check it out]]  &mdash;  [-22 March 2014, 13:36-]  
+>>messageitem<<
+R9GWFx Say, you got a nice blog.Thanks Again. Want more.
+>><<
+
+[[#comment3]](:nl:)>>messagehead<<
+!!!!![[~Rojo]]  &mdash;  [-09 July 2013, 07:27-]  
+>>messageitem<<
+Howdy I am so happy I found your blog page, I really found you by error, while I was brwiosng on Digg for something else, Regardless I am here now and would just like to say thanks a lot for a fantastic post and a all round enjoyable blog (I also love the theme/design), I donâ€™t have time to read it all at the moment but I have book-marked it and also added in your RSS feeds, so when I have time I will be back to read more, Please do keep up the superb work.
+>><<
+
+[[#comment2]](:nl:)>>messagehead<<
+!!!!![[~Tammi]]  &mdash;  [-19 March 2013, 02:43-]  
+>>messageitem<<
+, two co-authors of the UDDI specifications, two arttciechs of the next-generation Apache Web services engine (Axis). These people know what they are talking about from both a theoretical and practical standpoint. The book addresses all levels of the Web services technology stack with amazing focus and depth. This book does not just regurgitate the specifications it goes well beyond them to cover adjacent domains that are relevant. With the knowledge that I have gained from reading this book I feel I am in a much better position to analyze my web services needs, design a service architecture and implement the services necessary to bring it to life. Most importantly, I feel like I have learned how to evaluate the inevitable trade-offs I'll have to make doing real-world development. There are so many examples of this  Chapter 3 does an excellent job of comparing and contrasting RPC-oriented Web services with document (messaging) oriented Web services. This is the kind of out-of-the-ordinary material that imparts truly valuable knowledge on the reader, stuff you will not find while reading the bare specs or one of the quickly hacked together books on Web services. Chapter 5 talks a lot about security, an otherwise missing topic in the Web services space, and about enterprise-quality Web services. I learned some things about configuring application server security that I had missed after two years of J2EE development. In short, this book is a must-read for both beginning and experienced Web services developers and anyone interested in better understanding the space. If you're a pro, you will learn a lot from the realistic examples and the authors' real-world experience. If you're a beginner, do not despair. Chapter 1 makes the drive towards Web services easy to understand by exposing the technology and market forces behind the rapid change the industry is going through. Chapter 2 is the best, simplest, most focused introduction to data-oriented uses of XML I have ever seen. After these two, you'll be all set for tackling the rest of the book. As for me, I'll go study the example code now 
+>><<
+
+[[#comment1]](:nl:)>>messagehead<<
+!!!!![[~Teige]]  &mdash;  [-29 February 2012, 10:56-]  
+>>messageitem<<
+In awe of that ansewr! Really cool!
+>><<
+
+(:commentbox:)

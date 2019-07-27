@@ -1,0 +1,118 @@
+---
+title: Spring WS – Od XSD k webovej službe
+date: 2008-01-11T16:08:05+01:00
+---
+
+# Krok 1 - základná webová služba
+
+Ukážkový dokument pre požiadavku.
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+
+<movieReservationRequest xmlns="http://movie.novotnyr.sk/ws/types" >
+  <title>Battlestar Galactica</title>
+  <date>2008-12-24</date>
+  <numberOfTickets>4</numberOfTickets>  
+</movieReservationRequest>
+```
+
+## `web.xml`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+         version="2.4">
+
+  <servlet>
+    <servlet-name>spring-ws</servlet-name>
+    <servlet-class>
+      org.springframework.ws.transport.http.MessageDispatcherServlet
+    </servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>spring-ws</servlet-name>
+    <url-pattern>/*</url-pattern>
+  </servlet-mapping>
+
+</web-app>
+
+```
+
+## spring-ws-servlet.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xsi:schemaLocation="http://www.springframework.org/schema/beans 
+                         http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+                         http://www.springframework.org/schema/context
+                         http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+  
+  <context:component-scan base-package="sk.novotnyr.movie"/>  
+ 
+  <bean class="org.springframework.ws.server.endpoint.mapping
+               .PayloadRootAnnotationMethodEndpointMapping"/> 
+</beans>
+```
+
+## Endpoint
+```java
+package sk.novotnyr.movie;
+
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+
+import org.springframework.ws.server.endpoint.annotation.Endpoint;
+import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
+
+@Endpoint
+public class RegistrationEndPoint {
+  @PayloadRoot(namespace="http://movie.novotnyr.sk/ws/types", 
+               localPart="movieReservationRequest")
+  public void register(Source messageSource) {
+    try {
+      Transformer transformer 
+        = TransformerFactory.newInstance().newTransformer();
+      transformer.transform(messageSource, 
+                            new StreamResult(System.out));
+    } catch (Exception e) {
+      e.printStackTrace();
+    } 
+  }
+}
+```
+
+## Klient
+```java
+WebServiceTemplate webServiceTemplate = new WebServiceTemplate();
+webServiceTemplate.setDefaultUri("http://localhost:8080/movie-ws/");
+		
+StreamSource source = new StreamSource(new FileReader("D:\\Projects\\movie-ws\\web\\WEB-INF\\xml\\movieReservationRequest.xml"));
+StreamResult result = new StreamResult(System.out);
+
+webServiceTemplate.sendSourceAndReceiveToResult(source, result);
+```
+
+# Krok 2 - dodanie WSDL
+
+## XML schema
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://movie.novotnyr.sk/ws/types"
+   xmlns:types="http://movie.novotnyr.sk/ws/types" elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="movieReservationRequestType">
+    <xsd:sequence>
+      <xsd:element name="title" type="string" />
+      <xsd:element name="date" type="dateTime" />
+      <xsd:element name="numberOfTickets" type="int" />
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="movieReservationRequest" type="types:movieReservationRequestType" />
+</xsd:schema>
+```
+

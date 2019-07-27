@@ -55,15 +55,18 @@ Každý projekt by mal obsahovať minimálne 5 tried (testovacie triedy sa nezap
 ## Realizovaný program
 ### 21. 9. 2006 
 ([Prezentácia](http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/paz1c-1.ppt )) Formality a byrokracie. Historický úvod. Deklarácia a definovanie premenných. Podmienky a cykly (for, while). Polia.
+
 ### 22. 9. 2006 
 Úlohy, ktoré je potrebné zaslať mailom do 28. 9. 2006, 23.59
+
 1. Vyskúšajte si program Hello World.
 1. Dané sú dve polia a = (a'_1_', a'_2_', a'_3_', a'_4_'), b = (b'_1_', b'_2_', b'_3_', b'_4_'). Vypíšte ich súčet po prvkoch, teda prvky poľa c = (a'_1_' + b'_1_', a'_2_' + b'_2_', a'_3_' + b'_3_', a'_4_' + b'_4_').
 1. Vypíšte prvky poľa d = (a'_4_' + b'_4_', a'_3_' + b'_3_', a'_2_' + b'_2_', a'_1_' + b'_1_').
 1. Daný je reťazec *s*. Vypíšte ho odzadu (použite cyklus).
 1. Vypíšte parametre programu, ktoré boli špecifikované pri jeho spustení.
 
-Úlohy, ktoré je potrebné vyskúšať
+Úlohy, ktoré je potrebné vyskúšať:
+
 1. Stiahnite a nainštalujte JDK, nastavte systémové premenné PATH, JAVA_HOME, CLASSPATH
 1. Oboznámte sa s dokumentáciou JavaDoc.
 

@@ -1,0 +1,216 @@
+(:title Spring 2.5 a anotácie pre automatické prepájanie komponentov :)
+(:article:yes:)
+(:#toc-float:)
+Jedným z významných prínosov Spring 2.5 je podpora anotácií, ktoré môžu slúžiť ako alternatíva na deklarovanie vzťahov a závislostí medzi jednotlivými komponentami a riešenie ''dependency injection''. K dispozícii je podpora pre springovskú sadu anotácií i pre štandardizované anotácie zo špecifikácie [[http://java.sun.com/javase/6/docs/api/javax/annotation/package-summary.html | JSR-250]] (''Commons Annotations for Java Platform'').
+
+Ukážme si jednoduchý príklad v ktorom sa používajú anotácie.
+
+! Springovské anotácie
+Majme interfejs na generovanie citátov:
+(:java:)
+package sk.novotnyr.quotes;
+
+public interface QuoteGenerator {
+  public String getQuote();
+}
+(:javaend:)
+a jeho jednoduchú implementáciu:
+(:java:)
+package sk.novotnyr.quotes;
+
+public class HardwiredQuoteGenerator implements QuoteGenerator {
+
+  public String getQuote() {
+    return "Spring is gr8";
+  }
+
+}
+(:javaend:)
+A okrem toho majme triedu, ktorá bude vypisovať citáty na štandardný výstup:
+(:java:)
+public class QuotePrinter {
+  private QuoteGenerator quoteGenerator;
+  
+  public void print() {
+    String quote = quoteGenerator.getQuote();
+    System.out.println(quote);
+  }
+
+  // gettre a settre
+}
+(:javaend:)
+V klasickom Springu by sme mohli nadeklarovať v aplikačnom kontexte nasledovné beany:
+(:xml:)
+<bean id="hardwiredQuoteGenerator"  
+      class="sk.novotnyr.quotes.HardwiredQuoteGenerator" />
+    
+<bean id="quotePrinter" 
+      class="sk.novotnyr.quotes.QuotePrinter" />
+(:xmlend:)
+a použiť vypisovač citátov nasledovne:
+(:java:)
+ClassPathXmlApplicationContext ctx 
+  = new ClassPathXmlApplicationContext(
+      "applicationContext.xml"); 
+QuotePrinter printer = (QuotePrinter) ctx.getBean("quotePrinter");
+printer.print();
+(:javaend:)
+
+V novom Springu 2.5 sú k dispozícii anotácie @@@Autowired@@ a @@@Component@@, ktoré reprezentujú alternatívny spôsob deklarácie a wiringu beanov. Triedy anotované ako komponenty nie je potrebné deklarovať v popisovači aplikačného kontextu. Odhalia sa automaticky v @@CLASSPATH@@e (viď nižšie). Poznamenajme, že k anotácii @@@Component@@ jestvujú jej špecializácie @@@Service@@, @@@Repository@@ a @@@Controller@@, ktoré je možné používať pre anotáciu služieb, úložísk (t. j. DAO objektov) a kontrolérov (v MVC vrstve).
+(:java:)
+@Component
+public class HardwiredQuoteGenerator implements QuoteGenerator {
+  public String getQuote() {
+    return "Spring is gr8";
+  }
+}
+(:javaend:)
+A asociáciu s vypisovačom vykonáme pomocou autowiringu:
+(:java:)
+@Component
+public class QuotePrinter {
+  @Autowired
+  private QuoteGenerator quoteGenerator;
+  
+  public void print() {
+    String quote = quoteGenerator.getQuote();
+    System.out.println(quote);
+  }
+}
+(:javaend:)
+Do @@quoteGeneratora@@ sa automaticky nawireuje implementácia príslušného rozhrania (prebieha detekcia podľa typu, v kontexte sa musí nájsť práve jedna implementácia, inak nastane výnimka). Ak použijeme @@@Autowired@@ na inštančnej premennej, nemusíme dokonca poskytnúť gettre a settre.
+
+Ak chceme presnejšie vyšpecifikovať použitý bean (napr. v prípade, že sa v aplikačnom kontexte nachádza viacero implementácií daného interfejsu), môžeme použiť anotáciu @@@Qualifier@@.
+(:java:)
+@Autowired
+@Qualifier("hardwiredQuoteGenerator")
+private QuoteGenerator quoteGenerator;
+(:javaend:)
+Tento príklad skúsi nawireovať triedu @@HardwiredQuoteGenerator@@ implementujúcu interfejs @@QuoteGenerator@@ (názov beanu v @@@Qualifier@@ sa odvodí z názvu triedy). 
+
+Samotný @@QuotePrinter@@ má byť takisto beanom v aplikačnom kontexte, preto ho analogicky označíme ako @@@Component@@.
+
+Z popisovača aplikačného kontextu teda môžeme vynechať beany, ktoré zodpovedajú anotovaným triedam. Musíme však zapnúť podporu pre načítavanie anotovaných tried.
+(:xml:)
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans 
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+               
+     <context:component-scan base-package="sk.novotnyr.quotes" />
+</beans>
+(:xmlend:)
+Element @@component-scan@@ zapne podporu pre anotácie @@@Component@@, @@@Autowired@@, @@@Qualifier@@ a pod. a zaregistruje komponentové beany (nachádzajúce sa v príslušnom balíčku) ako beany.
+
+Vypisovač citátov naštartujeme a spustíme zvyčajným spôsobom:
+(:java:)
+ClassPathXmlApplicationContext ctx = new   
+  ClassPathXmlApplicationContext("applicationContext.xml"); 
+QuotePrinter printer = (QuotePrinter) ctx.getBean("quotePrinter");
+printer.print();
+(:javaend:)
+
+! Používanie anotácií z JSR-250
+Spring podporuje aj používanie anotácií z JSR-250 (@@@Resource@@, @@@PostDestroy@@, @@@PreDestroy@@ atď) na reprezentovanie beanov a ich wiringu. Tieto anotácie sú k dispozícii v Java SE 6 a Java 5 EE automaticky. Ak používame staršiu verziu Javy, JAR súbor s triedami si môžeme stiahnuť [[http://javashoplm.sun.com/ECom/docs/Welcome.jsp?StoreId=22&PartDetailId=caj-1.0-fr-eval-oth-JSpec&SiteId=JCP&TransactionId=noreg | zo stránok JSR-250]]. Náš generátor citátov môžeme upraviť, namiesto springovskej anotácie @@@Component@@ použijeme @@@Resource@@:
+(:java:)
+import javax.annotation.Resource;
+
+@Resource
+public class HardwiredQuoteGenerator implements QuoteGenerator {
+  public String getQuote() {
+    return "Spring is gr8";
+  }
+}
+(:javaend:)
+Analogicky upravíme aj @@QuotePrinter@@. Anotácia @@@Resource@@ má dvojakú sémantiku: v prípade, že anotuje triedu, indikuje tým komponent, ktorý má byť vyhľadaný počas behu. Ak anotuje inštančnú premennú, reprezentuje tým cieľ pre ''dependency injection''.
+(:java:)
+@Resource
+public class QuotePrinter {
+  @Resource(name="randomQuoteGenerator")
+  private QuoteGenerator quoteGenerator;
+  
+  public void print() {
+    String quote = quoteGenerator.getQuote();
+    System.out.println(quote);
+  }
+}
+(:javaend:)
+V prípade, že potrebujeme vyriešiť nejednoznačnosť beanov, môžeme použiť atribút @@name@@, v ktorom uvedieme identifikátor beanu, ktorý sa má nawireovať (podobne ako v prípade springovských anotácií sa identifikátor odvodí od názvu triedy).
+
+Budeme musieť ešte upraviť popisovač aplikačného kontextu. Element @@component-scan@@ totiž v @@CLASSPATH@@ vyhľadáva len triedy anotované ako @@@Component@@,  @@@Repository@@, @@@Service@@ a @@@Component@@. Ak chceme detekovať aj @@@Resource@@, musíme to uviesť konfigurácii tohto elementu.
+(:xml:)
+<context:component-scan base-package="sk.novotnyr.quotes.jsr250">
+  <context:include-filter type="annotation" 
+                          expression="javax.annotation.Resource"/>
+</context:component-scan>
+(:xmlend:)
+
+!Vytvorenie vlastnej anotácie
+Spring umožňuje používať pre automatickú registráciu beanov v kontexte akúkoľvek anotáciu (nielen @@@Component@@, @@@Resource@@ atď.) Principiálne jestvujú dva spôsoby:
+* vytvorenie vlastnej anotácie a jej zavedenie cez @@<context:include-filter>@@. To sme demonštrovali na predošlom príklade anotácie @@javax.annotation.Resource@@.
+* vytvorenie vlastnej anotácie, ktorá je špecializáciou springovskej anotácie @@@Component@@. V tejto časti rozoberieme práve tento spôsob.
+
+Java anotácie nepodporujú dedičnosť (anotácia nemôže dediť prvky a metódy od inej anotácie). V prípade springovskej špecializácie je možné tento nedostatok obísť - stačí, keď oanotujeme vlastnú anotáciou pomocou @@@Component@@:
+(:java:)
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.springframework.stereotype.Component;
+
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Component
+public @interface Bean {
+   String value() default "";
+} 
+(:javaend:)
+Inštančná premenná @@value@@ nie je povinná, ale pomocou nej môžeme dodávať alternatívny názov pre anotovaný bean.
+
+Všetky bean anotované pomocou @@@Bean@@ zaregistrujú automaticky - jediná vec, ktorú treba špecifikovať, je zapnutie automatickej detekcie v konfiguračnom súbore:
+(:xml:)
+<context:component-scan base-package="sk.novotnyr.spring.tools" />
+(:xmlend:)
+
+Príklad použitia je potom nasledovný:
+(:java:)
+@Bean
+public class HardwiredQuoteGenerator implements QuoteGenerator {
+  public String getQuote() {
+    return "Spring is gr8";
+  }
+}
+(:javaend:)
+Bean získame z kontextu nasledovným spôsobom:
+(:java:)
+ClassPathXmlApplicationContext ctx 
+  = new ClassPathXmlApplicationContext("ctx.xml");
+QuoteGenerator tool
+  = (QuoteGenerator) ctx.getBean("hardWiredQuoteGenerator");
+(:javaend:)
+Samozrejme, bean môžeme aj aliasovať
+(:java:)
+@Bean("quoteGenerator")
+public class HardwiredQuoteGenerator implements QuoteGenerator {
+...
+}
+(:javaend:)
+a v tom prípade bude jeho získanie z kontextu prebiehať nasledovne:
+(:java:)
+QuoteGenerator tool
+  = (QuoteGenerator) ctx.getBean("quoteGenerator");
+(:javaend:)
+
+! Referencie
+* [[http://www.infoq.com/articles/spring-2.5-part-1 | Článok na InfoQ]]
+* [[http://static.springframework.org/spring/docs/2.5.x/reference/beans.html#beans-annotation-config | Oficiálna dokumentácia]]
+* [[http://qcon.infoq.com/sanfrancisco/file?path=/QConSF2007/slides/public/RodJohnson_ConfiguringTheSpringContainer.pdf | Configuring the Spring Container ]], prezentácia Roda Johnsona.
+
+

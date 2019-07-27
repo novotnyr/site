@@ -1,0 +1,151 @@
+---
+title: Tomcat Connection Pooling 
+date: 2006-02-02T12:43:54+01:00
+---
+V nasledovnom článku popíšeme *rozchodenie* connection poolingu v Tomcate. 
+## Čo je connection pooling?
+Connection pooling v Tomcate umožňuje vylepšenú podporu a správu pripojení 
+(triedy implementujúce interface `java.sql.Connection`) v servletoch a JSP. Základné riešenie ťažkého kalibru je pri volaní príslušnej metódy servletu vytvoriť nové pripojenie a po vybavení požiadavky ho hneď zatvoriť. Žiaľ, toto riešenie je k databáze nešetrné (čo ak pripojenie nie je korektne uzavreté? čo ak počet vyžiadaných pripojení presiahne databázou povolenú hodnotu?). 
+
+Vhodným riešením je **connection pooling**. Server si pri spustení danej aplikácie otvorí vopred predefinovaný počet pripojení k databáze (t. j. vytvorí sa požadovaný počet inštancií triedy implementujúcej `java.sql.Connection`) a vloží ich do kvázi-poľa nazývaného pool. Ak nejaká trieda potrebuje pre svoju činnosť objekt typu `Connection`, vyžiada si ho od servera (nebude teda `Connection` inštancionalizovať sama). Server vyberie z poolu objekt `Connection` a aplikácia s ním môže podľa ľubovole pracovať. Ak už aplikácia `Connection` nepotrebuje, jednoducho to oznámi serveru a server tento objekt vráti do poolu, kde čaká na ďalšie využitie. Ak už v poole nie sú žiadne objekty `Connection` (t. j. všetky sa už používajú), je možné použiť viacero postupov. Buď sa vytvorí istý *rezervný* počet objektov `Connection` (tento postup však nemožno veľakrát opakovať), alebo sa prezrie využívaných zoznam objektov a zistí sa, či niektorý objekt nie je už dlhší čas bez využitia (napr. ak programátor zabudol po použití oznámiť serveru, že `Connection` je už voľný a uplynul dosť dlhý časový interval od vyžiadania si objektu z poolu).
+
+## Connection pooling v serveri Apache Tomcat
+### Čo potrebujeme na využívanie connection poolingu?
+Na využívanie poolingu v Tomcat-e potrebujeme:
+
+* **Apache Tomcat 4.1.18** (na tejto verzii boli vyskúšané príklady)
+* **Jakarta Commons DBCP 1.0** je modul, resp. sada tried, ktoré umožňujú programátorom využívať pooling databázových pripojení.Apache Tomcat už obsahuje v sebe tieto triedy (typicky v archíve `%CATALINA_HOME%\common\lib\commons-dbcp.jar`). Vyššie verzie Tomcata obsahujú novšiu verziu 1.1.
+* **databázu** a
+* **JDBC driver**. Príklady boli odskúšané na nasledovných databázach
+  * *IBM DB2 7.1 Personal Edition.* JDBC driver je dodávaný s databázou
+  * *MySQL 4.0.15.* JDBC driver si možno stiahnuť samostatne zo stránok MySQL
+
+### Apache Tomcat a IBM DB2.
+Popíšeme postup, ako upovedomiť Tomcat o existencii databázy a inštalácii JDBC ovládača do Tomcata.
+
+#### Príprava JDBC ovládačov
+
+* Zastavíme Apache Tomcat 4.1.
+
+* Vyhľadáme archív JAR, resp. ZIP obsahujúci JDBC ovládač k databáze. Vo verzii 7.1 a štandardnej inštalácii je to archív `c:\Program Files\SQLLIB\java\db2java.zip`. Tento archív skopírujeme medzi rôzne moduly používané Tomcatom a to do adresára `%CATALINA_HOME%\common\lib`. Archív potom **MUSÍME** premenovať na JAR, inak ho Tomcat neuvidí! JDBC ovládač bude teda v archíve
+
+        %CATALINA_HOME%\common\lib\db2java.jar
+
+
+Pridanie tohto archívu do systémovej premennej `CLASSPATH` nestačí!
+
+* Spustíme Apache Tomcat 4.1
+
+#### Konfigurácia webaplikácie
+Spustíme v prehliadači Tomcat Web Server Administration Tool (typicky na adrese http://localhost:8080/admin). Vyhľadáme si v strome príslušný kontext, v ktorej budeme connection pooling využívať. V ňom rozbalíme položku *Resources* a v nej klikneme na podpoložku *Data Sources*. Úplná cesta v strome je napr. `Tomcat Server/Service (Tomcat-Standalone)/Host (localhost)/Context (mojobchod)/Resources/Data Sources`. V rozbaľovacom menu vpravo hore vyberieme položku *Create New Data Source* a položky vyplníme nasledovne:
+
+| Položka   | Hodnota | Popis |
+|-----------|---------|---------|
+| JNDI Name:| jdbc/db2Test| Uvádza skrátený názov, pomocou ktorého sa možno odkazovať na objekt prideľujúci pripojenia (ide o analógiu služby DNS v internete). Názov si môžeme určiť sami, kvôli prehľadnosti je ale vhodné uviesť predponu `jdbc/`|
+| Data Source URL:| jdbc:db2:*nazov_databazy*| Adresa databázového servera a databázy v prípade ovládača Type 2|
+| Data Source URL:| jdbc:db2://*adresa_servera*:6789/*nazov_databazy*| Adresa databázového servera a databázy v prípade ovládača Type 4|
+| JDBC Driver Class:| COM.ibm.db2.jdbc.app.DB2Driver| Úplný názov triedy ovládača JDBC, prípad ovládača Type 2|
+| JDBC Driver Class:| COM.ibm.db2.jdbc.net.DB2Driver| Úplný názov triedy ovládača JDBC, prípad ovládača Type 4|
+| User Name:| user| Užívateľské meno pre pripojenie k databáze. Používané pri objektoch `Connection`|
+| Password:| | Heslo pre pripojenie k databáze. Používané pri objektoch `Connection`|
+| Max. Active Connections:| 2| Maximálny počet pripojení, ktorý môže byť alokovaný z poolu.|
+| Max. Idle Connections:| 2| Maximálny počet nevyužitých pripojení v poole, pri ktorom sa ešte nevytvoria dodatočné (rezervné) pripojenia.|
+| Max. Wait for Connection:| 5| Maximálna dĺžka času, počas ktorého bude pool čakať na uvoľnenie pripojenia, ak sú už všetky pripojenia alokované. Po uplynutí tohto času vyhodí pool výnimku. -1 znamená neobmedzenú dĺžku čakania, 0 znamená okamžité vyhodenie výnimky, ak sú už všetky pripojenia obsadené.|
+| Validation Query:| `SELECT COUNT(*) FROM SYSCAT.TABLES`| Dopyt, ktorý bude použitý pre overenie správnosti vytvorenia objektu `Connection`. Uveďte dopyt vracajúci aspoň jeden riadok. Dokumentácia JNDI HOW-TO k Tomcatu 4.1.18 neuvádza, že ak je toto pole prázdne, nebudú vytvárané žiadne pripojenia a DB2 (ale aj MySQL) sa zacyklí, čo vynúti reštart databázy.|
+
+Bližší popis jednotlivých položiek a ďalšie rady možno nájsť v JNDI DataSource HOW-TO, JNDI Resources HOW-TO
+v dokumentácii Tomcatu, prípadne v API dokumentácii k Commons DBCP.
+
+Teraz prejdeme k časti Úprava `web.xml`.
+
+### Apache Tomcat a MySQL.
+Popíšeme postup, ako upovedomiť Tomcat o existencii databázy a inštalácii JDBC ovládača do Tomcata.
+### Príprava JDBC ovládačov
+
+* Stiahneme si JDBC ovládač k MySQL zo stránok (http://www.mysql.com). Typický názov súboru je `mysql-connector-java-3.0.8-stable.zip`.
+* V tomto archíve sa nachádza množstvo súborov, ale najdôležitejší je JAR súbor `mysql-connector-java-3.0.8-stable-bin.jar`.
+* Zastavíme Apache Tomcat 4.1.
+* Tento JAR archív skopírujeme medzi rôzne moduly používané Tomcatom a to do adresára `%CATALINA_HOME%\common\lib`. JDBC ovládač bude teda v archíve
+
+        %CATALINA_HOME%\common\lib\mysql-connector-java-3.0.8-stable-bin.jar
+
+Pridanie tohto archívu do systémovej premennej `CLASSPATH` nestačí!
+
+* Spustíme Apache Tomcat 4.1
+
+#### Konfigurácia webaplikácie
+Webaplikáciu nakonfigurujeme podobne, ako v prípade databázy DB2. Konfiguračné možnosti budú analogické ako v prípade databázy DB2, upravíme len odlišné hodnoty:
+
+| Položka            | Hodnota                          | Popis                                                        |
+| ------------------ | -------------------------------- | ------------------------------------------------------------ |
+| JNDI Name:         | jdbc/mySQLTest                   |                                                              |
+| Data Source URL:   | jdbc:mysql://localhost:3306/test | Adresa databázového servera (`localhost`) portu (implicitne 3306) a databázy (v tomto prípade `test`) |
+| JDBC Driver Class: | com.mysql.jdbc.Driver            |                                                              |
+| Validation Query:  | `SELECT NOW()`                   |                                                              |
+
+Teraz prejdeme k časti Úprava `web.xml`.
+
+### Úprava `web.xml`
+Máme už nakonfigurovaný kontext a upovedomili sme Tomcat na JDBC ovládače. Potrebujeme ešte upraviť deployment descriptor (súbor `web.xml`) príslušnej webaplikácie. 
+
+* Do súboru `web.xml` vložíme nasledovné riadky:
+
+  ```xml
+  <resource-ref>
+  <description>
+    Odkaz na továreň, ktorá produkuje objekty java.sql.Connection.
+  </description>
+  <res-ref-name>
+    jdbc/db2Test <!-- alebo jdbc/mySQLTest, ak používame MySQL -->
+  </res-ref-name>
+  <res-type>
+    javax.sql.DataSource
+  </res-type>
+  <res-auth>
+    Container
+  </res-auth>
+  </resource-ref>
+  ```
+
+  Musíme dávať pozor na štruktúru súboru `web.xml`. Tá sa riadi príslušným DTD súborom, ktorým sa musíme riadiť.
+
+* Reštartujeme príslušnú webaplikáciu.
+
+
+
+### Krátky kus kódu
+
+Uviedeme úsek kódu, v ktorom je ukázaná, ako sa získa objekt `java.sql.Connection` z poolu:
+
+```java
+//inicializujeme kontext pre JNDI
+Context ctx = new InitialContext();
+/* získame objekt typu DataSource -- poskytovateľa pripojení. Získame
+   ho podľa jednoznačného identifikátora, ktorý sme nastavili
+   v kontexte webaplikácie. java:comp/env/ je štandardná predpona
+   v Tomcate
+*/
+DataSource ds = (DataSource) ctx.lookup("java:comp/env/jdbc/db2Test");
+
+Connection con = null;
+try {
+  // DataSource nám poskytne Connection
+  con = ds.getConnection();
+  ... 
+  tu využívame Connection
+  ...
+} finally {
+  if (con != null)
+    //uzavrieme pripojenie (to sa "v tichosti" vráti do poolu)
+    con.close();
+}
+```
+
+Vidíme, že návrat pripojenia do poolu sa deje takmer automaticky. Uzavretím pripojenia sa pripojenie vráti do poolu, pričom programátor toto nemusí nijak špeciálne obslúžiť.
+
+Vidíme, že návrat pripojenia do poolu sa deje takmer automaticky. Uzavretím pripojenia sa pripojenie vráti do poolu, pričom programátor toto nemusí nijak špeciálne obslúžiť.
+
+## Ďalšie možnosti
+Existuje ešte množstvo ďalších konfiguračných nastavení -- napr. automatické vracanie dlhšie nevyužívaných alebo nekorektne uzatvorených pripojení do poolu a pod. Bližšie informácie možno nájsť v JNDI DataSource How-to,
+ktoré je súčasťou dokumentácie Tomcat-a. Vo verzii 4.1.18 je na adrese
+http://localhost:8080/tomcat-docs/jndi-datasource-examples-howto.html (localhost:8080 je server a číslo portu, je ho potrebné prispôsobiť lokálnym podmienkam)
