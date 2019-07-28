@@ -1,0 +1,37 @@
+Vytvorte tabulku, ktora obsahuje v riadkoch cisla od 1 po N.
+
+V Pascale by to bol @@for@@:
+(:code:)
+for i:=1 to N do begin
+  writeln(i)
+end
+(:codeend:)
+Lenze my nemame for. Mame len rekurziu. My vsak vieme kazdy prvok v postupnosti odvodit z predosleho prvku. Prvy prvok je 0, dalsi prvok je predosly prvok + 1. Cize @@s_0 = 0@@, @@s_i = s_i-1 + 1@@
+
+(:code:)
+s_0 = 0
+s_i = s_i-1 + 1
+(:codeend:)
+
+Napisane vseobecne
+(:code:)
+s(i) = 0, ak i = 0
+s(i) = s(i-1) + 1
+(:codeend:)
+
+(:code:)
+s(x) = 0, ak x = 0
+s(x) = s(x-1) + 1
+(:codeend:)
+
+Toto vieme mechanicky previest na SELECT
+(:code:)
+WITH s(x) as
+(
+SELECT 0 FROM SYSIBM.SYSDUMMY1
+UNION ALL
+SELECT x + 1 FROM s
+WHERE x < 1000
+)
+SELECT * FROM s
+(:codeend:)

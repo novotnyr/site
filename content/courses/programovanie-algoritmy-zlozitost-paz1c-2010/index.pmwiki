@@ -1,0 +1,117 @@
+(:title Programovanie, algoritmy, zložitosť:)
+
+(:toc:)
+
+! Teoretické cvičenia
+
+!! Cvičenie 1 - 29. 9. 2010
+Úvod, triedy. Od návrhu k implementácii -- príklad univerzálneho Turingovho stroja
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-01.pdf | PDF]]
+
+!! Cvičenie 2 - 6. 10. 2010
+Swing ako aplikačný rámec pre vývoj softvéru. Princípy, komponenty, modely, udalosti.
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-02-swing.pdf | PDF]]
+
+!! Cvičenie 3 - 13. 10. 2010
+Správanie ako základ pre štruktúru tried. Kontrakty a ich reprezentácia interfejsmi. 
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-03-kontrakty.pdf | PDF]]
+
+!! Cvičenie 4 - 20. 10. 2010
+Dedičnosť, kompozícia a delegácia: príklady použitia
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-04.pdf | PDF]]
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-04-kod.pdf | zdrojový kód]]
+
+!! Cvičenie 5 - 27. 10. 2010
+Výhody a nevýhody dedičnosti, vhodnosť jej použitia. Liskovovej substitučný princíp. Open-closed principle prí návrhu tried.
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-05.pdf | PDF]]
+
+
+!! Cvičenie 6 - 3. 11. 2010
+Vrstvové aplikácie, návrhový vzor DAO, príklad použitia
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-06.pdf | PDF]]
+
+!! Cvičenie 7 - 10. 11. 2010
+%red% Test!
+Ukážkový test z minulého roka: [[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2009/pisomka-paz1c-2009.pdf | PDF]]
+
+!! Cvičenie 8 - 24. 11. 2010
+Výnimky a ich použitie v kontraktoch
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-07-vynimky.pdf | PDF]]
+
+!! Cvičenie 9 - 1. 12. 2010
+Vláknové programovanie v Jave. Základné koncepty - exekútory, úlohy. Základné problémy konkurentného programovania a riešenie v Jave.
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-08-threads.pdf | PDF]]
+
+!! 8. 12. 2010
+
+Swing a vlákna. SwingWorker ako nástroj pre tvorbu svižných UI, príklady jeho použitia a typické problémy.
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-09-swing-threads.pdf  | PDF]]
+
+Pozri tiež 
+* [[Java/SwingThreads|+]]
+* [[Java.AutomatickaKontrolaPravopisuVJTextArea|+]]
+
+!! 15. 12. 2010
+Prístup k databázam pomocou Spring-JDBC. Ukážky použitia a demonštrácia zjednodušenia kódu.
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/paz1c-10-spring-jdbc.pdf   | PDF]]
+
+
+! Praktické cvičenie
+
+!!Cvičenie 1 - 27. 9. 2010
+-
+
+!!Cvičenie 2 - 4. 10. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/zoznamka-2010-10-04.zip  | Výsledný projekt ]]
+
+
+!!Cvičenie 3 - 11. 10. 2010
+-
+
+!!Cvičenie 4 - 18. 10. 2010
+Okno @@OsobaForm@@ ako model Osoby. Vytvorenie prázdneho konštruktora a konštruktora @@OsobaForm(Osoba)@@ plus vytvorenie gettera pre Osobu. Úprava ListModelu tak, aby pracoval s @@Osoba@@mi, pridanie novej osoby a úprava existujúcej osoby pomocou dvojkliku na @@JList@@. Zabezpečenie modality @@OsobaForm@@ a jej migrácia na @@JDialog@@.
+
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/zoznamka-2010-10-18.zip | Výsledný projekt ]]
+
+!!Cvičenie 5 - 25. 10. 2010
+-
+
+!!Cvičenie 6 - 1. 11. 2010
+-
+
+!!Cvičenie 7 - 8. 11. 2010
+
+
+!! Cvičenie 8 - 15. 11. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/kniznica-2010-11-15.zip   | Výsledný projekt ]]
+
+!! Cvičenie 9 - 22. 11. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/kniznica-2010-11-22.zip  | Výsledný projekt ]]
+
+!! Cvičenie 10 - 29. 11. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/kniznica-2010-11-29.zip | Výsledný projekt ]]
+
+
+!! Cvičenie 11 - 6. 12. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/kniznica-2010-12-06.zip | Výsledný projekt ]]
+
+!! Cvičenie 12 - 13. 12. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/rozhovor-2010-12-13.7z | Výsledný projekt ]]
+
+!! Cvičenie 13 - 20. 12. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/rozhovor-finalna-verzia.zip  | Výsledný projekt ]]
+
+
+! Praktické cvičenie II
+!! Cvičenie 11. 11. 2010
+[[http://ics.upjs.sk/~novotnyr/home/skola/programovanie_algoritmy_zlozitost/2010/kniznica-2010-11-11.zip | Výsledný projekt ]]
+
+
+
+

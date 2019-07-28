@@ -1,0 +1,51 @@
+---
+title: Objektovo-orientované programovanie 2010
+year: 2010/2011
+date: 2010-09-23T12:56:00+01:00
+course: UINF/OOP1a
+---
+
+# Inštrukcie
+
+* cvičenie pre informatikov sa koná v utorky od 13.00 v P3
+* cvičenie pre medziodborové kombinácie sa koná vo štvrtky s RNDr. Tomášom Horváthom
+
+Cvičenia
+========
+
+## Cvičenie 1 (24. 2. 2009)
+- [PDF](http://ics.upjs.sk/~novotnyr/java/oop/oop1a-1.pdf ) 
+
+Triedy ako služby, triedy ako entity. Návrh minimalistického systému. Použitie interfejsov a ukážka polymorfizmu.
+
+## Cvičenie 2 (3. 3. 2009)
+- [PDF](http://ics.upjs.sk/~novotnyr/java/oop/oop1a-2.pdf ) 
+
+Refaktor ukážkového kódu. Unit testy. Logovanie. Príklad a smerovanie k dependency injection.
+
+## Cvičenie 3 (10. 3. 2009)
+- [Projekt, z ktorého vychádzame](http://ics.upjs.sk/~novotnyr/java/oop/books2.zip )
+- [PDF prezentácia](http://ics.upjs.sk/~novotnyr/java/spring/spring-core-v2.pdf )
+
+Spring ako príklad kontajnera pre dependency injection. Deklarácia beanov, aplikačný kontext. Definovanie závislostí medzi beanmi. Typy dependency injection.
+
+## Cvičenie 4 (12. 3. 2009)
+- [PDF prezentácia](http://ics.upjs.sk/~novotnyr/java/spring/spring-core-v2.pdf )
+
+Spring JDBC ako vrstva pre prístup k SQL databázam. Základná filozofia. Dátove zdroje a JDBC šablóny. Typické operácie: výber dát, vkladanie a aktualizácia dát.
+
+## Cvičenie 5 (17. 3. 2009)
+- [PDF prezentácia k CVS](http://ics.upjs.sk/~novotnyr/java/oop/oop1a-3-cvs.pdf )
+
+- [PDF prezentácia k webovým aplikáciám](http://ics.upjs.sk/~novotnyr/java/oop/webove-aplikacie.pdf )
+
+Systémy pre správu zdrojových kódov. CVS ako príklad. Základné operácie - checkout, commit, update. Riešenie konfliktov, zlučovanie.
+
+Úvod k webovým aplikáciám, servlety. Servletový kontajner Jetty.
+
+## Cvičenie 6—8 (19, 24, 31. 3. 2009)
+Návrhový vzor Model-View-Controller. MVC frameworky a dôvody ich vzniku. Spring MVC ako príklad MVC frameworku. Filozofia kontrolérov v Spring MVC. Ukážka CRUD aplikácie. Väzba objektov na model. Formuláre. Validácia. Ďalšie príklady kontrolérov.
+
+## Cvičenie 9 (7. 4. 2009)
+Objektovo-relačné mapovanie. Štandard Java Persistence API. TopLink ako príklad implementácie. Mapovanie jednoduchých objektov. Mapovanie identifikátorov. Asociácie 1:1. Ukladanie a načítavanie objektov.
+

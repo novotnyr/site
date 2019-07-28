@@ -1,0 +1,897 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This document was created with Syntext Serna Free. -->
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<article lang="sk">
+  <title>Swing a vláknové programovanie</title>
+
+  <sect1>
+    <title>Úvod</title>
+
+    <para>Jednou zo základných požiadaviek používateľského rozhrania je jeho
+    <emphasis>responsiveness</emphasis>, teda včasná a rýchla reakcia na
+    používateľov vstup (teda zadávanie z klávesnice, kliky myšou atď.)
+    Rozhranie, ktoré nedokáže reagovať včas, používateľa frustruje, pretože
+    tempo svojej práce musí prispôsobovať počítaču a začne mať dojem, že
+    program ho v práci zdržuje. Včas reagujúce používateľské rozhranie by malo
+    spĺňať nasledovné požiadavky<footnote>
+        <para>Viď
+        http://developer.kde.org/documentation/books/kde-2.0-development/ch09.html.</para>
+      </footnote>:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>umožniť používateľovi vidieť aktuálny stav aplikácie</para>
+        </listitem>
+
+        <listitem>
+          <para>dať na vedomie, že jeho vstup bol prijatý</para>
+        </listitem>
+
+        <listitem>
+          <para>v prípade, že aplikácia rieši dlhotrvajúcu úlohu, dávať na
+          známosť priebežný stav a nebudiť dojem, že zamrzla</para>
+        </listitem>
+
+        <listitem>
+          <para>ovplyvňovať beh programu (zatvoriť ho, pozastaviť
+          atď.).</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Pri vývoji swingovských aplikácii, ktoré spĺňajú vyššieuvedené
+    zásady, sa nevyhneme použitiu vlákien a iných vlastností konkurentného
+    programovania. Hoci sa to na prvý pohľad môže zdať pomerne odstrašujúce
+    (konkurentné programovanie v sebe nesie potenciál ťažko odladiteľných
+    chýb), v skutočnosti máme k dispozícii množstvo nápomocných tried a metód,
+    ktoré prácu uľahčia.</para>
+
+    <sect2>
+      <title>Zmýšľanie pri grafických aplikáciách</title>
+
+      <para>Pri používaní klasických konzolových aplikácií používateľ uvažuje
+      lineárne: aplikácia si od neho postupne vyžaduje údaje, ktoré sú do nej
+      postupne zadávané z klávesnice. <screen>Enter username:
+&gt; novotnyr
+New UNIX password: 
+&gt; ******
+Retype new UNIX password: 
+&gt; ******
+passwd: all authentication tokens updated successfully.</screen>V prípade
+      grafických aplikácii sa však spôsob zmýšľania mení -- a to nielen na
+      strane používateľa, ale i na strane vývojára.</para>
+
+      <para>Aplikácia musí reagovať na <emphasis>udalosti</emphasis>, ktoré
+      používateľ vyvoláva na jej ovládacích prvkoch, a v závislosti na nich
+      aktualizovať a prekresľovať používateľské rozhranie.</para>
+
+      <para>Kritickým problémom sú dlhotrvajúce operácie: kým v konzolovej
+      aplikácii stačí vypísať <computeroutput>„Prosím
+      čakajte...“</computeroutput> a o prekresľovanie sa starať netreba
+      (všetky dáta sú už totiž zobrazené), v grafickom používateľskom rozhraní
+      je situácia presne opačná. Ak aplikácia vykonáva tiahly výpočet, nesmie
+      zabudnúť na spracovávanie používateľovho vstupu a následné
+      prekresľovanie, pretože v opačnom prípade získa používateľ mylný pocit,
+      že program vytuhol a treba ho násilne ukončiť.</para>
+    </sect2>
+
+    <sect2>
+      <title>Vlákna v Swingu</title>
+
+      <para>Kým bežná konzolová aplikácia v Jave si vystačí s jediným vláknom
+      (tzv. <emphasis>main</emphasis>), swingová aplikácia po spustení vytvorí
+      viacero vlákien, ktoré sú zodpovedné za prekresľovanie, vybavovanie
+      udalostí a ich rozosielanie jednotlivým event handlerom (teda kódu
+      obsluhy udalostí) a ďalšie nízkoúrovňové operácie. Vlákna v typickej
+      aplikácii sú zobrazené na nasledovnom obrázku:</para>
+
+      <figure>
+        <title>Vlákna v swingovskej aplikácii (Sun JDK 1.6). Vlákno main už
+        dobehlo.</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="swing-threads-eclipse.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Zo všetkých vlákien v swingovskej aplikácii sú však
+      najdôležitejšie dve:<variablelist>
+          <varlistentry>
+            <term>main</term>
+
+            <listitem>
+              <para>Inštancie ľubovoľného swingovského okna z neho automaticky
+              naštartujú ostatné nízkoúrovňové vlákna (AWT-Shutdown,
+              AWT-Windows) a vlákno EDT.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>event dispatch thread</term>
+
+            <listitem>
+              <para>najdôležitejšie vlákno, ktoré je zodpovedné za
+              spracovávanie udalostí a delegovanie udalostí pre ich obsluhu,
+              ktorá sa nachádza v jednotlivých komponentoch.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+    </sect2>
+
+    <sect2>
+      <title>Event Dispatch Thread (EDT)</title>
+
+      <para>Predstavme si kód z jednoduchej aplikácie, kde vytvoríme tlačidlo
+      <classname>JButton</classname> a priradíme mu obsluhu udalosti, ktorá
+      nastane po kliknutí naň: Kód v rámci metódy
+      <methodname>actionPerformed()</methodname> predstavuje <emphasis>obsluhu
+      udalostí</emphasis> (<foreignphrase>event
+      handler</foreignphrase>).</para>
+
+      <para>Čo sa stane po kliknutí myšou?</para>
+
+      <para>Vlákno EDT v sebe obsahuje tzv. <emphasis>rad udalostí</emphasis>
+      (<foreignphrase>event queue</foreignphrase>). Akákoľvek akcia, ktorú
+      vyvolá používateľ v používateľskom rozhraní -- či už pohyb myšou,
+      kliknutie, stlačenie klávesy atď -- spôsobí vytvorenie objektu udalosť
+      (v skutočnosti potomkovia triedy <classname>AWTEvent</classname>, to
+      však nie je dôležité) a jeho zaradenie na koniec tohto radu.</para>
+
+      <para>Z jeho opačného konca EDT postupne vyberá jednotlivé objekty
+      udalostí a rozposiela ich do jednotlivých komponentov, ktoré ich ďalej
+      posielajú do svojich event handlerov, resp. listenerov. Tu však platí
+      dôležitá a kritická zásada: objekt udalosti je z radu vybratý až potom,
+      čo dobehne kód v event handleri (listeneri), ktorý obslúži predošlú
+      udalosť. <figure>
+          <title>Architektúra EDT</title>
+
+          <screenshot>
+            <screeninfo>Architektúra EDT</screeninfo>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="swing-threads-eventqueue.jpg" />
+              </imageobject>
+            </mediaobject>
+          </screenshot>
+        </figure></para>
+
+      <para>Z tejto dôležitej zásady vyplýva prvé dôležité pravidlo pri práci
+      so Swingom: <warning>
+          <para>V EDT nikdy nevykonávajte dlhotrvajúce operácie!</para>
+        </warning></para>
+
+      <para>Ukážme si príklad, čo sa stane, ak to nedodržíme. Predstavme si
+      kód v listeneri tlačidla, ktorý vykonáva dlhotrvajúcu operáciu,
+      napríklad výpočet najväčšieho prvočísla. <programlisting
+      language="java">JButton button = new JButton("Hello!");
+button.addActionListener(new ActionListener() {
+	public void actionPerformed(ActionEvent e) {
+		/* dlhotrvajúci výpočet... */
+		stiahniSúbor("http://en.wikipedia.org/wiki/File:Java_logo.svg");
+	}
+});
+add(button);</programlisting></para>
+
+      <para>Po kliknutí na príslušný gombík sa do radu udalostí zaradí nová
+      inštancia udalosti <classname>ActionEvent</classname>. Po spracovaní
+      udalostí, ktoré sú pred ňou, sa dostane na začiatok radu. EDT ju z radu
+      vyberie, a pošle príslušnému komponentu (teda gombíku
+      <varname>button</varname>), ktorý ju odošle do svojho action listenera.
+      Ten vykoná kód vo svojej metóde
+      <methodname>actionPerformed()</methodname>, a po jeho dobehnutí umožní
+      vláknu EDT spracovať ďalšie udalosti vo fronte.</para>
+
+      <para>Kód v tejto metóde však predstavuje kritický bod: kým beží
+      vyhľadávanie najväčšieho prvočísla, nemôže prebiehať spracovanie
+      udalostí vo rade. Z toho vyplýva doslova viditeľný dôsledok:
+      používateľské rozhranie „vytuhne“. Ak je pozastavené spracovanie
+      udalostí, neprebieha ani prekresľovanie používateľského rozhrania a
+      používateľ začne byť nervózny. <figure>
+          <title>Zamrznuté používateľské rozhranie</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="swing-threads-frozen-ui.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Predošlý obrázok ukazuje príklad zamrznutého používateľského
+      rozhrania. Používateľ stlačil tlačidlo, začal sa vykonávať
+      <foreignphrase>action listener</foreignphrase>, ale prekresľovanie
+      ustalo -- rozbehne sa až po dobehnutí kódu v listeneri. Všimnime si
+      negatívny dôsledok: tlačidlo ostalo zobrazené v medzistave, teda v stave
+      „používateľ stlačil tlačidlo myši“. Nervózny používateľ zrejme začne
+      „zbesilo“ klikať do okna, prípadne sa snažiť ukončiť aplikáciu, lenže
+      jeho pokusy budú márne. Každý klik, či posun myši len vyvolá ďalšiu
+      udalosť, ktorá sa zaradí na koniec radu udalostí. Ich spracovanie je
+      však pozastavené; čaká sa totiž na dobehnutie <foreignphrase>action
+      listenera</foreignphrase>.</para>
+
+      <para>Morálne ponaučenie sme už spomenuli: dlhotrvajúce operácie
+      <emphasis>nesmú</emphasis> prebiehať v EDT, inak zablokujú spracovávanie
+      udalostí. Z toho však vyplýva ešte jeden dôsledok, ktorý budeme musieť
+      brať do úvahy v druhej časti pravidiel pre prácu so Swingom: <warning>
+          <para>Kód v listeneroch komponentov vždy beží v rámci vlákna
+          EDT.</para>
+        </warning></para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Dlhotrvajúce úlohy v Swingu</title>
+
+    <sect2>
+      <title>Riešenie pomocou <classname>SwingWorker</classname>a</title>
+
+      <para>Jedným z tradičných spôsobov, ktorými možno riešiť beh
+      dlhotrvajúcich úloh bez toho, aby sme narušili prekresľovanie
+      používateľského rozhrania, je použitie triedy
+      <classname>SwingWorker</classname>.</para>
+
+      <para><classname>SwingWorker</classname> je veľmi flexibilná trieda,
+      ktorá umožňuje elegantne riešiť typické úlohy pri práci s viacerými
+      vláknami v Swingu.<itemizedlist>
+          <listitem>
+            <para>spustenie dlhotrvajúcej úlohy bez zablokovania radu EDT a
+            teda zastavenia prekresľovania používateľského rozhrania</para>
+          </listitem>
+
+          <listitem>
+            <para>podpora dlhotrvajúcich úloh, ktoré vracajú výsledok</para>
+          </listitem>
+
+          <listitem>
+            <para>priebežná aktualizácia používateľského rozhrania</para>
+          </listitem>
+
+          <listitem>
+            <para>možnosť zistiť, či úloha ešte stále beží alebo či už bola
+            dokončená</para>
+          </listitem>
+
+          <listitem>
+            <para>zrušenie behu dlhotrvajúcej úlohy</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>Táto trieda je od JDK 6 priamo k dispozícii. Pre predošlé verzie
+      Javy je dostupná v podobe dodatočného projektu zo stránok <ulink
+      url="http://swingworker.dev.java.net">dev.java.net</ulink>. Ak chceme
+      vytvoriť SwingWorker, ktorý spustí sťahovanie súboru mimo vlákna EDT,
+      vieme použiť nasledovnú konštrukciu:<programlisting language="java">SwingWorker&lt;Void, Void&gt; swingWorker = new SwingWorker&lt;Void, Void&gt;() {
+	@Override
+		protected Void doInBackground() throws Exception {
+			stiahniSúbor(
+				"http://en.wikipedia.org/wiki/File:Java_logo.svg");
+			return null;
+		}
+	};
+swingWorker.execute();</programlisting></para>
+
+      <para>Základom filozofie je vytvoriť novú inštanciu
+      <classname>SwingWorker</classname>a. Táto trieda používa dva generické
+      parametre, ktoré pôsobia pomerne šokujúco, ale umožňujú dodržať typovú
+      kontrolu. Prvý parameter v generiku určuje návratovú hodnotu metódy
+      <methodname>doInBackground()</methodname>(V našom prípade nevracia nič).
+      Druhý parameter určuje dátový typ objektov prehadzovaných medzi metódami
+      <methodname>publish()</methodname> a <methodname>process()</methodname>.
+      O oboch metódach sa podrobnejšie zmienime v ďalších sekciách.</para>
+
+      <para>Po vytvorení inštancie potrebujeme prekryť niektoré z metód, a
+      nakoniec spustiť vykonávanie pomocou metódy
+      <methodname>execute()</methodname>.</para>
+
+      <para>Kód v metóde <methodname>doInBackground()</methodname> sa spustí
+      asynchrónne, teda v samostatnom vlákne mimo EDT, čo presne spĺňa zásadu
+      o neblokovaní prekresľovania. Návratový typ tejto metódy sa musí
+      zhodovať s generickým typom uvedeným pri konštrukcii
+      <classname>SwingWorker</classname>a. V prípade, že nevraciame žiadny
+      objekt, môžeme s výhodou využiť dátový typ <classname>Void</classname>
+      (s veľkým „V“!). Kvôli syntaktickým obmedzeniam však i v tomto prípade
+      musíme vrátiť nejakú návratovú hodnotu, teda <token>null</token>.<figure>
+          <title>Priebeh volaní</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="swing-threads-swimlanes.png" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Vytváranie a spustenie <classname>SwingWorkera</classname>, ktoré
+      vykoná dlhotrvajúcu operáciu, je možné vložiť do kódu metódy
+      <methodname>actionPerformed()</methodname> v <foreignphrase>action
+      listeneri</foreignphrase>.</para>
+
+      <para>V prípade, že je <classname>SwingWorker</classname> komplexnejší a
+      plánuje sa jeho použitie v rámci volania action listenera, môžeme
+      vytvoriť samostatnú triedu, ktorá bude dediť od
+      <classname>SwingWorkera</classname> a implementovať interfejs
+      <interfacename>ActionListener</interfacename>:</para>
+
+      <para><programlisting language="java">public class DownloadActionListener extends SwingWorker&lt;Void, Void&gt; 
+	implements ActionListener 
+{
+	private URL url;
+	
+	public DownloadActionListener(String url) {
+		try {
+			this.url = new URL(url);
+		} catch (MalformedURLException e) {
+			throw new IllegalArgumentException(
+				"Illegal protocol in URL.", e);
+		}
+	}
+
+	public DownloadActionListener(URL url) {
+		this.url = url;
+	}
+	
+	protected Void doInBackground() throws Exception {
+		// dlhý výpočet
+		return null;
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		new DownloadActionListener(url).execute();
+	}
+}</programlisting>Metóda <methodname>actionPerformed()</methodname> následne
+      vytvorí novú inštanciu <classname>SwingWorker</classname>a a spustí ju,
+      teda je ekvivalentná volaniu metódy execute(). Pridanie asynchrónnej
+      akcie do tlačidla je potom jednoduché:<programlisting language="java">button.addActionListener(
+ new DownloadActionListener(
+	"http://en.wikipedia.org/wiki/File:Java_logo.svg"))
+</programlisting>Táto technika je prehľadná, hoci má drobnú nevýhodu vo
+      viacnásobnom vytváraní inštancie <classname>SwingWorker</classname>a
+      (keďže s každým volaním metódy<methodname>
+      actionPerformed()</methodname> sa vytvárajú nové inštancie). Žiaľ, iný
+      spôsob nie je možný, lebo inštanciu
+      <methodname>SwingWorkera</methodname> nemožno spúšťať opakovane
+      (podrobnosti pozri sekcia <xref linkend="opakovane-ulohy" />).</para>
+    </sect2>
+
+    <sect2>
+      <title id="sec-uloha-dobehla">Zistenie, či úloha dobehla</title>
+
+      <para>Kód pre preberanie súboru má jednu značnú nevýhodu: používateľ
+      vonkoncom netuší, v akom stave je jeho priebeh, pretože používateľské
+      rozhranie nedáva na známosť, či preberanie ešte stále beží alebo už
+      skončilo. SwingWorker dáva k dispozícii metódu
+      <methodname>done()</methodname>, ktorú možno prekryť a realizovať v nej
+      kód, ktorý sa má vykonať po dobehnutí operácie v
+      <methodname>doInBackground()</methodname>. Typickým príkladom je
+      aktualizácia používateľského rozhrania, napr. zmenou textu v nejakom
+      popisku <varname>label</varname>.<programlisting language="java">public class DownloadActionListener extends SwingWorker&lt;Void, Void&gt;
+	implements ActionListener 
+{
+
+	private JLabel label;
+
+	public DownloadActionListener(String url, JLabel labe) {
+		//...
+	}
+
+	// ...
+
+	protected void done() {
+		label.setText("Hotovo.");
+	}
+}</programlisting><important>
+          <para>Kým kód v metóde <methodname>doInBackground()</methodname>
+          beží asynchrónne, metóda <methodname>done()</methodname> sa naopak
+          vykonáva v rámci EDT. Kód v nej by mal prebehnúť čo najrýchlejšie,
+          aby nebrzdil prekresľovanie.</para>
+        </important>Alternatívny spôsob využíva možnosť sledovania zmien
+      vlastností (<foreignphrase>properties</foreignphrase>) v JavaBeanoch.
+      <classname>SwingWorker</classname> umožňuje sledovať zmeny svojich
+      properties, a jednou z nich je <varname>status</varname>. Ak
+      zaregistrujeme na <classname>SwingWorker</classname>i inštanciu triedy
+      <classname>PropertyChangeListener</classname>, kde zistíme, či vlastnosť
+      <varname>status</varname> má hodnotu <token>DONE</token>, vieme následne
+      aktualizovať používateľské rozhranie.<programlisting language="java">swingWorker.addPropertyChangeListener(new PropertyChangeListener() {
+	public void propertyChange(PropertyChangeEvent event) {
+		if ("state".equals(event.getPropertyName())
+			&amp;&amp; SwingWorker.StateValue.DONE == event.getNewValue()) {
+			label.setText("Hotovo.");
+		}
+	}
+});</programlisting>Tento druhý spôsob umožňuje striktnejšie oddeliť
+      funkcionalitu <classname>SwingWorker</classname>a od samotných
+      komponentov používateľského rozhrania, hoci na úkor
+      komplexnosti.<important>
+          <para>Kód v obsluhe udalostí (teda v listeneroch) vždy beží vo
+          vlákne EDT. Túto vlastnosť možno využiť pri modifikovaní stavu
+          komponentov.</para>
+        </important></para>
+    </sect2>
+
+    <sect2>
+      <title>Aktualizácia komponentov počas behu úlohy</title>
+
+      <para>Metóda <methodname>done()</methodname> slúži na notifikáciu
+      ukončenia úlohy. Ako však informovať o priebežnom stave? Zoberme si kus
+      kódu, ktorý začne sťahovať dáta z webovej adresy:<programlisting
+      language="java">protected Void doInBackground() throws Exception {
+	//...
+    InputStream stream = ...
+	BufferedOutputStream out = ...
+	
+	int b = -1;
+	int progress = 0;
+	while((b = stream.read()) != -1) {
+		out.write(b);
+		// priebežne aktualizujeme UI
+		aktualizujUI(progress, contentLength);
+	}
+	// ...
+}</programlisting>Po zapísaní bajtu môžeme aktualizovať používateľské
+      rozhranie -- napríklad môžeme využiť „teplomer“ v podobe
+      <classname>JProgressBar</classname>, ktorý dokáže zobraziť percentuálny
+      stav úlohy. Ak poznáme dĺžku sťahovaného súboru, percentuálny progres
+      vieme odvodiť nasledovne:<programlisting language="java">progressBar.setValue((int) (((double) progress / (double) contentLength) * 100));</programlisting>Samozrejme,
+      to predpokladá, že <classname>SwingWorker</classname> má inštančnú
+      premennú s <foreignphrase>progress barom</foreignphrase>, ktorú sme doň
+      vopred dodali.<note>
+          <para>Pretypovávacie vúdú je potrebné kvôli celočíselnému deleniu:
+          delenie dvoch <classname>int</classname>ov vedie k
+          <classname>int</classname>u, čo má dôsledky v podobe výpočtu <code>2
+          / 3 == 0</code>. Metóda <methodname>aktualizujUI()</methodname> by
+          mohla vyzerať nasledovne: <programlisting language="java">private void aktualizujUI(double progress, double length) {
+	int percents = (int) ((progress / contentLength) * 100);
+	progressBar.setValue(percents);
+}</programlisting></para>
+        </note>Uvedený kus kódu je na prvý pohľad korektný, ale je v ňom jedna
+      zásadná chyba, ktorá súvisí s prácou so swingovskými vláknami. Metóda
+      <methodname>doInBackground()</methodname>, ako už bolo viackrát
+      zmienené, beží v samostatnom vlákne. V tom istom vlákne bežia aj metódy,
+      ktorá sú z nej volané -- teda i naša metóda
+      <methodname>aktualizujUI()</methodname>, v ktorej aktualizujeme stav
+      progress baru. V Swingu však platí dôležitá zásada:<warning>
+          <para>Stav swingovských komponentov možno meniť len z vlákna
+          EDT!</para>
+        </warning>Toto je druhá a posledná kritická zásada práce so Swingom.
+      Jej ignorovanie nevedie k syntaktickým chybám, a aplikácia zrejme
+      pobeží. Skôr či neskôr, a hlavne v kritických situáciách, sa môže
+      prejaviť nečakaným správaním, ktoré sa môže prejaviť nesprávnym
+      prekresľovaním komponentov či iným čudným správaním.</para>
+
+      <para>Metóda <methodname>aktualizujUI()</methodname> túto zásadu
+      ignoruje, pretože nebeží v rámci EDT. Ako to však opraviť?</para>
+
+      <para>V samotnej podstate tu ide o problém odovzdávania dát medzi
+      vláknami a ich koordinácie. V bežnom konkurentnom programovaní je to
+      nepríliš ľahká úloha. <classname>SwingWorker</classname> však poskytuje
+      elegantnú možnosť, ako to dosiahnuť bez väčších ťažkostí.<note>
+          <para>V Swingu existuje niekoľko málo metód komponentov, ktoré sú
+          <foreignphrase>thread-safe</foreignphrase>, teda možno ich bezpečne
+          volať aj z iného vlákna než EDT. Je však smutným faktom, že i v
+          prípade, že je v dokumentácii uvedená
+          <foreignphrase>thread-safety</foreignphrase>, realita tomu
+          nezodpovedá. Z tohto dôvodu je lepšie vždy a všade dodržiavať zásadu
+          o modifikácii komponentov len z vlákna EDT, aj keď to podľa
+          dokumentácie nie je nutné. V konečnom dôsledku to však nie je až
+          také obmedzenie, keďže počet dokumentovaných
+          <foreignphrase>thread-safe</foreignphrase> metód je pomerne
+          malý.</para>
+        </note></para>
+
+      <sect3>
+        <title>Metóda <methodname>publish()</methodname></title>
+
+        <para>Základnou metódou, ktorou možno odoslať dáta do vlákna EDT, je
+        <methodname>publish()</methodname>, ktorá umožňuje odoslať do EDT dáta
+        uvedené v jej parametroch. Dátový typ parametra je špecifikovaný v
+        druhom generickom argumente uvedenom pri vytváraní inštancie
+        <classname>SwingWorker</classname>a.</para>
+      </sect3>
+
+      <sect3>
+        <title>Metóda <methodname>process()</methodname></title>
+
+        <para>Dáta, ktoré sme odoslali do EDT použitím
+        <methodname>publish()</methodname>, si môžeme vyzdvihnúť v rámci
+        metódy <methodname>process()</methodname>. Tá beží v rámci vlákna EDT,
+        a teda je vhodným miestom, kde môžeme aktualizovať komponenty bez
+        toho, aby sme porušili vyššieuvedenú zásadu. Táto metóda má svojskú
+        signatúru:<programlisting language="java">protected void process(List&lt;Integer&gt; chunks)</programlisting>Jej
+        parametrom je zoznam, ktorý obsahuje prvky toho typu, ktorý bol
+        deklarovaný v generickom argumente, resp. v parametri metódy
+        <methodname>publish()</methodname>. V zozname sa ocitnú všetky
+        <emphasis>publikované dáta</emphasis>. Za normálnych okolností by sa
+        dalo čakať, že každé volanie <methodname>publish()</methodname> je
+        spárované s volaním <methodname>process()</methodname>, ale kvôli
+        efektivite volaní môže <classname>SwingWorker</classname> zlúčiť
+        niekoľko publikovaných dát do jedného volania metódy
+        <methodname>process()</methodname>. Prirodzene, žiadne publikované
+        dáta sa nestratia -- objavia sa v zozname <varname>chunks</varname> v
+        takom poradí, v akom boli publikované do EDT.<note>
+            <para>V dokumentácii sa udáva príklad zoskupovania viacerých
+            volaní:<programlisting language="java">publish(123);
+publish(860);
+publish(2320);</programlisting> Tieto volania môžu vyústiť v jediné volanie
+            <methodname>process()</methodname>, kde bude zoznam chunks
+            obsahovať prvky 123, 860 a 2320.</para>
+
+            <para>Metóda <methodname>publish()</methodname> tiež podporuje
+            odosielanie viacerých parametrov naraz. V niektorých situáciách
+            môžeme teda odoslať rovno <code>publish(123, 860, 2320)</code> --
+            samozrejme, v našom príklade sledovania priebehu to nemá
+            zmysel.</para>
+          </note>Ak sledujeme priebeh, bude nás zaujímať len posledná
+        publikovaná hodnota, teda posledný prvok zoznamu. V rámci metódy
+        vypočítame percento priebehu a nastavíme ho na zozname.<programlisting
+        language="java">protected void process(List&lt;Integer&gt; chunks) {
+	double progress = chunks.get(chunks.size() - 1);
+	progressBar.setValue((int) (progress / contentLength) * 100));
+}</programlisting></para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title><classname>SwingWorker</classname> a sledovanie priebehu</title>
+
+      <para>Ak chceme priebežne sledovať percentuálny priebeh úlohy, môžeme
+      tiež použiť alternatívny spôsob, ktorý využíva metódu
+      <methodname>setProgress()</methodname> zabudovanú v SwingWorkeri. Má
+      jeden parameter v intervale 0..100, ktorý vieme nastaviť
+      <foreignphrase>property</foreignphrase> s názvom
+      <varname>progress</varname>. <programlisting language="java">protected Void doInBackground() throws Exception {
+	//...
+	while((b = stream.read()) != -1) {
+		// .. priebežne publikujeme progres
+		setProgress(percentProgress);
+	}
+	// ...
+}</programlisting>Zmenu stavu možno sledovať zaregistrovaním inštancie
+      <classname>PropertyChangeListener</classname> na inštancii
+      <classname>SwingWorker</classname>a.</para>
+    </sect2>
+
+    <sect2>
+      <title>Blokovanie EDT v prípade dlhotrvajúcej operácie</title>
+
+      <para>V niektorých prípadoch chceme vykonať dlhotrvajúcu operáciu tak,
+      aby používateľ musel vyslovene počkať na výsledok. Chceme mu zabrániť v
+      používaní grafického rozhrania, ale zároveň chceme predísť vytuhnutiu
+      aplikácie. Dokumentácia k <classname>SwingWorker</classname>u v tomto
+      prípade radí trik, ktorý využíva modálne okno.</para>
+
+      <para>Vo vlákne EDT vytvoríme inštanciu modálneho okna, spustíme
+      <classname>SwingWorker</classname> a toto okno (modálne okno „vyblokuje“
+      používateľské rozhranie). Zároveň však budeme v <foreignphrase>property
+      change listeneri</foreignphrase> priebežne sledovať, či ešte operácia
+      beží. Ak už dobehla, okno zatvoríme. Zmienený <foreignphrase>property
+      change listener</foreignphrase> vyzerá nasledovne a podobá sa na
+      listener zo sekcie <xref linkend="sec-uloha-dobehla" />.<programlisting
+      language="java">private final class SwingWorkerCompletionWaiter 
+	implements PropertyChangeListener 
+{
+	private JDialog dialog;
+
+	public SwingWorkerCompletionWaiter(JDialog dialog) {
+		this.dialog = dialog;
+	}
+
+	public void propertyChange(PropertyChangeEvent event) {
+		if ("state".equals(event.getPropertyName())
+			&amp;&amp; SwingWorker.StateValue.DONE == event.getNewValue()) {
+			dialog.setVisible(false);
+			dialog.dispose();
+		}
+	}
+}</programlisting></para>
+
+      <para>Použitie na príklade <foreignphrase>action
+      listenera</foreignphrase> je nasledovné:<programlisting language="java">button.addActionListener(new ActionListener() {
+	public void actionPerformed(ActionEvent e) {
+		SwingWorker&lt;Void, Void&gt; worker = ...
+		JDialog dialog = new JDialog(MainForm.this, true);
+		worker.addPropertyChangeListener(
+			new SwingWorkerCompletionWaiter(dialog));
+		worker.execute();
+		dialog.setVisible(true);		
+	}
+});</programlisting>V tomto prípade treba dať pozor na správne poradie
+      príkazov. Do <varname>worker</varname>a treba vložiť
+      <foreignphrase>property change listener</foreignphrase>, ktorý však
+      potrebuje inštanciu modálneho <classname>JDialog</classname>u. Metóda
+      <methodname>execute()</methodname> spustí asynchrónne
+      <classname>SwingWorker</classname>, čo sa musí udiať ešte pred
+      zobrazením modálneho okna (v opačnom prípade okno blokuje EDT).</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title><classname>SwingWorker</classname> ako úloha pre paralelné
+    spustenie</title>
+
+    <para>Vyššie sme sa zmieňovali o metóde
+    <methodname>execute()</methodname>, ktorá asynchrónne spustí kód v metóde
+    <methodname>doInBackground()</methodname>. V útrobách
+    <methodname>SwingWorker</methodname>a sa udržiava množina obslužných
+    vlákien (typicky desiatich), ktorá automaticky obsluhuje všetky
+    workerovské úlohy.</para>
+
+    <para>Napriek tomu však existujú situácie, keď si chceme spúšťanie
+    <methodname>SwingWorker</methodname>a spravovať sami.
+    <classname>SwingWorker</classname> je možné použiť v role bežnej
+    asynchrónne spúšťanej úlohy. Trieda implementuje interfejs
+    <interfacename>RunnableFuture</interfacename>, čím dokáže zároveň splniť
+    rolu <interfacename>Runnable</interfacename> i
+    <interfacename>Future</interfacename>.</para>
+
+    <sect2>
+      <title><classname>SwingWorker</classname> a
+      <classname>Thread</classname></title>
+
+      <para>Implementovaním interfejsu <interfacename>Runnable</interfacename>
+      je umožnené spúšťanie inštancie <classname>SwingWorker</classname>a
+      pomocou klasickej triedy vlákna <classname>Thread</classname>.
+      Nasledovný kód spustí vo vlákne <classname>Thread</classname> inštanciu
+      <foreignphrase>workera</foreignphrase> presne tak, ako akúkoľvek inú
+      inštanciu <interfacename>Runnable</interfacename>: <programlisting
+      language="java">SwingWorker&lt;Void, Integer&gt; worker = ...
+Thread thread = new Thread(worker);
+thread.start();</programlisting>Tento kód je zhruba ekvivalentný štandardnému
+      spusteniu cez <code>worker.execute()</code>. V tomto prípade však
+      explicitne určíme vlákno, ktoré bude spracovávať danú úlohu.<note>
+          <para>Za normálnych okolností nie je veľmi dôvod používať túto
+          metódu.</para>
+        </note></para>
+    </sect2>
+
+    <sect2>
+      <title><classname>SwingWorker</classname> a exekútory</title>
+
+      <para>Keďže SwingWorker implementuje
+      <interfacename>Runnable</interfacename>, možno ho zaslať do exekútora.
+      Táto možnosť má zmysel napr. v prípade, že chceme synchronizovať beh
+      viacerých vlákien. Predstavme si, že chceme zobraziť okno, ktoré má
+      viacero <foreignphrase>progress barov</foreignphrase> indikujúcich
+      paralelné sťahovanie viacerých súborov a po dokončení sťahovania sa
+      automaticky zatvorí.</para>
+
+      <figure>
+        <title>Paralelné sťahovanie súborov</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="swing-threads-parallel-downloads.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Tento problém vieme elegantne vyriešiť pomocou exekútora, teda
+      inštancie triedy <classname>ExecutorService</classname>. Doňho vieme
+      odoslať viacero úloh, ktoré sa spustia asynchrónne v samostatných
+      vláknach. V tomto konkrétnom prípade navyše vieme využiť metódu
+      <methodname>invokeAll()</methodname>, ktorá blokuje dovtedy, kým
+      nedobehnú všetky úlohy. Inak povedané, spustíme úlohy, blokujeme a po
+      ich dobehnutí zatvoríme okno. Drobným nedostatkom je fakt, že
+      invokeAll() vyžaduje úlohu v podobe inštancie typu
+      <interfacename>Callable</interfacename>. Našťastie, volaním
+      <code>Executors.callable()</code> vieme previesť
+      <interfacename>Runnable</interfacename> na
+      <interfacename>Callable</interfacename>.<programlisting language="java">setVisible(true);
+try {
+	ExecutorService executor = Executors.newCachedThreadPool();
+	List&lt;Callable&lt;Object&gt;&gt; tasks 
+		= new LinkedList&lt;Callable&lt;Object&gt;&gt;();
+	for (Component c : this.getContentPane().getComponents()) {
+		if (c instanceof DownloadProgressPanel) {
+			// panel s progress barom a popiskom
+			DownloadProgressPanel panel = (DownloadProgressPanel) c;
+			// vytvoríme inštanciu SwingWorkera
+			DownloadTask task
+			= new DownloadTask(panel.getUrl(),
+				panel.getProgressBar());
+			// prevedieme ho na Callable a zaradíme do zoznamu úloh
+			Callable&lt;Object&gt; callable = Executors.callable(task);
+			tasks.add(callable);
+		}
+	}
+	// vykonáme všetky úlohy. Volanie metódy čaká, kým nedobehnú úlohy.
+	executor.invokeAll(tasks);
+} catch (InterruptedException e) {
+	e.printStackTrace();
+} finally {
+	setVisible(false);
+}</programlisting></para>
+    </sect2>
+
+    <sect2>
+      <title id="opakovane-ulohy">Opakované úlohy</title>
+
+      <para>V prípade, že sa snažíme pustiť úlohu reprezentovanú
+      <classname>SwingWorker</classname>om opakovane, treba dať pozor na jednu
+      významnú zásadu.<warning>
+          <para>Inštanciu <classname>SwingWorker</classname>a možno spustiť
+          len raz.</para>
+        </warning>Táto vlastnosť v podstate zabraňuje opakovanému spúšťaniu
+      úloh.</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Ostatné nástroje pre práce s vláknami v Swingu</title>
+
+    <para><classname>SwingWorker</classname> je skutočne rafinovaná trieda,
+    ktorou dokážeme vyriešiť veľa problémov. Napriek tomu sa môže v
+    zriedkavých prípadoch stať, že si potrebujeme poradiť aj bez neho.
+    Príkladom môže byť kód vykonávaný v rámci vlákna, ktorý chce aktualizovať
+    swingovské komponenty. Pravidlo v Swingu tvrdí, že to možno robiť len v
+    rámci EDT, čo sa v rámci <classname>SwingWorker</classname>a dialo v
+    metóde <methodname>process()</methodname>, resp.
+    <methodname>done()</methodname>.</para>
+
+    <para>Nízkoúrovňové volanie využíva metódu
+    <code>SwingUtilities.invokeLater()</code>, ktorá vie zobrať parameter typu
+    <interfacename>Runnable</interfacename>, predstavujúci úlohu. Po zavolaní
+    tejto metódy sa úloha <interfacename>Runnable</interfacename> zaradí na
+    koniec radu v EDT, čo zaručí vykonanie kódu vo vlákne EDT a teda možnosť
+    meniť komponenty. Úloha potom beží asynchrónne.</para>
+
+    <para>Podotknime, že zavolanie metódy
+    <methodname>invokeLater()</methodname> môžeme vykonať z ľubovoľného vlákna
+    (aj z EDT). V prípade, že ho voláme z vlákna EDT, sa kód v úlohe
+    <classname>Runnable</classname> vykoná až potom, čo sa spracujú ostatné
+    úlohy čakajúce vo fronte EDT. Niekedy sa oplatí vedieť, či vykonávaný kód
+    beží v EDT alebo nie, čo zistíme nasledovne:<programlisting
+    language="java">boolean smeVoVnutriEDT = SwingUtilities.isEventDispatchThread()</programlisting>
+    Doplnkom metódy <methodname>invokeLater()</methodname> je
+    <code>SwingUtilities.invokeAndWait()</code>, ktorý funguje rovnako, ale
+    blokuje do chvíle, kým nedobehne úloha odoslaná do EDT.</para>
+  </sect1>
+
+  <sect1>
+    <title>Sumár</title>
+
+    <para>Programovanie svižného používateľského rozhrania v Swingu má svoje
+    úskalia. Trieda <classname>SwingWorker</classname> ich však v mnohom
+    dokáže maximálne uľahčiť. Najdôležitejšou zásadou je nezabúdať na niekoľko
+    zásad. Žiaľ, ak ich nedodržíme, žiadne IDE nás na to neupozorní a už zo
+    povahy konkurentného programovania vyplýva, že chyby, ktoré z toho
+    vyplynú, sa ladia extrémne ťažko.<orderedlist>
+        <listitem>
+          <para>Dlhotrvajúce úlohy vykonávajte mimo EDT!</para>
+        </listitem>
+
+        <listitem>
+          <para>Modifikácia komponentov sa musí udiať v rámci EDT!</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para>Netreba však zabúdať ani na bočné zásady:<orderedlist>
+        <listitem>
+          <para>Kód v listeneroch komponentu beží v rámci EDT.</para>
+        </listitem>
+
+        <listitem>
+          <para><classname>SwingWorker</classname> možno spustiť len
+          raz.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <sidebar>
+      <title>Ako overovať zásady?</title>
+
+      <para>Alexander Potočkin navrhuje niekoľko spôsobov, ktorými možno
+      overiť dodržanie nasledovných zásad. Väčšinou však používajú intenzívne
+      Java vúdú, či dokonca aspektovo orientované programovanie, a hodia sa
+      len pre ladiace účely, keďže dramaticky ovplyvňujú výkon. Idey sú
+      zhrnuté v jeho blogu na <ulink
+      url="http://weblogs.java.net/blog/2006/02/16/debugging-swing-final-summary">java.net</ulink>.</para>
+
+      <para>Často nastáva otázka, prečo niekto nevytvorí mechanizmus, ktorým
+      sa kód automaticky vykoná mimo EDT? Podľa Potočkina to je síce technicky
+      možné, ale len za cenu čiernej mágie založenej na generovaní kódu sa
+      behu, resp. aspektovo orientovanom programovaní, ktoré má opäť vplyv na
+      výkon. Úvahy zhrnul v samostatnom článku <ulink
+      url="http://weblogs.java.net/blog/2006/01/12/debugging-swing-summary-1"><citetitle>Debugging
+      Swing Summary</citetitle></ulink> na java.net.</para>
+    </sidebar>
+
+    <sect2>
+      <title>Sumár metód <classname>SwingWorker</classname>a</title>
+
+      <para><table>
+          <title>Sumár metód <classname>SwingWorker</classname>a</title>
+
+          <tgroup cols="3">
+            <thead>
+              <row>
+                <entry align="center">Metóda</entry>
+
+                <entry align="center">Význam</entry>
+
+                <entry align="center">Beží v</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry><code>new SwingWorker&lt;V, W&gt;</code></entry>
+
+                <entry><code>V</code>: návratový typ
+                <methodname>done()</methodname>, <type>W</type>: parameter v
+                <methodname>publish()</methodname></entry>
+
+                <entry>V rámci vlákna, z ktorého sa volal tento
+                konštruktor.</entry>
+              </row>
+
+              <row>
+                <entry><methodname>doInBackground()</methodname></entry>
+
+                <entry>Umiestnenie kódu, ktorý má bežať asynchrónne mimo
+                EDT.</entry>
+
+                <entry>mimo EDT</entry>
+              </row>
+
+              <row>
+                <entry><methodname>done()</methodname></entry>
+
+                <entry>kód sa vykoná po dobehnutí metódy
+                doInBackground()</entry>
+
+                <entry>EDT</entry>
+              </row>
+
+              <row>
+                <entry><methodname>publish(W...)</methodname></entry>
+
+                <entry>odošle parameter typu W do EDT</entry>
+
+                <entry>-</entry>
+              </row>
+
+              <row>
+                <entry><methodname>process(List&lt;W&gt;)</methodname></entry>
+
+                <entry>spracováva výsledky odoslané z metódy
+                <methodname>publish()</methodname></entry>
+
+                <entry>EDT</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table></para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Zdroje</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para><ulink
+          url="http://java.sun.com/javase/6/docs/api/javax/swing/SwingWorker.html">Dokumentácia
+          k SwingWorkeru</ulink></para>
+        </listitem>
+
+        <listitem>
+          <para><ulink
+          url="http://mindprod.com/jgloss/swingthreads.html">Swing
+          Threads</ulink>, článok na mindprod.com</para>
+        </listitem>
+
+        <listitem>
+          <para><ulink
+          url="http://java.sun.com/products/jfc/tsc/articles/threads/threads1.html">Threads
+          and Swing</ulink>, článok o zásadách používania vlákien v
+          Swingu</para>
+        </listitem>
+
+        <listitem>
+          <para><ulink
+          url="http://mindprod.com/jgloss/swingthreads.html">Swing
+          Threads</ulink>, článok na mindprod.com:</para>
+        </listitem>
+      </orderedlist></para>
+  </sect1>
+</article>

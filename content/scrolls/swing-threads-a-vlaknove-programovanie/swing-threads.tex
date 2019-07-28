@@ -1,0 +1,1022 @@
+%% LyX 1.6.4 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[10pt,slovak]{article}
+\usepackage{beraserif}
+\usepackage{berasans}
+\usepackage{beramono}
+\renewcommand{\familydefault}{\rmdefault}
+\usepackage[T1]{fontenc}
+\usepackage[cp1250]{inputenc}
+\usepackage{listings}
+\lstset{basicstyle={\ttfamily\small},
+columns=flexible,
+frame=l,
+framerule=1pt,
+framexleftmargin=6pt,
+tabsize=2,
+xleftmargin=15pt}
+\usepackage[a4paper]{geometry}
+\geometry{verbose,tmargin=2.5cm,bmargin=3.5cm,lmargin=3cm,rmargin=3cm,headheight=1cm,headsep=1cm,footskip=1cm}
+\usepackage{color}
+\usepackage[slovak]{babel}
+
+\usepackage{array}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage[unicode=true, pdfusetitle,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=true]
+ {hyperref}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+
+\newcommand{\code}[1]{\texttt{#1}}
+
+\newcommand{\classname}[1]{\texttt{#1}}
+
+\newenvironment{sidebarwarning}
+{
+    \bigskip\begin{tabular}{p{1cm}p{0.8\textwidth}}
+   	\hline\noindent\rule{0pt}{32pt}%
+   	\raisebox{-.3cm}{\includegraphics[width= 1cm]{icon-important}} & %
+}
+{        \\&\\\hline
+    \end{tabular}\bigskip%
+}
+
+\newenvironment{sidebar}{\hrulefill\nopagebreak\begin{list}{}{\setlength{\leftmargin}{1cm}}\small\item[]}{\end{list}\vspace*{-8pt}\nopagebreak\par\indent\hrulefill}
+
+\newenvironment{sidebarinfo}
+{
+	\small%
+    \bigskip\begin{tabular}{p{1cm}p{0.8\textwidth}}
+   	\hline\noindent\rule{0pt}{32pt}%
+   	\raisebox{-.8cm}{\includegraphics[width= 1cm]{icon-information}} & %
+}
+{        \\&\\\hline
+    \end{tabular}\bigskip%
+}
+
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\let\oldmarginpar\marginpar\renewcommand\marginpar[1]{\-\oldmarginpar[\raggedleft\footnotesize\sffamily #1]%
+{\raggedright\footnotesize\sffamily #1}}
+%
+\makeatletter
+\def\@seccntformat#1{\protect\makebox[0pt][r]{\csname
+the#1\endcsname\quad}}
+\makeatother
+
+\makeatother
+
+\begin{document}
+
+\title{Vlákna a Swing}
+
+\maketitle
+
+\section{Úvod}
+
+Jednou zo základnıch poiadaviek pouívate¾ského rozhrania je jeho
+\emph{responsiveness}, teda vèasná a rıchla reakcia na pouívate¾ov
+vstup (teda zadávanie z klávesnice, kliky myšou atï.) Rozhranie, ktoré
+nedokáe reagova vèas, pouívate¾a frustruje, pretoe tempo svojej
+práce musí prispôsobova poèítaèu a zaène ma dojem, e program ho
+v práci zdruje.
+
+Vèas reagujúce pouívate¾ské rozhranie by malo spåòa nasledovné veci%
+\footnote{Viï http://developer.kde.org/documentation/books/kde-2.0-development/ch09.html.%
+}:
+\begin{itemize}
+\item umoni pouívate¾ovi vidie aktuálny stav aplikácie
+\item da na vedomie, e jeho vstup bol prijatı
+\item v prípade, e aplikácia rieši dlhotrvajúcu úlohu, dáva na známos
+priebenı stav a nebudi dojem, e zamrzla
+\item ovplyvòova beh programu (zatvori ho, pozastavi atï.).
+\end{itemize}
+Pri vıvoji swingovskıch aplikácii, ktoré spåòajú vyššieuvedené zásady,
+sa nevyhneme pouitiu vlákien a inıch vlastností konkurentného programovania.
+Hoci sa to na prvı poh¾ad môe zda pomerne odstrašujúce (konkurentné
+programovanie v sebe nesie potenciál ako odladite¾nıch chıb), v
+skutoènosti máme k dispozícii mnostvo nápomocnıch tried a metód,
+ktoré prácu u¾ahèia.
+
+
+\subsection{Zmıš¾anie pri grafickıch aplikáciách}
+
+Pri pouívaní klasickıch konzolovıch aplikácií pouívate¾ uvauje
+lineárne: aplikácia si od neho postupne vyaduje údaje, ktoré sú do
+nej postupne zadávané z klávesnice.
+
+
+\begin{lstlisting}
+Enter username:
+> novotnyr
+New UNIX password: 
+> ******
+Retype new UNIX password: 
+> ******
+passwd: all authentication tokens updated successfully.
+\end{lstlisting}
+
+
+V prípade grafickıch aplikácii sa však spôsob zmıš¾ania mení -- a
+to nielen na strane pouívate¾a, ale i na strane vıvojára. 
+
+Aplikácia musí reagova na \emph{udalosti}, ktoré pouívate¾ vyvoláva
+na jej ovládacích prvkoch, a v závislosti na nich aktualizova a prekres¾ova
+pouívate¾ské rozhranie.
+
+Kritickım problémom sú dlhotrvajúce operácie: kım v konzolovej aplikácii
+staèí vypísa ,,Prosím èakajte...{}`` a o prekres¾ovanie sa stara
+netreba (všetky dáta sú u toti zobrazené), v grafickom pouívate¾skom
+rozhraní je situácia presne opaèná. Ak aplikácia vykonáva tiahly vıpoèet,
+nesmie zabudnú na spracovávanie pouívate¾ovho vstupu a následné
+prekres¾ovanie, pretoe v opaènom prípade získa pouívate¾ mylnı pocit,
+e program vytuhol a treba ho násilne ukonèi.
+
+
+\subsection{Vlákna v Swingu}
+
+Kım bená konzolová aplikácia v Jave si vystaèí s jedinım vláknom
+(tzv. \emph{main}), swingová aplikácia po spustení vytvorí viacero
+vlákien, ktoré sú zodpovedné za prekres¾ovanie, vybavovanie udalostí
+a ich rozosielanie jednotlivım \emph{event handlerom} (teda kódu obsluhy
+udalostí) a ïalšie nízkoúrovòové operácie.
+
+Vlákna v typickej aplikácii sú zobrazené na nasledovnom obrázku:
+
+%
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.6]{swing-threads1}
+\par\end{centering}
+
+\caption{Vlákna v swingovskej aplikácii (Sun JDK 1.6). Vlákno \emph{main} u
+dobehlo.}
+
+
+
+\end{figure}
+
+
+Zo všetkıch vlákien v swingovskej aplikácii sú však najdôleitejšie
+dve:
+\begin{description}
+\item [{main}] hlavné vlákno kadej Java aplikácie. V prípade Swingu v
+òom beí kód uvedenı v metóde \code{main()}. Po vytvorení inštancie
+¾ubovo¾ného swingovského okna z neho automaticky naštartujú ostatné
+nízkoúrovòové vlákna (\emph{AWT-Shutdown, AWT-Windows}) a vlákno EDT.
+\item [{event~dispatch~thread~(EDT)}] najdôleitejšie vlákno, ktoré
+je zodpovedné za spracovávanie udalostí a delegovanie udalostí pre
+ich obsluhu, ktorá sa nachádza v jednotlivıch komponentoch.
+\end{description}
+
+\subsection{Event Dispatch Thread (EDT)}
+
+Predstavme si kód z jednoduchej aplikácie, kde vytvoríme tlaèidlo
+\classname{JButton} a priradíme mu obsluhu udalosti, ktorá nastane
+po kliknutí naò:
+
+
+\begin{lstlisting}
+JButton button = new JButton("Hello!");
+button.addActionListener(new ActionListener() {
+	public void actionPerformed(ActionEvent e) {
+		System.out.println("Hello World");
+	}
+});
+add(button);
+\end{lstlisting}
+
+
+Kód v rámci metódy \code{actionPerformed()} predstavuje obsluhu udalostí
+(\emph{event handler}). 
+
+Èo sa stane po kliknutí myšou?
+
+Vlákno EDT v sebe obsahuje tzv. rad udalostí (\emph{event queue}).
+Akáko¾vek akcia, ktorú vyvolá pouívate¾ v pouívate¾skom rozhraní
+-- èi u pohyb myšou, kliknutie, stlaèenie klávesy atï -- spôsobí
+vytvorenie objektu \emph{udalos} (v skutoènosti potomkovia triedy
+\classname{AWTEvent}, to však nie je dôleité) a jeho zaradenie na
+koniec tohto radu.
+
+Z jeho opaèného konca EDT postupne vyberá jednotlivé objekty udalostí
+a rozposiela ich do jednotlivıch komponentov, ktoré ich ïalej posielajú
+do svojich event handlerov, resp. listenerov. Tu však platí dôleitá
+a kritická zásada: objekt udalosti je z radu vybratı a potom, èo
+dobehne kód v event handleri (listeneri), ktorı obslúi predošlú udalos. 
+
+%
+\begin{figure}
+\begin{centering}
+\includegraphics{swing-threads-eventqueue}
+\par\end{centering}
+
+\caption{Architektúra EDT}
+
+\end{figure}
+
+
+Z tejto dôleitej zásady vyplıva prvé dôleité pravidlo pri práci
+so Swingom:
+
+%
+\begin{sidebarwarning}
+V EDT nikdy nevykonávajte dlhotrvajúce operácie!
+\end{sidebarwarning}
+
+
+Ukáme si príklad, èo sa stane, ak to nedodríme. Predstavme si kód
+v listeneri tlaèidla, ktorı vykonáva dlhotrvajúcu operáciu, napríklad
+vıpoèet najväèšieho prvoèísla.
+
+
+\begin{lstlisting}
+JButton button = new JButton("Hello!");
+button.addActionListener(new ActionListener() {
+	public void actionPerformed(ActionEvent e) {
+		/* dlhotrvajúci vıpoèet... */
+		stiahniSúbor("http://en.wikipedia.org/wiki/File:Java_logo.svg");
+	}
+});
+add(button);
+\end{lstlisting}
+
+
+Po kliknutí na príslušnı gombík sa do radu udalostí zaradí nová inštancia
+udalosti \classname{ActionEvent}. Po spracovaní udalostí, ktoré sú
+pred òou, sa dostane na zaèiatok radu. EDT ju z radu vyberie, a pošle
+príslušnému komponentu (teda gombíku \code{button}), ktorı ju odošle
+do svojho \emph{action listenera}. Ten vykoná kód vo svojej metóde
+\code{actionPerformed()}, a po jeho dobehnutí umoní vláknu EDT spracova
+ïalšie udalosti vo fronte.
+
+Kód v tejto metóde však predstavuje kritickı bod: kım beí vyh¾adávanie
+najväèšieho prvoèísla, nemôe prebieha spracovanie udalostí vo rade.
+Z toho vyplıva doslova vidite¾nı dôsledok: pouívate¾ské rozhranie
+,,vytuhne{}``. 
+
+Ak je pozastavené spracovanie udalostí, neprebieha ani prekres¾ovanie
+pouívate¾ského rozhrania a pouívate¾ zaène by nervózny.
+
+%
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.6]{swing-threads-frozen-ui}
+\par\end{centering}
+
+\caption{Zamrznuté pouívate¾ské rozhranie. }
+
+\end{figure}
+
+
+Predošlı obrázok ukazuje príklad zamrznutého pouívate¾ského rozhrania.
+Pouívate¾ stlaèil tlaèidlo, zaèal sa vykonáva \emph{action listener},
+ale prekres¾ovanie ustalo -- rozbehne sa a po dobehnutí kódu v listeneri.
+Všimnime si negatívny dôsledok: tlaèidlo ostalo zobrazené v medzistave,
+teda v stave ,,pouívate¾ stlaèil tlaèidlo myši{}``.
+
+Nervózny pouívate¾ zrejme zaène ,,zbesilo{}`` klika do okna, prípadne
+sa snai ukonèi aplikáciu. Jeho pokusy však budú márne.
+
+Kadı klik, èi posun myši len vyvolá ïalšiu udalos, ktorá sa zaradí
+na koniec radu udalostí, lene na ich spracovanie je pozastavené;
+èaká sa toti na dobehnutie \emph{action listenera}.
+
+Morálne ponauèenie sme u spomenuli: dlhotrvajúce operácie \textbf{nesmú}
+prebieha v EDT, inak zablokujú spracovávanie udalostí. Z toho však
+vyplıva ešte jeden dôsledok, ktorı budeme musie bra do úvahy v druhej
+èasti pravidiel pre prácu so Swingom:
+
+%
+\begin{sidebar}
+Kód v \emph{listeneroch} komponentov vdy beí v rámci vlákna EDT.
+\end{sidebar}
+
+
+
+\section{Dlhotrvajúce úlohy v Swingu}
+
+
+\subsection{Riešenie pomocou \protect\classname{SwingWorker}a}
+
+Jednım z tradiènıch spôsobov, ktorımi mono rieši beh dlhotrvajúcich
+úloh bez toho, aby sme narušili prekres¾ovanie pouívate¾ského rozhrania,
+je pouitie triedy \classname{SwingWorker}.
+
+\classname{SwingWorker} je ve¾mi flexibilná trieda, ktorá umoòuje
+elegantne rieši typické úlohy pri práci s viacerımi vláknami v Swingu. 
+\begin{itemize}
+\item spustenie dlhotrvajúcej úlohy bez zablokovania radu EDT a teda zastavenia
+prekres¾ovania pouívate¾ského rozhrania
+\item podpora dlhotrvajúcich úloh, ktoré vracajú vısledok
+\item priebená aktualizácia pouívate¾ského rozhrania
+\item monos zisti, èi úloha ešte stále beí alebo èi u bola dokonèená
+\item zrušenie behu dlhotrvajúcej úlohy
+\end{itemize}
+Táto trieda je od JDK 6 priamo k dispozícii. Pre predošlé verzie Javy
+je dostupná v podobe dodatoèného projektu zo stránok dev.java.net%
+\footnote{http://swingworker.dev.java.net%
+}.
+
+Ak chceme vytvori \code{SwingWorker}, ktorı spustí sahovanie súboru
+mimo vlákna EDT, vieme poui nasledovnú konštrukciu:
+
+
+\begin{lstlisting}
+SwingWorker<Void, Void> swingWorker = new SwingWorker<Void, Void>() {
+	@Override
+		protected Void doInBackground() throws Exception {
+			stiahniSúbor(
+				"http://en.wikipedia.org/wiki/File:Java_logo.svg");
+			return null;
+		}
+	};
+swingWorker.execute();
+\end{lstlisting}
+
+
+Základom filozofie je vytvori novú inštanciu \classname{SwingWorkera}.
+Táto trieda pouíva dva generické parametre, ktoré pôsobia pomerne
+šokujúco, ale umoòujú dodra typovú kontrolu.
+
+Prvı parameter v generiku urèuje návratovú hodnotu metódy \code{doInBackground()}.
+(V našom prípade nevracia niè). Druhı parameter urèuje dátovı typ
+objektov prehadzovanıch medzi metódami \code{publish()} a \code{process()}.
+O metódach sa podrobnejšie zmienime v ïalších sekciách.
+
+Po vytvorení inštancie potrebujeme prekry niektoré z metód, a nakoniec
+spusti vykonávanie pomocou metódy \code{execute()}.
+
+Kód v metóde \code{doInBackground()} sa spustí asynchrónne, teda
+v samostatnom vlákne mimo EDT. To presne spåòa zásadu o neblokovaní
+prekres¾ovania.
+
+Návratovı typ tejto metódy sa musí zhodova s generickım typom uvedenım
+pri konštrukcii \code{SwingWorkera}. V prípade, e nevraciame iadny
+objekt, môeme s vıhodou vyui dátovı typ \classname{Void} (s ve¾kım
+,,V{}``!). Kvôli syntaktickım obmedzeniam však i v tomto prípade
+musíme vráti nejakú návratovú hodnotu, teda \code{null}.
+
+%
+\begin{figure}
+\begin{centering}
+\includegraphics[scale=0.5]{swing-threads-swimlanes}
+\par\end{centering}
+
+\caption{Priebeh volaní}
+
+
+
+\end{figure}
+
+
+Vytváranie a spustenie \classname{SwingWorker}a, ktoré vykoná dlhotrvajúcu
+operáciu, je moné vloi do kódu metódy \code{actionPerformed()}
+v \emph{action listeneri}.
+
+V prípade, e je \classname{SwingWorker} komplexnejší a plánuje sa
+jeho pouitie v rámci volania \emph{action listenera}, môeme vytvori
+samostatnú triedu, ktorá bude dedi od \classname{SwingWorker}a a
+implementova interfejs \classname{ActionListener}:
+
+
+\begin{lstlisting}
+public class DownloadActionListener extends SwingWorker<Void, Void> 
+	implements ActionListener 
+{
+	private URL url;
+	
+	public DownloadActionListener(String url) {
+		try {
+			this.url = new URL(url);
+		} catch (MalformedURLException e) {
+			throw new IllegalArgumentException(
+				"Illegal protocol in URL.", e);
+		}
+	}
+
+	public DownloadActionListener(URL url) {
+		this.url = url;
+	}
+	
+	protected Void doInBackground() throws Exception {
+		// dlhı vıpoèet
+		return null;
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		new DownloadActionListener(url).execute();
+	}
+}
+\end{lstlisting}
+
+
+Metóda \code{actionPerformed()} následne spustí samotnı \classname{SwingWorker},
+teda je ekvivalentná volaniu metódy \code{execute()}.
+
+Pridanie asynchrónnej akcie do tlaèidla je potom jednoduché:
+
+
+\begin{lstlisting}
+button.addActionListener(
+ new DownloadActionListener(
+	"http://en.wikipedia.org/wiki/File:Java_logo.svg"));
+\end{lstlisting}
+
+
+Táto technika je preh¾adná, hoci má drobnú nevıhodu vo vytvorení minimálne
+dvoch inštancií \code{SwingWorkera} (keïe v rámci \code{actionPerformed()}
+sa vytvára ešte jedna inštancia.). ia¾, inı spôsob nie je monı,
+lebo inštanciu \classname{SwingWorker}a nemono spúša opakovane
+(podrobnosti pozri sekcia \ref{sub:Opakovan=0000E9-ulohy}).
+
+
+\subsection{Zistenie, èi úloha dobehla\label{sub:UlohaDobehla}}
+
+Kód pre preberanie súboru má jednu znaènú nevıhodu: pouívate¾ vonkoncom
+netuší, v akom stave je jeho priebeh, pretoe pouívate¾ské rozhranie
+nedáva na známos, èi preberanie ešte stále beí alebo u skonèilo. 
+
+\classname{SwingWorker} dáva k dispozícii metódu \classname{done()},
+ktorú mono prekry a realizova v nej kód, ktorı sa má vykona po
+dobehnutí operácie v \code{doInBackground()}. Typickım príkladom
+je aktualizácia pouívate¾ského rozhrania, napr. zmenou textu v nejakom
+popisku \emph{label}.
+
+
+\begin{lstlisting}
+public class DownloadActionListener extends SwingWorker<Void, Void>
+	implements ActionListener 
+{
+
+	private JLabel label;
+
+	public DownloadActionListener(String url, JLabel labe) {
+		//...
+	}
+
+	// ...
+
+	protected void done() {
+		label.setText("Hotovo.");
+	}
+}
+\end{lstlisting}
+
+
+%
+\begin{sidebarwarning}
+Kım kód v metóde \code{doInBackground()} beí asynchrónne, metóda
+\code{done()} sa naopak vykonáva v rámci EDT. Kód v nej by mal prebehnú
+èo najrıchlejšie, aby nebrzdil prekres¾ovanie.
+\end{sidebarwarning}
+
+
+Alternatívny spôsob vyuíva monos sledovania zmien vlastností (\emph{properties})
+v JavaBeanoch. \classname{SwingWorker} umoòuje sledova zmeny svojich
+\emph{properties}, a jednou z nich je \code{status}. Ak zaregistrujeme
+na \classname{SwingWorker}i inštanciu triedy \classname{PropertyChangeListener},
+kde zistíme, èi vlastnos \code{status} má hodnotu \emph{DONE}, vieme
+následne aktualizova pouívate¾ské rozhranie.
+
+
+\begin{lstlisting}
+swingWorker.addPropertyChangeListener(new PropertyChangeListener() {
+	public void propertyChange(PropertyChangeEvent event) {
+		if ("state".equals(event.getPropertyName())
+			&& SwingWorker.StateValue.DONE == event.getNewValue()) {
+			label.setText("Hotovo.");
+		}
+	}
+});
+\end{lstlisting}
+
+
+Tento druhı spôsob umoòuje striktnejšie oddeli funkcionalitu \classname{SwingWorker}a
+od samotnıch komponentov pouívate¾ského rozhrania, hoci na úkor komplexnosti.
+
+%
+\begin{sidebar}
+Kód v obsluhe udalostí (teda v listeneroch) vdy beí vo vlákne EDT.
+Túto vlastnos mono vyui pri modifikovaní stavu komponentov.
+\end{sidebar}
+
+
+
+\subsection{Aktualizácia komponentov poèas behu úlohy}
+
+Metóda \code{done()} slúi na notifikáciu ukonèenia úlohy. Ako však
+informova o priebenom stave?
+
+Zoberme si kus kódu, ktorı zaène sahova dáta z webovej adresy:
+
+
+\begin{lstlisting}
+protected Void doInBackground() throws Exception {
+	//...
+    InputStream stream = ...
+	BufferedOutputStream out = ...
+	
+	int b = -1;
+	int progress = 0;
+	while((b = stream.read()) != -1) {
+		out.write(b);
+		// priebene aktualizujeme UI
+		aktualizujUI(progress, contentLength);
+	}
+	// ...
+}
+\end{lstlisting}
+
+
+Po zapísaní bajtu môeme aktualizova pouívate¾ské rozhranie -- napríklad
+môeme vyui ,,teplomer{}`` v podobe \classname{JProgressBar},
+ktorı dokáe zobrazi percentuálny stav úlohy. Ak poznáme dåku sahovaného
+súboru, percentuálny progres vieme odvodi nasledovne:
+
+
+\begin{lstlisting}
+progressBar.setValue((int) (((double) progress / (double) contentLength) * 100));
+\end{lstlisting}
+
+
+Samozrejme, to predpokladá, e \classname{SwingWorker} má inštanènú
+premennú s \emph{progress barom}, ktorú sme doò vopred dodali.
+
+%
+\begin{sidebar}
+Pretypovávacie vúdú je potrebné kvôli celoèíselnému deleniu: delenie
+dvoch \code{int}ov vedie k \code{int}u, èo má dôsledky v podobe
+vıpoètu \code{2 / 3 == 0}.
+
+Metóda \code{aktualizujUI()} by mohla vyzera nasledovne:
+
+
+\begin{lstlisting}
+private void aktualizujUI(double progress, double length) {
+	int percents = (int) ((progress / contentLength) * 100);
+	progressBar.setValue(percents);
+}
+\end{lstlisting}
+
+\end{sidebar}
+
+
+Uvedenı kus kódu je na prvı poh¾ad korektnı, ale je v òom jedna zásadná
+chyba, ktorá súvisí s prácou so swingovskımi vláknami.
+
+Metóda \code{doInBackground()}, ako u bolo viackrát zmienené, beí
+v samostatnom vlákne. V tom istom vlákne beia aj metódy, ktorá sú
+z nej volané -- teda i naša metóda \code{aktualizujUI()}, v ktorej
+aktualizujeme stav \emph{progress baru}.
+
+V Swingu však platí dôleitá zásada:
+
+%
+\begin{sidebarwarning}
+Stav swingovskıch komponentov mono meni len z vlákna EDT!
+\end{sidebarwarning}
+
+
+Toto je druhá a posledná kritická zásada práce so Swingom. Jej ignorovanie
+nevedie k syntaktickım chybám, a aplikácia zrejme pobeí. Skôr èi
+neskôr, a hlavne v kritickıch situáciách, sa môe prejavi neèakanım
+správaním, ktoré sa môe prejavi nesprávnym prekres¾ovaním komponentov
+èi inım èudnım správaním.
+
+Metóda \code{aktualizujUI()} túto zásadu ignoruje, pretoe nebeí
+v rámci EDT. Ako to však opravi?
+
+V samotnej podstate tu ide o problém odovzdávania dát medzi vláknami
+a ich koordinácie. V benom konkurentnom programovaní je to nepríliš
+¾ahká úloha. \classname{SwingWorker} však poskytuje elegantnú monos,
+ako to dosiahnu bez väèších akostí.
+
+%
+\begin{sidebar}
+Existuje nieko¾ko málo metód komponentov, ktoré sú \emph{thread-safe},
+teda mono ich bezpeène vola aj z iného vlákna ne EDT. Je však smutnım
+faktom, e i v prípade, e je v dokumentácii potvrdená \emph{thread-safety},
+realita tomu nezodpovedá. Z tohto dôvodu je lepšie vdy a všade dodriava
+zásadu o modifikácii komponentov len z vlákna EDT, aj keï to pod¾a
+dokumentácie nie je nutné. Navyše, poèet dokumentovanıch \emph{thread-safe}
+metód je i tak pomerne malı.
+\end{sidebar}
+
+
+
+\subsubsection{Metóda \protect\code{publish()}}
+
+Základnou metódou, ktorou mono odosla dáta do vlákna EDT, je \code{publish()},
+ktorá umoòuje odosla do EDT dáta uvedené v jej parametroch. Dátovı
+typ parametra je špecifikovanı v druhom generickom argumente uvedenom
+pri vytváraní inštancie \classname{SwingWorker}a. 
+
+V našom príklade môeme odosiela do EDT poèet bajtov, ktoré sa u
+stiahli. Ak máme \classname{SwingWorker} vytvorenı ako \code{new SwingWorker<Void, Integer>()},
+znamená to, e do metódy \code{publish()} môeme posiela celé èísla.
+
+
+\begin{lstlisting}
+protected Void doInBackground() throws Exception {
+	//...
+    InputStream stream = ...
+	BufferedOutputStream out = ...
+	
+	int b = -1;
+	int progress = 0;
+	while((b = stream.read()) != -1) {
+		out.write(b);
+		// .. priebene publikujeme progres
+		publish(progress);
+	}
+	// ...
+}
+\end{lstlisting}
+
+
+
+\subsubsection{Metóda \protect\code{process()}}
+
+Dáta, ktoré sme odoslali do EDT pouitím \code{publish()}, si môeme
+vyzdvihnú v rámci metódy \code{process()}. Tá beí v rámci vlákna
+EDT, a teda je vhodnım miestom, kde môeme aktualizova komponenty
+bez toho, aby sme porušili vyššieuvedenú zásadu.
+
+Táto metóda má svojskú signatúru:
+
+
+\begin{lstlisting}
+protected void process(List<Integer> chunks)
+\end{lstlisting}
+
+
+Jej parametrom je zoznam, ktorı obsahuje prvky takého typu, ako bolo
+deklarované v generickom argumente, resp. v parametri metódy \code{publish()}.
+
+Tento zoznam obsahuje všetky \emph{publikované} dáta. Za normálnych
+okolností by sa dalo èaka, e kadé volanie \code{publish()} je
+spárované s volaním \code{process()}, ale kvôli efektivite volaní
+môe \classname{SwingWorker} zlúèi nieko¾ko publikovanıch dát do
+jedného volania metódy \code{process()}. Prirodzene, iadne publikované
+dáta sa nestratia -- objavia sa v zozname \code{chunks} v takom poradí,
+v akom boli publikované do EDT.
+
+%
+\begin{sidebar}
+V dokumentácii sa udáva príklad zoskupovania viacerıch volaní:
+
+
+\begin{lstlisting}
+publish(123);
+publish(860);
+publish(2320);
+\end{lstlisting}
+
+
+Tieto volania môu vyústi v jediné volanie \code{process()}, kde
+bude zoznam \code{chunks} obsahova prvky 123, 860 a 2320.
+
+Metóda \code{publish()} tie podporuje odosielanie viacerıch parametrov
+naraz. V niektorıch situáciách môeme teda odosla rovno \code{publish(123, 860, 2320)}
+-- samozrejme, v našom príklade sledovania priebehu to nemá zmysel.
+\end{sidebar}
+
+
+Ak sledujeme priebeh, bude nás zaujíma len posledná publikovaná hodnota,
+teda poslednı prvok zoznamu. V rámci metódy vypoèítame percento priebehu
+a nastavíme ho na zozname.
+
+
+\begin{lstlisting}
+protected void process(List<Integer> chunks) {
+	double progress = chunks.get(chunks.size() - 1);
+	progressBar.setValue((int) (progress / contentLength) * 100));
+}
+\end{lstlisting}
+
+
+
+\subsection{SwingWorker a sledovanie priebehu}
+
+Ak chceme priebene sledova percentuálny priebeh úlohy, môeme tie
+poui alternatívny spôsob, ktorı vyuíva metódu \code{setProgress()}
+zabudovanú v \classname{SwingWorker}i. Má jeden parameter v intervale
+0..100, ktorı vieme nastavi \emph{property} s názvom \code{progress}. 
+
+
+\begin{lstlisting}
+protected Void doInBackground() throws Exception {
+	//...
+	while((b = stream.read()) != -1) {
+		// .. priebene publikujeme progres
+		setProgress(percentProgress);
+	}
+	// ...
+}
+\end{lstlisting}
+
+
+Zmenu stavu mono sledova zaregistrovaním inštancie \code{PropertyChangeListener}
+na inštancii \classname{SwingWorkera}.
+
+
+\begin{lstlisting}
+swingWorker.addPropertyChangeListener(new PropertyChangeListener() {			
+	public void propertyChange(PropertyChangeEvent event) {
+		if ("progress".equals(event.getPropertyName()) {
+			int progress = (Integer) event.getNewValue();
+			jProgressBar.setValue(progress)
+		}
+	}
+});
+\end{lstlisting}
+
+
+
+\subsection{Blokovanie EDT v prípade dlhotrvajúcej operácie}
+
+V niektorıch prípadoch chceme vykona dlhotrvajúcu operáciu tak, aby
+pouívate¾ musel vyslovene poèka na vısledok. Chceme mu zabráni
+v pouívaní grafického rozhrania, ale zároveò chceme predís vytuhnutiu
+aplikácie. Dokumentácia k \classname{SwingWorker}u v tomto prípade
+radí trik, ktorı vyuíva modálne okno.
+
+Vo vlákne EDT vytvoríme inštanciu modálneho okna, spustíme \classname{SwingWorker}
+a toto okno (modálne okno ,,vyblokuje{}`` pouívate¾ské rozhranie).
+Zároveò však budeme v \emph{property change listeneri }priebene sledova,
+èi ešte operácia beí. Ak u dobehla, okno zatvoríme.
+
+Zmienenı \emph{property change listener} vyzerá nasledovne a podobá
+sa na listener zo sekcie \ref{sub:UlohaDobehla}.
+
+
+\begin{lstlisting}
+private final class SwingWorkerCompletionWaiter 
+	implements PropertyChangeListener 
+{
+	private JDialog dialog;
+
+	public SwingWorkerCompletionWaiter(JDialog dialog) {
+		this.dialog = dialog;
+	}
+
+	public void propertyChange(PropertyChangeEvent event) {
+		if ("state".equals(event.getPropertyName())
+			&& SwingWorker.StateValue.DONE == event.getNewValue()) {
+			dialog.setVisible(false);
+			dialog.dispose();
+		}
+	}
+}
+\end{lstlisting}
+
+
+Pouitie na príklade \emph{action listenera} je nasledovné:
+
+
+\begin{lstlisting}
+button.addActionListener(new ActionListener() {
+	public void actionPerformed(ActionEvent e) {
+		SwingWorker<Void, Void> worker = ...
+		JDialog dialog = new JDialog(MainForm.this, true);
+		worker.addPropertyChangeListener(
+			new SwingWorkerCompletionWaiter(dialog));
+		worker.execute();
+		dialog.setVisible(true);		
+	}
+});
+\end{lstlisting}
+
+
+V tomto prípade treba da pozor na správne poradie príkazov. Do \emph{workera}
+treba vloi \emph{property change listener}, ktorı však potrebuje
+inštanciu modálneho \classname{JDialog}u. Metóda \code{execute()}
+spustí asynchrónne \classname{SwingWorker}, èo sa musí udia ešte
+pred zobrazením modálneho okna (v opaènom prípade okno blokuje EDT).
+
+
+\section{\protect\classname{SwingWorker} ako úloha pre paralelné spustenie}
+
+Vyššie sme sa zmieòovali o metóde \code{execute()}, ktorá asynchrónne
+spustí kód v metóde \code{doInBackground()}. V útrobách \code{SwingWorker}a
+sa udriava mnoina obslunıch vlákien, ktorá automaticky obsluhuje
+všetky workerovské úlohy. V štandardnej implementácii je tıchto vlákien
+10, pretoe väèší poèet by potenciálne mohol spoma¾ova celú aplikáciu.
+Napriek tomu však existujú situácie, keï si chceme spúšanie \code{SwingWorkera}
+spravova sami.
+
+\classname{SwingWorker} je moné poui v role benej asynchrónne
+spúšanej úlohy. Trieda implementuje interfejs \code{RunnableFuture},
+èím dokáe zároveò splni rolu \code{Runnable} i \code{Future}.
+
+
+\subsection{\protect\classname{SwingWorker} a \protect\classname{Thread}}
+
+Implementovaním interfejsu \code{Runnable} je umonené spúšanie
+inštancie \code{SwingWorkera} pomocou vlákna \code{Thread}. Nasledovnı
+kód spustí vo vlákne \classname{Thread} inštanciu \emph{workera}
+presne tak, ako akúko¾vek inú inštanciu \classname{Runnable}:
+
+
+\begin{lstlisting}
+SwingWorker<Void, Integer> worker = ...
+Thread thread = new Thread(worker);
+thread.start();
+\end{lstlisting}
+
+
+Tento kód je zhruba ekvivalentnı štandardnému spusteniu cez \code{worker.execute()}.
+V tomto prípade však explicitne urèíme vlákno, ktoré bude spracováva
+danú úlohu.
+
+%
+\begin{sidebar}
+Za normálnych okolností nie je ve¾mi dôvod pouíva túto metódu.
+\end{sidebar}
+
+
+
+\subsection{\protect\classname{SwingWorker} a exekútory}
+
+Keïe \classname{SwingWorker} implementuje \classname{Runnable},
+mono ho zasla do exekútora. Táto monos má zmysel napr. v prípade,
+e chceme synchronizova beh viacerıch vlákien.
+
+Predstavme si, e chceme zobrazi okno, ktoré má viacero \emph{progress
+barov} indikujúcich paralelné sahovanie viacerıch súborov. Po dokonèení
+sahovania chceme automaticky zatvori okno.
+
+%
+\begin{figure}
+\noindent \begin{centering}
+\includegraphics[scale=0.4]{swing-threads-parallel-downloads}
+\par\end{centering}
+
+\caption{Paralelné sahovanie súborov}
+
+\end{figure}
+
+
+Tento problém vieme elegantne vyrieši pomocou \emph{exekútora}, teda
+inštancie triedy \classname{ExecutorService}. Doòho vieme odosla
+viacero úloh, ktoré sa spustia asynchrónne v samostatnıch vláknach.
+V tomto konkrétnom prípade navyše vieme vyui metódu \code{invokeAll()},
+ktorá blokuje dovtedy, kım nedobehnú všetky úlohy. Inak povedané,
+spustíme úlohy, blokujeme a po ich dobehnutí zatvoríme okno.
+
+Drobnım nedostatkom je fakt, e \code{invokeAll()} vyaduje úlohu
+v podobe inštancie typu \code{Callable}. Našastie, volaním \code{Executors.callable()}
+vieme previes \code{Runnable} na \code{Callable}.
+\begin{lstlisting}
+setVisible(true);
+try {
+	ExecutorService executor = Executors.newCachedThreadPool();
+	List<Callable<Object>> tasks 
+		= new LinkedList<Callable<Object>>();
+	for (Component c : this.getContentPane().getComponents()) {
+		if (c instanceof DownloadProgressPanel) {
+			// panel s progress barom a popiskom
+			DownloadProgressPanel panel = (DownloadProgressPanel) c;
+			// vytvoríme inštanciu SwingWorkera
+			DownloadTask task
+			= new DownloadTask(panel.getUrl(),
+								panel.getProgressBar());
+			// prevedieme ho na Callable a zaradíme do zoznamu úloh
+			Callable<Object> callable = Executors.callable(task);
+			tasks.add(callable);
+		}
+	}
+	// vykonáme všetky úlohy. Volanie metódy èaká, kım nedobehnú úlohy.
+	executor.invokeAll(tasks);
+} catch (InterruptedException e) {
+	e.printStackTrace();
+} finally {
+	setVisible(false);
+}
+\end{lstlisting}
+
+
+
+\subsection{Opakované úlohy\label{sub:Opakovan=0000E9-ulohy}}
+
+V prípade, e sa snaíme pusti úlohu reprezentovanú \code{SwingWorker}om
+opakovane, treba da pozor na jednu vıznamnú zásadu.
+
+%
+\begin{sidebar}
+Inštanciu \classname{SwingWorker}a mono spusti len raz.
+\end{sidebar}
+
+
+Táto vlastnos v podstate zabraòuje opakovanému spúšaniu úloh.
+
+
+\section{Ostatné nástroje pre práce s vláknami v Swingu}
+
+\classname{SwingWorker} je skutoène rafinovaná trieda, ktorou dokáeme
+vyrieši ve¾a problémov. Napriek tomu sa môe v zriedkavıch prípadoch
+sta, e si potrebujeme poradi aj bez neho.
+
+Príkladom môe by kód vykonávanı v rámci vlákna, ktorı chce aktualizova
+swingovské komponenty. Pravidlo v Swingu tvrdí, e to mono robi
+len v rámci EDT, èo sa v rámci \code{SwingWorker}a dialo v metóde
+\code{process()}, resp. \code{done()}.
+
+Nízkoúrovòové volanie vyuíva metódu \code{SwingUtilities.invokeLater()},
+ktorá vie zobra parameter typu \code{Runnable}, predstavujúci úlohu.
+Po zavolaní tejto metódy sa úloha \classname{Runnable} zaradí na
+koniec radu v EDT, èo zaruèí vykonanie kódu vo vlákne EDT a teda monos
+meni komponenty. Úloha potom beí asynchrónne.
+
+Volanie \code{invokeLater()} nesmie prebieha v EDT. Ak nemáme istotu,
+èi aktuálne vykonávanı kód EDT, pomoc je ¾ahká:
+
+
+\begin{lstlisting}
+boolean smeVoVnutriEDT = SwingUtilities.isEventDispatchThread()
+\end{lstlisting}
+
+
+Doplnkom metódy \code{invokeLater()} je \code{SwingUtilities.invokeAndWait()},
+ktorı funguje rovnako, ale blokuje do chvíle, kım nedobehne úloha
+odoslaná do EDT.
+
+
+\section{Sumár}
+
+Programovanie sviného pouívate¾ského rozhrania v Swingu má svoje
+úskalia. Trieda \code{SwingWorker} ich však v mnohom dokáe maximálne
+u¾ahèi. Najdôleitejšou zásadou je nezabúda na nieko¾ko zásad. ia¾,
+ak ich nedodríme, iadne IDE nás na to neupozorní a u zo povahy
+konkurentného programovania vyplıva, e chyby, ktoré z toho vyplynú,
+sa ladia extrémne ako.
+
+%
+\begin{sidebarinfo}
+Alexander Potoèkin navrhuje nieko¾ko spôsobov, ktorımi mono overi
+dodranie nasledovnıch zásad. Väèšinou však pouívajú intenzívne Java
+vúdú, èi dokonca aspektovo orientované programovanie, a hodia sa len
+pre ladiace úèely, keïe dramaticky ovplyvòujú vıkon. Idey sú zhrnuté
+v jeho blogu \url{http://weblogs.java.net/blog/2006/02/16/debugging-swing-final-summary}.
+\end{sidebarinfo}
+
+\begin{enumerate}
+\item Dlhotrvajúce úlohy vykonávajte mimo EDT!
+\item Modifikácia komponentov sa musí udia v rámci EDT!
+\end{enumerate}
+%
+\begin{sidebar}
+Preèo niekto nevytvorí mechanizmus, ktorım sa kód automaticky vykoná
+mimo EDT? Alexander Potoèkin nad tım uvauje a usúdil, e technicky
+to moné je, ale len za cenu èiernej mágie zaloenej na generovaní
+kódu sa behu, resp. aspektovo orientovanom programovaní, ktoré má
+opä vplyv na vıkon. Podrobnosti sú na jeho blogu \url{http://weblogs.java.net/blog/2006/01/12/debugging-swing-summary-1}.
+\end{sidebar}
+
+
+A ïalšie boèné zásady:
+\begin{enumerate}
+\item Kód v \emph{listeneroch}~komponentu beí v rámci EDT.
+\item \code{SwingWorker} mono spusti len raz.
+\end{enumerate}
+
+\subsection{Sumár metód \protect\classname{SwingWorker}a}
+
+\begin{tabular}{|c|>{\raggedright}p{0.4\textwidth}|>{\raggedright}p{0.3\textwidth}|}
+\hline 
+{\footnotesize Metóda} & {\footnotesize vıznam} & {\footnotesize beí v}\tabularnewline
+\hline
+\hline 
+{\footnotesize new SwingWorker<V, W>} & {\footnotesize V: návratovı typ \code{done()}, W: parameter v \code{publish()}} & {\footnotesize Vlákno, z ktorého sa zavolal konštruktor}\tabularnewline
+\hline 
+{\footnotesize \code{doInBackground()}} & {\footnotesize kód beí asynchrónne, mimo EDT} & {\footnotesize kód beí asynchrónne, mimo EDT}\tabularnewline
+\hline 
+{\footnotesize \code{done()}} & {\footnotesize kód sa vykoná po dobehnutí \code{doInBackground()}} & {\footnotesize EDT}\tabularnewline
+\hline 
+{\footnotesize \code{publish(W...)}} & {\footnotesize odošle parameter typu W do EDT. } & {\footnotesize -}\tabularnewline
+\hline 
+{\footnotesize \code{process(List<W>)}} & {\footnotesize spracováva vısledky z \code{publish()}} & {\footnotesize EDT}\tabularnewline
+\hline
+\end{tabular}
+
+
+\section{Zdroje}
+\begin{itemize}
+\item Dokumentácia k \classname{SwingWorker}u: http://java.sun.com/javase/6/docs/api/javax/swing/SwingWorker.html
+\item \emph{Threads and Swing}, èlánok o zásadách pouívania vlákien v Swingu:
+http://java.sun.com/products/jfc/tsc/articles/threads/threads1.html
+\item \emph{Swing Threads}, èlánok na mindprod.com: http://mindprod.com/jgloss/swingthreads.html
+\item 
+\end{itemize}
+
+\end{document}
