@@ -1,0 +1,595 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=windows-1250" />
+  <title>novotnyr@ics :: Wiki | Skola / UINF/SWB Sémantický web | Pripojiť prílohu</title>
+  <meta http-equiv='Content-Style-Type' content='text/css' />
+  <link rel='stylesheet' href='http://ics.upjs.sk/~novotnyr/wiki/pub/skins/novotnyr3/style.css' type='text/css' />
+
+  <script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/tinymce/tiny_mce.js" ></script >
+  <script type="text/javascript" >
+    tinyMCE.init({
+        mode : "none",
+        theme : "advanced",
+	content_css : "http://ics.upjs.sk/~novotnyr/wiki/pub/skins/novotnyr3/style.css",
+        theme_advanced_buttons1 : "bold,italic,underline,|,justifyleft,justifycenter,justifyright,formatselect",
+        theme_advanced_buttons2 : "cut,copy,paste,|,bullist,numlist,|,outdent,indent,|,undo,redo,|,link,unlink,anchor,image,|,code",
+	theme_advanced_blockformats : "p,h1,h2,h3,h4,pre",
+        theme_advanced_toolbar_location : "top",
+        theme_advanced_toolbar_align : "left",
+        theme_advanced_statusbar_location : "bottom",
+        theme_advanced_resizing : true,
+	plugins : "preelementfix,contextmenu",
+	preelementfix_css_aliases: {
+            'C++': 'brush: cpp',
+            'C#': 'brush: csharp',
+            'Delphi': 'brush: delphi',
+            'HTML': 'brush: html',
+            'Java': 'brush: java',
+            'Java Script': 'brush: javascript',
+            'PHP': 'brush: php',
+            'Python': 'brush: python',
+            'Ruby': 'brush: ruby',
+            'Sql': 'brush: sql',
+            'VB': 'brush: vb',
+            'XHTML': 'brush: xhtml',
+            'XML': 'brush: xml'
+         }
+    });
+    tinyMCE.addShortcut('ctrl+shift+c', '', ['FormatBlock', false, '<b>']);
+  </script >
+
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shCore.js"></script>
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shBrushJScript.js"></script>
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shBrushJava.js"></script>
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shBrushXml.js"></script>
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shBrushSql.js"></script>
+	<script type="text/javascript" src="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/scripts/shBrushHtml.js"></script>
+	<link href="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/styles/shCore.css" rel="stylesheet" type="text/css" />
+	<link href="http://ics.upjs.sk/~novotnyr/wiki/pub/syntaxhighlighter/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+<!--HTMLHeader--><style type='text/css'><!--
+  ul, ol, pre, dl, p { margin-top:0px; margin-bottom:0px; }
+  code.escaped { white-space: nowrap; }
+  .vspace { margin-top:1.33em; }
+  .indent { margin-left:40px; }
+  .outdent { margin-left:40px; text-indent:-40px; }
+  a.createlinktext { text-decoration:none; border-bottom:1px dotted gray; }
+  a.createlink { text-decoration:none; position:relative; top:-0.5em;
+    font-weight:bold; font-size:smaller; border-bottom:none; }
+  img { border:0px; }
+  
+span.anchor {
+	float: left;
+	font-size: 60%;
+	margin-left: -1em;
+	width: 1em;
+    position:relative; top:-0.1em;
+	text-align: center;
+}
+span.anchor a { text-decoration: none; }
+span.anchor a:hover { text-decoration: underline; }
+ol.toc { text-indent:-25px; list-style: none; margin-bottom:5px; }
+ol ol.toc { margin-left:-24px; text-indent:-24px; }
+div.tocfloat { font-size: smaller; margin-bottom: 10px;
+    border-top: 1px dotted #555555; border-bottom: 1px dotted #555555;
+    padding-top: 5px; 
+    width: 38%; float: right; margin-left: 10px; clear: right;
+    margin-right:-21px; padding-right: 13px; padding-left: 13px;
+    background-color: #eeeeee; }
+div.toc { font-size: smaller; 
+    border: 1px dotted #cccccc;
+    background: #f7f7f7;
+    margin-bottom: 10px; }
+div.toc p { background-color: #f9f6d6;
+    padding: 5px;
+    border-bottom:  1px dotted #cccccc; }
+.sourceblocklink {
+  text-align: right;
+  font-size: smaller;
+
+  display: none;
+}
+.sourceblocktext {
+  padding: 0.5em;
+  border: 1px solid #808080;
+  background-color: #f1f0ed;
+}
+.sourceblocktext div {
+  font-family: 'Courier New CE', monospace;
+  font-size: small;
+  line-height: 1.2;
+  height: 1%;
+
+}
+.sourceblocktext div.head,
+.sourceblocktext div.foot {
+  font: italic medium serif;
+  padding: 0.5em;
+}
+.editconflict { color:green; 
+  font-style:italic; margin-top:1.33em; margin-bottom:1.33em; }
+
+  table.markup { border:2px dotted #ccf; width:90%; }
+  td.markup1, td.markup2 { padding-left:10px; padding-right:10px; }
+  table.vert td.markup1 { border-bottom:1px solid #ccf; }
+  table.horiz td.markup1 { width:23em; border-right:1px solid #ccf; }
+  table.markup caption { text-align:left; }
+  div.faq p, div.faq pre { margin-left:2em; }
+  div.faq p.question { margin:1em 0 0.75em 0; font-weight:bold; }
+  div.faqtoc div.faq * { display:none; }
+  div.faqtoc div.faq p.question 
+    { display:block; font-weight:normal; margin:0.5em 0 0.5em 20px; line-height:normal; }
+  div.faqtoc div.faq p.question * { display:inline; }
+   
+    .frame 
+      { border:1px solid #cccccc; padding:4px; background-color:#f9f9f9; }
+    .lfloat { float:left; margin-right:0.5em; }
+    .rfloat { float:right; margin-left:0.5em; }
+a.varlink { text-decoration:none;}
+
+--></style><script type="text/javascript">
+function toggle(obj, hide, show) {
+    var elstyle = document.getElementById(obj).style;
+    var text    = document.getElementById(obj + "tog");
+    if(!hide) { var hide = "hide"; }
+    if(!show) { var show = "show"; }
+    if (elstyle.display == 'none') {
+        elstyle.display = 'block';
+        text.innerHTML  = hide;
+    } else {
+        elstyle.display = 'none';
+        text.innerHTML  = show;
+    }
+}
+</script>
+	<link href='http://ics.upjs.sk/~novotnyr/wiki/pub/commentboxplus/commentboxplus.css' rel='stylesheet' type='text/css' />  <meta name='robots' content='noindex,nofollow' />
+
+</head>
+
+
+
+<body>
+
+<script type="text/javascript">
+	SyntaxHighlighter.all();
+</script>
+
+
+<div id="bodyshadow">
+<div id="body">
+<div id="header">
+  <div id="logodiv">
+    <img src="http://ics.upjs.sk/~novotnyr/wiki/pub/skins/novotnyr3/squares.gif"/>
+  </div>
+  <div id="breadcrumbs">
+    <div id="breadcrumbs-inner">
+        <a href="/~novotnyr/wiki">Wiki</a> |
+        <a href="/~novotnyr/vox">Fórum</a> |
+        <a href="/~novotnyr/home">Home</a> |
+        <a href="/~novotnyr/index/search.php">Hľadať v Home</a> |
+        <a href="/~novotnyr/perly">Perly</a> |
+    </div>
+  </div>
+
+  <div id="pagetitle-pos">
+    <div id="pagetitle-div">
+
+        <table>
+        <tr><td>UINF/SWB Sémantický web (<a href='http://ics.upjs.sk/~novotnyr/wiki/Skola'>Skola</a>)</td></tr>
+        </table>
+    </div>
+  </div>
+
+  <div style="clear: both;"/>
+
+  <div class="shadedline"></div>
+</div>
+<div id="sidebar">
+<!--PageActionFmt-->
+    <div id="wikiactions">
+        <div id='wikicmds'></div>  
+        <ul><li class='browse'>      <a accesskey=''  rel='nofollow'  class='selflink' href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb'>Zobraziť</a>
+</li><li class='edit'>      <a accesskey='e'  rel='nofollow'  class='wikilink' href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=edit'>Upraviť</a>
+</li><li class='diff'>   <a accesskey='h'  rel='nofollow'  class='wikilink' href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=diff'>História úprav</a>
+</li><li class='print'>     <a accesskey=''  rel='nofollow'  class='wikilink' href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=print'>Tlačiť</a>
+</li></ul>
+
+    </div>
+
+  <div id="wikisearch">
+    <form action='http://ics.upjs.sk/~novotnyr/wiki'>
+      <input type='hidden' name='n' value='Skola.SemantickyWeb' />
+      <input type='hidden' name='action' value='search' />
+      <a href='http://ics.upjs.sk/~novotnyr/wiki/Site/Search'>Hľadať</a>:<br />
+      <input type='text' name='q' value='' class='inputbox searchbox' /> 
+      <input type='submit' class='inputbutton searchbutton' value='' />  
+    </form>
+  </div>   
+  
+  <div id="wikicombobox">
+      Prejsť:
+      <br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<br />
+<b>Deprecated</b>:  crypt(): Supplied salt is not valid for DES. Possible bug in provided salt format. in <b>/home/novotnyr/public_html/wiki/pmwiki.php</b> on line <b>487</b><br />
+<p><select id='selectpagelist'
+    onchange="document.location = 'http://ics.upjs.sk/~novotnyr/wiki' + '/' + this.options[this.selectedIndex].value"
+    ><option style='text-align:center'>-- vyberte stránku --</option><option value='Articles.RecentChanges'>Articles.RecentChanges</option>
+<option value='Category.Category'>Category.Category</option>
+<option value='Category.GroupFooter'>Category.GroupFooter</option>
+<option value='Category.RecentChanges'>Category.RecentChanges</option>
+<option value='CLanguage.RecentChanges'>CLanguage.RecentChanges</option>
+<option value='Comments.RecentChanges'>Comments.RecentChanges</option>
+<option value='DatabazoveSystemy.RecentChanges'>DatabazoveSystemy.RecentChanges</option>
+<option value='Databazy.RecentChanges'>Databazy.RecentChanges</option>
+<option value='DiplomovaPraca.Changelog'>DiplomovaPraca.Changelog</option>
+<option value='DiplomovaPraca.HomePage'>DiplomovaPraca.HomePage</option>
+<option value='DiplomovaPraca.RecentChanges'>DiplomovaPraca.RecentChanges</option>
+<option value='DisiectaMembra.36MetodDokazu'>DisiectaMembra.36MetodDokazu</option>
+<option value='DisiectaMembra.AlexandraPavelkova-PrisahaRecenziaVPravde'>DisiectaMembra.Mytológia v sexi balení</option>
+<option value='DisiectaMembra.AlfaCentauri'>DisiectaMembra.AlfaCentauri</option>
+<option value='DisiectaMembra.BabylonskaKniznica'>DisiectaMembra.BabylonskaKniznica</option>
+<option value='DisiectaMembra.BerkeleyVsMIT'>DisiectaMembra.BerkeleyVsMIT</option>
+<option value='DisiectaMembra.DeadParrotAncestor'>DisiectaMembra.DeadParrotAncestor</option>
+<option value='DisiectaMembra.DisiectaMembra'>DisiectaMembra.DisiectaMembra</option>
+<option value='DisiectaMembra.Koans'>DisiectaMembra.Koans</option>
+<option value='DisiectaMembra.Kopytovci-Shakespeareup'>DisiectaMembra.Kopytovci-Shakespeareup</option>
+<option value='DisiectaMembra.KremNaOpalovanie'>DisiectaMembra.KremNaOpalovanie</option>
+<option value='DisiectaMembra.LadovuBitkuVyhraliPravoslavni'>DisiectaMembra.Ľadovú bitku vyhrali pravoslávni</option>
+<option value='DisiectaMembra.ListKozakov'>DisiectaMembra.ListKozakov</option>
+<option value='DisiectaMembra.LoremIpsum'>DisiectaMembra.LoremIpsum</option>
+<option value='DisiectaMembra.MoskvaObzeraDarySovietskymVodcom'>DisiectaMembra.MoskvaObzeraDarySovietskymVodcom</option>
+<option value='DisiectaMembra.NabehVsKonflikt'>DisiectaMembra.Nábeh versus konflikt</option>
+<option value='DisiectaMembra.OtcovaRola-MojePolePosobnosti'>DisiectaMembra.OtcovaRola-MojePolePosobnosti</option>
+<option value='DisiectaMembra.PoemNaPrirodneVedy'>DisiectaMembra.PoemNaPrirodneVedy</option>
+<option value='DisiectaMembra.Quotes'>DisiectaMembra.Quotes</option>
+<option value='DisiectaMembra.RecentChanges'>DisiectaMembra.RecentChanges</option>
+<option value='DisiectaMembra.Spam'>DisiectaMembra.Spam</option>
+<option value='DisiectaMembra.Turing'>DisiectaMembra.Turing</option>
+<option value='EmptySetRing.HomePage'>EmptySetRing.HomePage</option>
+<option value='EmptySetRing.MainPage'>EmptySetRing.MainPage</option>
+<option value='EmptySetRing.RecentChanges'>EmptySetRing.RecentChanges</option>
+<option value='Java.RecentChanges'>Java.RecentChanges</option>
+<option value='Kulturnik.HomePage'>Kulturnik.HomePage</option>
+<option value='LaTeXSablonaPreZaverecnePrace.LaTeXSablonaPreZaverecnePrace'>LaTeXSablonaPreZaverecnePrace.rn-thesis: šablóna pre záverečné práce v LaTeXu</option>
+<option value='LaTeXSablonaPreZaverecnePrace.RecentChanges'>LaTeXSablonaPreZaverecnePrace.RecentChanges</option>
+<option value='Linux.RecentChanges'>Linux.RecentChanges</option>
+<option value='Lyrics.Cechomor-Katusa'>Lyrics.Čechomor - Katuša</option>
+<option value='Lyrics.HomePage'>Lyrics.HomePage</option>
+<option value='Lyrics.KapelaZeWsiWarszawa-UMojejMateczki'>Lyrics.Kapela ze wsi Warszawa - U mojej mateczki</option>
+<option value='Lyrics.LlibreVermell-StellaSplendens'>Lyrics.Stella splendens</option>
+<option value='Lyrics.MetallicaNothingElseMatters'>Lyrics.Metallica - Nothing Else Matters</option>
+<option value='Lyrics.Mightfish-Fishmaster'>Lyrics.Nightwish - Wishmaster Misheard Lyrics</option>
+<option value='Lyrics.MikeOldfield-ManInTheRain'>Lyrics.Mike Oldfield - Man in the Rain</option>
+<option value='Lyrics.NaStrykowskimPolu'>Lyrics.Kapela ze wsi Warszawa - Na Strykowskim polu</option>
+<option value='Lyrics.NickCave-FireDownBelow'>Lyrics.Nick Cave - Fire Down Below</option>
+<option value='Lyrics.OLaskoLasko'>Lyrics.Michal Tučný - O lásko, lásko</option>
+<option value='Lyrics.PastTimeWithGoodCompany'>Lyrics.Past Time with Good Company</option>
+<option value='Lyrics.RecentChanges'>Lyrics.RecentChanges</option>
+<option value='Lyrics.SimonAndGarfunkel-ScarboroughFair'>Lyrics.Simon &amp; Garfunkel - Scarborough Fair / Canticle</option>
+<option value='Lyrics.Varttina-Seelinnikoi'>Lyrics.Värttinä - Seelinnikoi</option>
+<option value='Lyrics.WarsawVillageBand-DoCiebieKasiuniu'>Lyrics.Kapela ze wsi Warszawa - Do ciebie Kasiuniu</option>
+<option value='Lyrics.WarsawVillageBand-KtoSieZaNi'>Lyrics.Kapela ze wsi Warszawa - Kto się zani</option>
+<option value='Lyrics.WarsawVillageBand-NiolamKochaneczka'>Lyrics.Kapela ze wsi Warszawa - Niolam kochanecka</option>
+<option value='Lyrics.WarsawVillageBand-Sowa'>Lyrics.Kapela ze wsi Warszawa - Sowa</option>
+<option value='Lyrics.WarsawVillageBand-WBoruKalinka'>Lyrics.Kapela ze wsi Warszawa - W boru kalinka</option>
+<option value='Lyrics.WarsawVillageBand-Welcome'>Lyrics.Kapela ze wsi Warszawa - Welcome / Haven</option>
+<option value='Main.AllRecentChanges'>Main.AllRecentChanges</option>
+<option value='Main.Blocklist'>Main.Blocklist</option>
+<option value='Main.GroupAttributes'>Main.GroupAttributes</option>
+<option value='Main.HomePage'>Main.Róbert Novotný</option>
+<option value='Main.RecentChanges'>Main.RecentChanges</option>
+<option value='Main.SandBox'>Main.SandBox</option>
+<option value='Main.Sandbox'>Main.Sandbox</option>
+<option value='Main.SandBox-Comments'>Main.SandBox-Comments</option>
+<option value='Main.WikiSandbox'>Main.WikiSandbox</option>
+<option value='MontyPython.CuidadoLlamas'>MontyPython.CuidadoLlamas</option>
+<option value='MontyPython.HomePage'>MontyPython.HomePage</option>
+<option value='MontyPython.RecentChanges'>MontyPython.RecentChanges</option>
+<option value='Museion.BezOdpovedi'>Museion.BezOdpovedi</option>
+<option value='Museion.RecentChanges'>Museion.RecentChanges</option>
+<option value='Perly.Perly'>Perly.Perly</option>
+<option value='Perly.RecentChanges'>Perly.RecentChanges</option>
+<option value='PHP.RecentChanges'>PHP.RecentChanges</option>
+<option value='PmWiki.AccessKeys'>PmWiki.AccessKeys</option>
+<option value='PmWiki.AdvancedTables'>PmWiki.AdvancedTables</option>
+<option value='PmWiki.Audiences'>PmWiki.Audiences</option>
+<option value='PmWiki.AuthUser'>PmWiki.AuthUser</option>
+<option value='PmWiki.AvailableActions'>PmWiki.AvailableActions</option>
+<option value='PmWiki.BackupAndRestore'>PmWiki.Backup and Restore</option>
+<option value='PmWiki.BasicEditing'>PmWiki.Basic PmWiki editing rules</option>
+<option value='PmWiki.BasicVariables'>PmWiki.BasicVariables</option>
+<option value='PmWiki.Blocklist'>PmWiki.Blocklist</option>
+<option value='PmWiki.BlockMarkup'>PmWiki.BlockMarkup</option>
+<option value='PmWiki.Categories'>PmWiki.Categories</option>
+<option value='PmWiki.ChangeLog'>PmWiki.ChangeLog</option>
+<option value='PmWiki.ChangesFromPmWiki1'>PmWiki.ChangesFromPmWiki1</option>
+<option value='PmWiki.ConditionalMarkup'>PmWiki.ConditionalMarkup</option>
+<option value='PmWiki.ContactUs'>PmWiki.Contact us</option>
+<option value='PmWiki.Contributors'>PmWiki.Contributors</option>
+<option value='PmWiki.CreatingNewPages'>PmWiki.Creating New Pages</option>
+<option value='PmWiki.CustomInterMap'>PmWiki.CustomInterMap</option>
+<option value='PmWiki.CustomMarkup'>PmWiki.CustomMarkup</option>
+<option value='PmWiki.CustomWikiStyles'>PmWiki.CustomWikiStyles</option>
+<option value='PmWiki.DebugVariables'>PmWiki.DebugVariables</option>
+<option value='PmWiki.DeletingPages'>PmWiki.DeletingPages</option>
+<option value='PmWiki.DesignNotes'>PmWiki.DesignNotes</option>
+<option value='PmWiki.DocumentationIndex'>PmWiki.Documentation Index</option>
+<option value='PmWiki.Drafts'>PmWiki.Drafts</option>
+<option value='PmWiki.EditVariables'>PmWiki.EditVariables</option>
+<option value='PmWiki.ErrorMessages'>PmWiki.Error and Warning Messages</option>
+<option value='PmWiki.FAQ'>PmWiki.FAQ</option>
+<option value='PmWiki.FilePermissions'>PmWiki.FilePermissions</option>
+<option value='PmWiki.FmtPageName'>PmWiki.FmtPageName</option>
+<option value='PmWiki.Forms'>PmWiki.Forms</option>
+<option value='PmWiki.Functions'>PmWiki.Functions</option>
+<option value='PmWiki.Glossary'>PmWiki.Glossary</option>
+<option value='PmWiki.GroupAttributes'>PmWiki.GroupAttributes</option>
+<option value='PmWiki.GroupCustomizations'>PmWiki.GroupCustomizations</option>
+<option value='PmWiki.GroupFooter'>PmWiki.GroupFooter</option>
+<option value='PmWiki.GroupHeader'>PmWiki.GroupHeader</option>
+<option value='PmWiki.GroupHeaders'>PmWiki.GroupHeaders and GroupFooters</option>
+<option value='PmWiki.I18nVariables'>PmWiki.I18nVariables</option>
+<option value='PmWiki.Images'>PmWiki.Images</option>
+<option value='PmWiki.IncludeOtherPages'>PmWiki.IncludeOtherPages</option>
+<option value='PmWiki.InitialSetupTasks'>PmWiki.InitialSetupTasks</option>
+<option value='PmWiki.Installation'>PmWiki.PmWiki Installation</option>
+<option value='PmWiki.InterMap'>PmWiki.InterMap</option>
+<option value='PmWiki.Internationalizations'>PmWiki.Internationalizations</option>
+<option value='PmWiki.Introduction'>PmWiki.Introduction</option>
+<option value='PmWiki.LayoutVariables'>PmWiki.LayoutVariables</option>
+<option value='PmWiki.Links'>PmWiki.Links</option>
+<option value='PmWiki.LinkVariables'>PmWiki.LinkVariables</option>
+<option value='PmWiki.LocalCustomizations'>PmWiki.LocalCustomizations</option>
+<option value='PmWiki.MailingLists'>PmWiki.MailingLists</option>
+<option value='PmWiki.MailPosts'>PmWiki.MailPosts</option>
+<option value='PmWiki.MarkupExpressions'>PmWiki.MarkupExpressions</option>
+<option value='PmWiki.MarkupMasterIndex'>PmWiki.Markup Master Index</option>
+<option value='PmWiki.MarkupVariables'>PmWiki.MarkupVariables</option>
+<option value='PmWiki.Notify'>PmWiki.Notify</option>
+<option value='PmWiki.OtherVariables'>PmWiki.OtherVariables</option>
+<option value='PmWiki.PageDirectives'>PmWiki.PageDirectives</option>
+<option value='PmWiki.PageFileFormat'>PmWiki.PageFileFormat</option>
+<option value='PmWiki.PageHistory'>PmWiki.PageHistory</option>
+<option value='PmWiki.PageLists'>PmWiki.PageLists</option>
+<option value='PmWiki.PageListTemplates'>PmWiki.PageListTemplates</option>
+<option value='PmWiki.PagelistVariables'>PmWiki.PagelistVariables</option>
+<option value='PmWiki.PageTextVariables'>PmWiki.PageTextVariables</option>
+<option value='PmWiki.PageVariables'>PmWiki.Page specific variables</option>
+<option value='PmWiki.Passwords'>PmWiki.Passwords</option>
+<option value='PmWiki.PasswordsAdmin'>PmWiki.PasswordsAdmin</option>
+<option value='PmWiki.PathVariables'>PmWiki.PathVariables</option>
+<option value='PmWiki.PatrickMichaud'>PmWiki.PatrickMichaud</option>
+<option value='PmWiki.PerGroupCustomizations'>PmWiki.PerGroupCustomizations</option>
+<option value='PmWiki.PmWiki'>PmWiki.PmWiki</option>
+<option value='PmWiki.PmWikiPhilosophy'>PmWiki.PmWikiPhilosophy</option>
+<option value='PmWiki.RecentChanges'>PmWiki.RecentChanges</option>
+<option value='PmWiki.RefCount'>PmWiki.RefCount</option>
+<option value='PmWiki.ReleaseNotes'>PmWiki.Release Notes</option>
+<option value='PmWiki.Requirements'>PmWiki.Requirements</option>
+<option value='PmWiki.RSS'>PmWiki.RSS</option>
+<option value='PmWiki.Search'>PmWiki.Search</option>
+<option value='PmWiki.Security'>PmWiki.Security</option>
+<option value='PmWiki.SecurityVariables'>PmWiki.SecurityVariables</option>
+<option value='PmWiki.SimpleTables'>PmWiki.SimpleTables</option>
+<option value='PmWiki.SimultaneousEdits'>PmWiki.SimultaneousEdits</option>
+<option value='PmWiki.SitePageActions'>PmWiki.SitePageActions</option>
+<option value='PmWiki.SitePreferences'>PmWiki.SitePreferences</option>
+<option value='PmWiki.Skins'>PmWiki.Skins</option>
+<option value='PmWiki.SkinTemplates'>PmWiki.SkinTemplates</option>
+<option value='PmWiki.SpecialCharacters'>PmWiki.SpecialCharacters</option>
+<option value='PmWiki.TableDirectives'>PmWiki.Table directives</option>
+<option value='PmWiki.Tables'>PmWiki.Tables</option>
+<option value='PmWiki.TextFormattingRules'>PmWiki.TextFormattingRules</option>
+<option value='PmWiki.Troubleshooting'>PmWiki.Troubleshooting</option>
+<option value='PmWiki.Upgrades'>PmWiki.Upgrades</option>
+<option value='PmWiki.UpgradingFromPmWiki1'>PmWiki.UpgradingFromPmWiki1</option>
+<option value='PmWiki.Uploads'>PmWiki.Uploads</option>
+<option value='PmWiki.UploadsAdmin'>PmWiki.Uploads Administration</option>
+<option value='PmWiki.UploadVariables'>PmWiki.UploadVariables</option>
+<option value='PmWiki.UrlApprovals'>PmWiki.UrlApprovals</option>
+<option value='PmWiki.UTF-8'>PmWiki.UTF-8</option>
+<option value='PmWiki.Variables'>PmWiki.Variables</option>
+<option value='PmWiki.Version'>PmWiki.Version</option>
+<option value='PmWiki.WebFeeds'>PmWiki.WebFeeds</option>
+<option value='PmWiki.WikiAdministrator'>PmWiki.WikiAdministrator</option>
+<option value='PmWiki.WikiFarms'>PmWiki.WikiFarms</option>
+<option value='PmWiki.WikiFarmTerminology'>PmWiki.WikiFarmTerminology</option>
+<option value='PmWiki.WikiGroup'>PmWiki.WikiGroup</option>
+<option value='PmWiki.WikiGroups'>PmWiki.WikiGroups</option>
+<option value='PmWiki.WikiPage'>PmWiki.WikiPage</option>
+<option value='PmWiki.WikiSandbox'>PmWiki.WikiSandbox</option>
+<option value='PmWiki.WikiStructure'>PmWiki.WikiStructure</option>
+<option value='PmWiki.WikiStyleExamples'>PmWiki.WikiStyleExamples</option>
+<option value='PmWiki.WikiStyles'>PmWiki.WikiStyles</option>
+<option value='PmWiki.WikiTrails'>PmWiki.WikiTrails</option>
+<option value='PmWiki.WikiWikiWeb'>PmWiki.WikiWikiWeb</option>
+<option value='PmWiki.WikiWord'>PmWiki.WikiWord</option>
+<option value='PmWiki.WikiWords'>PmWiki.WikiWords</option>
+<option value='PmWikiSk.RecentChanges'>PmWikiSk.RecentChanges</option>
+<option value='PmWikiSk.XLPage'>PmWikiSk.XLPage</option>
+<option value='PowerShell.PrikladyCmdletov'>PowerShell.PrikladyCmdletov</option>
+<option value='PowerShell.RecentChanges'>PowerShell.RecentChanges</option>
+<option value='PowerShell.VytvaranieCmdletovVSharpDevelop'>PowerShell.Vývoj cmdletov pre PowerShell v prostredí SharpDevelop</option>
+<option value='PowerShell.VytvaranieCmdletovVSharpDevelop-Comments'>PowerShell.VytvaranieCmdletovVSharpDevelop-Comments</option>
+<option value='Profiles.Baelara'>Profiles.Baelara</option>
+<option value='Profiles.IsilMae'>Profiles.IsilMae</option>
+<option value='Programovanie.RecentChanges'>Programovanie.RecentChanges</option>
+<option value='Python.RecentChanges'>Python.RecentChanges</option>
+<option value='ReceptyKJaxb.RecentChanges'>ReceptyKJaxb.RecentChanges</option>
+<option value='ReceptyKJaxb.ReceptyKJaxb'>ReceptyKJaxb.ReceptyKJaxb</option>
+<option value='RPG.Amn'>RPG.Amn</option>
+<option value='RPG.Asantil'>RPG.Asantil</option>
+<option value='RPG.Ascalon'>RPG.Ascalon</option>
+<option value='RPG.Athlon'>RPG.Athlon</option>
+<option value='RPG.AzbestoveTrenky'>RPG.AzbestoveTrenky</option>
+<option value='RPG.Baelara'>RPG.Baelara</option>
+<option value='RPG.Bane'>RPG.Bane</option>
+<option value='RPG.Canthoviant'>RPG.Canthoviant</option>
+<option value='RPG.ChramNaOstrove'>RPG.ChramNaOstrove</option>
+<option value='RPG.Cintorin'>RPG.Cintorin</option>
+<option value='RPG.Cyric'>RPG.Cyric</option>
+<option value='RPG.Dilpur'>RPG.Dilpur</option>
+<option value='RPG.Dobrodruzstva'>RPG.Dobrodruzstva</option>
+<option value='RPG.Dun'>RPG.Dun</option>
+<option value='RPG.DungeonMaster'>RPG.DungeonMaster</option>
+<option value='RPG.Elminster'>RPG.Elminster</option>
+<option value='RPG.Esmeltaran'>RPG.Esmeltaran</option>
+<option value='RPG.ForgottenRealms'>RPG.ForgottenRealms</option>
+<option value='RPG.GameOfThrones'>RPG.GameOfThrones</option>
+<option value='RPG.GroupAttributes'>RPG.GroupAttributes</option>
+<option value='RPG.HarborLightsInn'>RPG.HarborLightsInn</option>
+<option value='RPG.HarborSentryInn'>RPG.HarborSentryInn</option>
+<option value='RPG.Harpers'>RPG.Harpers</option>
+<option value='RPG.HistoriaCiernehoPrstenaPodlaDM'>RPG.HistoriaCiernehoPrstenaPodlaDM</option>
+<option value='RPG.HomePage'>RPG.HomePage</option>
+<option value='RPG.Impiltur'>RPG.Impiltur</option>
+<option value='RPG.IsilMae'>RPG.IsilMae</option>
+<option value='RPG.IsilMaenovskeNakupovanie'>RPG.IsilMaenovskeNakupovanie</option>
+<option value='RPG.Isilmen'>RPG.Isilmen</option>
+<option value='RPG.KalendarHarptosa'>RPG.KalendarHarptosa</option>
+<option value='RPG.Khelben'>RPG.Khelben</option>
+<option value='RPG.Krakatit'>RPG.Krakatit</option>
+<option value='RPG.KrcmaUMorskehoDraka'>RPG.KrcmaUMorskehoDraka</option>
+<option value='RPG.KrcmaUTrochVezi'>RPG.KrcmaUTrochVezi</option>
+<option value='RPG.Kriminalita'>RPG.Kriminalita</option>
+<option value='RPG.Kronika03122003'>RPG.Kronika03122003</option>
+<option value='RPG.Kronika11122003'>RPG.Kronika11122003</option>
+<option value='RPG.Kronika19112003'>RPG.Kronika19112003</option>
+<option value='RPG.Kronika26112003'>RPG.Kronika26112003</option>
+<option value='RPG.Kythorn1365'>RPG.Kythorn1365</option>
+<option value='RPG.Laskom'>RPG.Laskom</option>
+<option value='RPG.Lathander'>RPG.Lathander</option>
+<option value='RPG.LegendaOCernoknaznikovi'>RPG.LegendaOCernoknaznikovi</option>
+<option value='RPG.LordDromar'>RPG.LordDromar</option>
+<option value='RPG.Lyrabar'>RPG.Lyrabar</option>
+<option value='RPG.Majak'>RPG.Majak</option>
+<option value='RPG.Meryk'>RPG.Meryk</option>
+<option value='RPG.Merykch'>RPG.Merykch</option>
+<option value='RPG.MoonseaMaiden'>RPG.MoonseaMaiden</option>
+<option value='RPG.Nabor'>RPG.Nabor</option>
+<option value='RPG.Nalin'>RPG.Nalin</option>
+<option value='RPG.NightWatchTavern'>RPG.NightWatchTavern</option>
+<option value='RPG.NovyZelez'>RPG.NovyZelez</option>
+<option value='RPG.Oghma'>RPG.Oghma</option>
+<option value='RPG.Onulinovci'>RPG.Onulinovci</option>
+<option value='RPG.Palindom'>RPG.Palindom</option>
+<option value='RPG.Pigislav'>RPG.Pigislav</option>
+<option value='RPG.Polymorph'>RPG.Polymorph</option>
+<option value='RPG.Pravidla'>RPG.Pravidla</option>
+<option value='RPG.PregnantMermaid'>RPG.PregnantMermaid</option>
+<option value='RPG.PrstenBaelara'>RPG.PrstenBaelara</option>
+<option value='RPG.RecentChanges'>RPG.RecentChanges</option>
+<option value='RPG.Sarshel'>RPG.Sarshel</option>
+<option value='RPG.SedemSestier'>RPG.SedemSestier</option>
+<option value='RPG.Sevirn'>RPG.Sevirn</option>
+<option value='RPG.SilkieOfSarshelBay'>RPG.SilkieOfSarshelBay</option>
+<option value='RPG.SoargarsLegacy'>RPG.SoargarsLegacy</option>
+<option value='RPG.StaffOfMaggi'>RPG.StaffOfMaggi</option>
+<option value='RPG.StaryZelez'>RPG.StaryZelez</option>
+<option value='RPG.Syslie'>RPG.Syslie</option>
+<option value='RPG.TheFameAndFortuneAndGloryAndJoyAndHappinessAndTheUtterMonumentalGreatness'>RPG.Wushu report 1</option>
+<option value='RPG.Theo'>RPG.Theo</option>
+<option value='RPG.TimeOfTroubles'>RPG.TimeOfTroubles</option>
+<option value='RPG.Torun'>RPG.Torun</option>
+<option value='RPG.Tovana'>RPG.Tovana</option>
+<option value='RPG.Tuscan'>RPG.Tuscan</option>
+<option value='RPG.UnseenRecords'>RPG.UnseenRecords</option>
+<option value='RPG.UvodnaStranka'>RPG.UvodnaStranka</option>
+<option value='RPG.VilovaOsada'>RPG.VilovaOsada</option>
+<option value='RPG.VirgilOnulin'>RPG.VirgilOnulin</option>
+<option value='RPG.VlciaHlaska'>RPG.VlciaHlaska</option>
+<option value='RPG.Wom'>RPG.Wom</option>
+<option value='RPG.WushuPrekladovyKluc'>RPG.WushuPrekladovyKluc</option>
+<option value='RPG.Zurauxon'>RPG.Zurauxon</option>
+<option value='SandBox.PageList'>SandBox.PageList</option>
+<option value='SandBox.RecentChanges'>SandBox.RecentChanges</option>
+<option value='Science.RecentChanges'>Science.RecentChanges</option>
+<option value='Science.Workshops'>Science.Workshops</option>
+<option value='SemanticWeb.HomePage'>SemanticWeb.HomePage</option>
+<option value='Site.AllRecentChanges'>Site.AllRecentChanges</option>
+<option value='Site.AuthForm'>Site.AuthForm</option>
+<option value='Site.AuthUser'>Site.AuthUser</option>
+<option value='Site.EditForm'>Site.EditForm</option>
+<option value='Site.EditQuickReference'>Site.EditQuickReference</option>
+<option value='Site.GroupAttributes'>Site.GroupAttributes</option>
+<option value='Site.LocalTemplates'>Site.LocalTemplates</option>
+<option value='Site.PageActions'>Site.PageActions</option>
+<option value='Site.PageListTemplates'>Site.PageListTemplates</option>
+<option value='Site.PageNotFound'>Site.PageNotFound</option>
+<option value='Site.Preferences'>Site.Preferences</option>
+<option value='Site.RecentChanges'>Site.RecentChanges</option>
+<option value='Site.Search'>Site.Search</option>
+<option value='Site.SideBar'>Site.SideBar</option>
+<option value='Site.Site'>Site.Site Configuration</option>
+<option value='Site.UploadQuickReference'>Site.UploadQuickReference</option>
+<option value='Skola.ProgramovanieVJazykuC2011'>Skola.ÚINF/JAC1a - Programovanie v jazyku C</option>
+<option value='Skola.ProgramovanieVJazykuC2011Cvicenie1'>Skola.Cvičenie 1</option>
+<option value='Skola.RecentChanges'>Skola.RecentChanges</option>
+<option value='Skola.SemantickyWeb'>Skola.UINF/SWB Sémantický web</option>
+<option value='TeX.RecentChanges'>TeX.RecentChanges</option>
+<option value='WebServices.RecentChanges'>WebServices.RecentChanges</option>
+<option value='WebServices.WSPolicy'>WebServices.WSPolicy</option>
+<option value='Windows.NLiteStatusReport'>Windows.NLiteStatusReport</option>
+<option value='Windows.RecentChanges'>Windows.RecentChanges</option>
+<option value='XML.RecentChanges'>XML.RecentChanges</option>
+<option value='XUL.AlertListener'>XUL.AlertListener</option>
+<option value='XUL.EcmaScript'>XUL.EcmaScript</option>
+<option value='XUL.RecentChanges'>XUL.RecentChanges</option>
+<option value='.'>.</option>
+<option value='.'>.</option>
+<option value='.'>.</option>
+<option value='.'>.</option>
+<option value='.'>.</option>
+<option value='.'>.</option>
+</select> 
+</p>
+   
+  </div>  
+</div>
+
+<div id="contents">
+
+<!--PageText-->
+<div id='wikitext'>
+<p><strong>Password required</strong>
+</p>
+<form name='authform' action='/~novotnyr/wiki/Skola/SemantickyWeb?action=upload&upname=deskripcna-logika3.pdf' method='post'>
+<p>Password: <input type='password' name='authpw' class='inputbox' />
+<input type='submit' value='OK' class='inputbutton' />
+</p></form>
+<script language='javascript' type='text/javascript'><!--
+    try { document.authform.authid.focus(); }
+    catch(e) { document.authform.authpw.focus(); } //--></script></div>
+
+
+</div>
+<div class="shadedline"></div>
+  <div id="footer">
+    <!--PageFooterFmt-->
+        <a rel="nofollow" href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=edit'>Upraviť</a> -
+        <a rel="nofollow" href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=diff'>História úprav</a> -
+        <a rel="nofollow" href='http://ics.upjs.sk/~novotnyr/wiki/Skola/SemantickyWeb?action=print' target='_blank'>Tlačiť</a> -
+        <a href='http://ics.upjs.sk/~novotnyr/wiki/Skola/RecentChanges'>Posledné úpravy</a> -
+        <span class='lastmod'>Posledná zmena 18. 02. 2014 16.55</span>
+  </div>
+</div>
+</div>
+
+
+
+
+</body>
+
+</html>
+
+

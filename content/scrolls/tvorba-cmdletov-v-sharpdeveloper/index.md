@@ -1,5 +1,5 @@
 ---
-title: Tvorba cmdletov v prostredí SharpDevelop
+title: Tvorba powershellových cmdletov v prostredí SharpDevelop
 date: 2011-11-21T17:51:08+01:00
 ---
 
@@ -297,12 +297,11 @@ cmdletu `Import-Module` zavedieme snap-in do prostredia.
 > **Warning**
 > 
 > Ak získame chybu:
-> ``` 
-> `Import-Module : Could not load file or assembly
-> 'file:///C:\Users\novotnyr\Documents\SharpDevelop\Projects\HelloWorldCmdlets\HelloWorldCmdlets\bin\Debug\HelloWorldCmdlets.dll' or one of its dependencies. This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.
-> At line:1 char:14 + Import-Module .\HelloWorldCmdlets.dll + CategoryInfo : NotSpecified: (:)
-[Import-Module], BadImageFormatException + FullyQualifiedErrorId : System.BadImageFormatException,Microsoft.PowerShell.Commands.ImportModuleCommand`
-> ```
+> 
+>       Import-Module : Could not load file or assembly
+>		'file:///C:\Users\novotnyr\Documents\SharpDevelop\Projects\HelloWorldCmdlets\HelloWorldCmdlets\bin\Debug\HelloWorldCmdlets.dll' or one of its dependencies. This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded.
+>       At line:1 char:14 + Import-Module .\HelloWorldCmdlets.dll + CategoryInfo : NotSpecified: (:)
+>       [Import-Module], BadImageFormatException + FullyQualifiedErrorId : System.BadImageFormatException,Microsoft.PowerShell.Commands.ImportModuleCommand
 > znamená to, že sme pri vytváraní projektu nastavili príliš novú verziu
 > .NET Frameworku.
 
@@ -320,3 +319,114 @@ Po zmene súboru musíme zatvoriť PowerShell, prebudovať projekt v
 SharpDevelope a použitím `Install-Module` ho opäť zaviesť do prostredia
 a otestovať. Najlepší spôsob, akým zrýchliť túto nezáživnú činnosť, je
 vytvoriť si vlastný powershellovský skript.
+
+Ďalšie cmdlety
+==============
+
+V ukážke máme tri cmdlety v jednom snap-ine:
+
+- `Say-Hello` demonštrujúci parameter `-UserName` s validáciou.
+- `Get-Translation` demonštrujúci pozičný parameter, ktorý môže nadobúdať aj hodnotu z rúry.
+- `Add-Extension` pracuje so súbormi a ukazuje povinný parameter.
+
+```
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Management.Automation;
+
+namespace HelloCmdlets
+{
+	[Cmdlet("Say", "Hello")]
+	public class HelloWorldCmdlet : PSCmdlet
+	{
+		[Parameter]
+		[ValidateSet("Steve Jobs", "Bill Gates")]
+		public string UserName {
+			get; set;
+		}
+		
+		protected override void ProcessRecord()
+		{
+			WriteObject(UserName + ", Hello World!");
+		}
+	}
+	
+	[Cmdlet("Get", "Translation")]	
+	public class TranslationCmdlet : PSCmdlet {
+		
+		[Parameter(Position=0, ValueFromPipeline=true)]
+		public string Word {
+			get;
+			set;
+		}
+		
+		private Dictionary<string, string> dictionary = new Dictionary<string, string>();
+		
+		public TranslationCmdlet() {
+			dictionary["slovo"] = "word";
+			dictionary["pes"] = "dog";
+			dictionary["dom"] = "house";
+			dictionary["zabijac"] = "slayer";
+		}
+		
+		protected override void ProcessRecord()
+		{
+			if(dictionary.ContainsKey(Word)) {
+				WriteObject(dictionary[Word]);
+			} else {
+				WriteError(new ErrorRecord(
+					new KeyNotFoundException(), 
+					"Slovo sa nenaslo", 
+					ErrorCategory.InvalidData, 
+					Word));
+			}
+		}
+		
+		protected override void BeginProcessing()
+		{
+			WriteObject("-----------------------------------------");
+		}
+	}
+	
+	[Cmdlet("Add", "Extension")]
+	public class AddExtensionCmdlet : PSCmdlet {
+		[Parameter(ValueFromPipeline=true, Position=0)]
+		public FileInfo File;
+		
+		[Parameter(Mandatory=true)]
+		public string Extension;
+		
+		protected override void ProcessRecord()
+		{
+			File.MoveTo(File.FullName + Extension);
+		}
+		
+	}
+	
+
+	[RunInstaller(true)]
+	public class HelloWorldSnapIn : PSSnapIn 
+	{
+		public override string Vendor {
+			get {
+				return "UPJS";
+			}
+		}
+		
+		public override string Name {
+			get {
+				return "HelloWorldSnapIn";
+			}
+		}
+		
+		public override string Description {
+			get {
+				return "Hello World cmdlets.";
+			}
+		}
+	}
+}
+```
+

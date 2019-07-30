@@ -1,0 +1,111 @@
+! Kalkulačka
+(:code:)
+2 + 2
+(:codeend:)
+(:codeio:)
+4
+(:codeioend:)
+
+! Kalkulačka - celočíselné delenie
+(:code:)
+3 / 2
+(:codeend:)
+(:codeio:)
+1
+(:codeioend:)
+
+! Kalkulačka - delenie reálnych čísiel
+(:code:)
+3.0 / 2
+(:codeend:)
+(:codeio:)
+1.5
+(:codeioend:)
+
+! Kalkulačka - mocnina
+(:code:)
+10 ** 2
+(:codeend:)
+(:code:)
+pow(10, 2)
+(:codeend:)
+(:codeio:)
+100
+(:codeioend:)
+
+! Maximum čísiel
+(:code:)
+max(4, 5, 3, 5, 7, 20)
+(:codeend:)
+(:codeio:)
+20
+(:codeioend:)
+
+! Minimum čísiel
+(:code:)
+min(4, 5, 3, 5, 7, 20)
+(:codeend:)
+(:codeio:)
+20
+(:codeioend:)
+
+! Premenné
+Python je dynamicky typovaný: dátové typy netreba uvádzať, každá premenná má však exaktný typ
+(:code:)
+dph = 19
+1000 * (dph / 100.0)
+(:codeend:)
+(:codeio:)
+190
+(:codeioend:)
+
+! Zoznamy
+Zoznam je kontajner/kolekcia viacerých prvkov v danom poradí.
+(:code:)
+parne_cisla = [2, 4, 6, 8, 10]
+(:codeend:)
+
+!! Súčet prvkov v zozname
+Funkcia @@sum()@@ berie zoznam prvkov.
+(:code:)
+sum([2, 4, 6, 8, 10])
+(:codeend:)
+(:code:)
+parne_cisla = [2, 4, 6, 8, 10]
+sum(parne_cisla)
+(:codeend:)
+(:codeio:)
+30
+(:codeioend:)
+
+!! Dĺžka zoznamu
+(:code:)
+parne_cisla = [2, 4, 6, 8, 10]
+len(parne_cisla)
+(:codeend:)
+(:codeio:)
+5
+(:codeioend:)
+
+
+!! Párujúca funkcia @@zip()@@
+Funkcia @@[[http://docs.python.org/library/functions.html#zip | zip()]]@@ páruje elementy z viacerých zoznamov. Vráti zoznam, ktorého ''i''-ty prvok je zoznam obsahujúci ''i''-te prvky zo zoznamov v parametri:
+
+(:code:)
+vektor1 = [5, 20]
+vektor2 = [15, 2]
+print zip(vektor1, vektor2)
+(:codeend:)
+(:codeio:)
+[[5, 15], [20, 2]]
+(:codeioend:)
+
+! Vektorový súčet
+(:py:)
+vec1 = [5, 20]
+vec2 = [15, 2]
+
+print [x + y for x, y in zip(vec1, vec2)];
+print map(sum, zip(vec1, vec2))
+(:pyend:)
+

@@ -1,0 +1,140 @@
+(:title UINF/SWB Sémantický web:)
+! Základné informácie
+''Kód predmetu:'' ÚINF/SWB/10
+
+''Počet kreditov:'' 4
+
+''Vyučujúci:'' 
+: : RNDr. Peter Gurský, PhD
+: : RNDr. Róbert Novotný
+
+''Rozvrh'':
+: : utorok, 9:50 -- 12:25, P/7
+
+! Realizované cvičenia
+!! Sémantický web a motivácia, oblasti, problémy, vízie. 
+: :Prezentácia: [[http://www.ics.forth.gr/isl/swprimer/presentations/Chapter1.ppt|The Semantic Web Vision]] zo SWP.
+!! Štruktúrované webové dokumenty a XML
+* Prezentácia [[http://www.ics.forth.gr/isl/swprimer/presentations/Chapter2.ppt | Structured Web Documents in XML]] zo SWP
+* [[XML/XMLNamespace|+]]
+* [[XML/TransformacieXML|+]]
+* [[XML/XPath|+]]
+
+!!! Nástroje
+* [[http://www.purplegene.com/static/transform.html|Online XSL Tools]]
+* [[http://www.whitebeam.org/library/guide/TechNotes/xpathtestbed.rhtm | XPath Testbed]]
+* [[https://addons.mozilla.org/en-US/firefox/addon/firepath/ | FirePath]] -- rozšírenie pre Firefox. Vyžaduje nainštalovaný FireBug.
+* [[http://www.xsltcake.com/ | XSLTCake]] -- online nástroj pre testovanie XSLT.
+* [[http://xslttest.appspot.com/ | XSLTTest]] -- ďalší online nástroj pre testovanie XSLT
+
+!!! Vzorové XML zo slajdov
+(:xml:)
+<library location="Bremen">
+	<author name="Henry Wise">
+		<book title="Artificial Intelligence"/>
+		<book title="Modern Web Services"/>
+		<book title="Theory of Computation"/>
+	</author>
+	<author name="William Smart">
+		<book title="Artificial Intelligence"/>
+	</author>
+	<author name="Cynthia Singleton">
+		<book title="The Semantic Web"/>
+		<book title="Browser Technology Revised"/>
+	</author>
+</library>
+(:xmlend:)
+
+!!! Vzorová XSLT šablóna
+(:xml:)
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+    <xsl:output method="html" indent="yes"/>
+    <xsl:template match="/author">
+        <html>
+            <head>
+                <title>An author</title>
+            </head>
+            <body bgcolor="white">
+                <b>
+                    <xsl:value-of select="name"/>
+                </b>
+                <br />
+                <xsl:value-of select="affiliation"/>
+                <br />
+                <i>
+                    <xsl:value-of select="email"/>
+                </i>
+            </body>
+        </html>
+    </xsl:template>
+</xsl:stylesheet>
+(:xmlend:)
+
+
+!! Popisovanie webových zdrojov pomocou RDF
+: :Prezentácia [[http://www.ics.forth.gr/isl/swprimer/presentations/Chapter3.ppt | Describing Web Resources in RDF]] zo SWP
+
+!! Jazyk ontológií webu: OWL
+: :Prezentácia [[http://www.ics.forth.gr/isl/swprimer/presentations/Chapter4.ppt | Web Ontology Language: OWL]] zo SWP
+
+
+!! SPARQL
+
+!! Modelovanie, Description Logics. 
+* Potreba formálnej logiky v konceptuálnom modelovaní
+** [[http://www.inf.unibz.it/~franconi/dl/course/slides/modelling/modelling.pdf|The Need for a Logic in Conceptual Modeling]]
+** [[Attach:deskripcna-logika1.pdf | prezentácia v slovenčine]] (pokrýva slajdy 1--41)
+* Motivácie z objektovo-orientovaného programovania, deskripčná logika FL-
+** [[Attach:deskripcna-logika2.pdf | prezentácia v slovenčine]] 
+* Deskripčná logika ALC
+** [[Attach:deskripcna-logika3.pdf | prezentácia v slovenčine]] 
+
+!! Protege
+* [[http://s.ics.upjs.sk/~bobco/?podsekcia=semantic|stránka Juraja Bobáka]]
+* [[http://www.youtube.com/watch?v=g6MxiUxlrL0&feature=related|španielsky videotutoriál]]
+* [[http://owl.cs.manchester.ac.uk/tutorials/protegeowltutorial/ | Protege OWL tutoriál]]
+* plug-in [[http://protegewiki.stanford.edu/wiki/OntoViz#Installation|OntoViz]]
+* projekt [[http://s.ics.upjs.sk/~bobco/protege/vysielanie.zip|Vysielanie]] z cvičenia
+* [[http://www.graphviz.org/Download_windows.php|GraphViz]]
+* plug-in Jambalaya pre vizualizáciu rámcov v ontológiách
+** [[http://sourceforge.net/projects/chiselgroup/|download]]
+** [[http://www.thechiselgroup.org/jambalaya_getting-started|Getting Started]]
+
+!! Jena
+: :[[Attach:semanticky-web-dzuris-jena.pdf|prezentácia Maroš Dzuriš]]
+
+!! Sesame
+*  [[http://www.openrdf.org/|Sesame]]
+*  [[http://www.openrdf.org/doc/sesame2/users/ | Manuál]]
+
+
+! Pokrytie obsahu
+* Sémantický web a motivácia, problémy, vízie.
+* XML, syntax, rozličné programové modely (DOM, SAX, StAX), menné priestory v XML, adresovací jazyk XPath, dopytovací jazyk XQuery. Ukážky programovania v Jave.
+* RDF, RDFS
+* OWL
+* dopytovacie jazyky: SPARQL
+* softvérové nástroje: Jena, Sesame, Protege
+* základy deskriptívnej logiky
+* odvodzovanie v deskripčnej logike
+
+! Odkazy
+* [[http://www.ksi.mff.cuni.cz/~vojtas/vyuka/NSWI140TechnologieSemantizaceWebu/1011/NSWI140.html | Technologie sémantizace webu (NSWI140)]] -- predmet na MFF UK Praha
+* Grigoris Antoniou and Frank van Harmelen: Semantic Web Primer, Second Edition. MIT Press, 2008. ISBN: 978-0-262-01242-3 
+** [[http://ics.upjs.sk/~novotnyr/home/skola/semanticky-web/|odkaz dostupný zo 158.197.*.*]]
+** [[http://www.ics.forth.gr/isl/swprimer/presentation.htm|anglické slajdy k SWP]]
+* [[http://www.inf.unibz.it/~franconi/dl/course/ | Description Logics Tutorial]]. Enrico Franconi, Free University of Bozen-Bolzano.
+* [[http://www.dcs.bbk.ac.uk/~michael/sw/sw.html | Semantic Web]]. Birkbeck University of London.
+
+
+!! Náhodné odkazy
+* http://www2.fiit.stuba.sk/~kapustik/ZS/Clanky0607/petras/index.html
+* http://www2.fiit.stuba.sk/~kapustik/ZS/Clanky0910/csoka/index.html
+* http://www2.fiit.stuba.sk/~kapustik/ZS/Clanky0607/klempa/index.html
+* http://www2.fiit.stuba.sk/~kapustik/ZS/Clanky0809/fris/index.html
+* Vojtěch Svátek: Ontologie a WWW. DATAKON 2002. Dostupné na iternete: http://nb.vse.cz/~svatek/onto-www.pdf
+* De Bruin, J.: Using Ontologies : Enabling Knowledge Sharing and Reuse on the Semantic Web.
+* DERI Technical Report DERI-TR-2003-10-29. Október 2003. Dostupné na internete: http://www.deri.at/publications/techpapers/documents/DERI-TR-2003-10-29.pdf
+* Noy, N., Hafner, C.: The State of the Art in Ontology Design : A Survey and Comparative Review. AI Magazine, American Association for Artificial Intelligence, 2003 
+* DERI Insbruck: Technical Papers. Dostupné na internete: http://www.deri.at/publications/techpapers/

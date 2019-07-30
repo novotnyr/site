@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<article>
+  <articleinfo>
+    <title>Cvičenie 1</title>
+
+    <author>
+      <firstname>Róbert</firstname>
+
+      <surname>Novotný</surname>
+    </author>
+  </articleinfo>
+
+  <section>
+    <title>Inštalácia</title>
+
+    <para>Nainštalujte Cygwin s balíčkami:<itemizedlist>
+        <listitem>
+          <para>gcc</para>
+        </listitem>
+
+        <listitem>
+          <para>gcc-g+</para>
+        </listitem>
+
+        <listitem>
+          <para>make</para>
+        </listitem>
+
+        <listitem>
+          <para>gdb</para>
+        </listitem>
+      </itemizedlist></para>
+  </section>
+
+  <section>
+    <title>Nový projekt v NetBeans</title>
+
+    <section>
+      <title>Vytvorenie nového projektu v NetBeans</title>
+
+      <para>Nechajte si spustiť prázdny projekt. Pozorujte zhody so syntaxou
+      Javy - funkcia <function>main()</function>, direktívy
+      <token>#include</token> ako analógia importov kučeravé zátvorky, dátové
+      typy podobné Jave. Spustite prázdny projekt, aby ste overili, že
+      prostredie funguje korektne. Okomentujeme, že funkcia
+      <function>main()</function> musí vracať celé číslo – nula znamená, že
+      program dobehol správne. Konštanta <token>EXIT_SUCCESS</token> má
+      hodnotu 0.</para>
+    </section>
+
+    <section>
+      <title>Ahoj svet</title>
+
+      <para>Vypíšte na konzolu "Ahoj svet".</para>
+
+      <para>Použite funkciu <function>puts()</function>.<programlisting>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+int main(int argc, char** argv) {  
+    puts("Hello World!");
+    return (EXIT_SUCCESS);
+}</programlisting></para>
+
+      <para>Alternatívne použite funkciu <function>printf()</function>.</para>
+
+      <para>Urobte zámernú chybu -- napr. vynechajte bodkočiarku -- a
+      pozorujte varovanie kompilátora.</para>
+    </section>
+
+    <section>
+      <title>Vypíšte čísla od 1 po 30</title>
+
+      <para>Použijeme <token>for</token> cyklus. Vysvetlime si, že na rozdiel
+      od Javy nemôžeme deklarovať premenné rovno v rámci cyklu – to je totiž
+      až vymoženosť C++. Premenné deklarujeme na začiatku funkciu – podobne
+      ako v Pascale.<programlisting>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char** argv) {
+    int i = 0;
+    for(i; i &lt; 10; i++) {
+        printf("%d", i);
+    }
+    return (EXIT_SUCCESS);
+}</programlisting></para>
+
+      <para>Zdôraznime, že lokálne premenné treba vždy inicializovať, pretože
+      štandardne je ich hodnota nedefinovaná a môžu obsahovať náhodné
+      dáta.</para>
+
+      <para>Stručne vysvetlíme princíp formátovacích reťazcov -
+      <token>%d</token> formátuje číslo.</para>
+
+      <para>Všimneme si, že výstupom je štrúdlik čísiel v jednom riadku -
+      funkcia <function>printf()</function> totiž neudáva koniec riadku. Ten
+      musíme špeciálne uviesť vo formátovacom reťazci. Korektnejšia verzia je
+      teda<programlisting>printf("%d\n", i);</programlisting></para>
+
+      <para>Špeciálne si dajme pozor na to, že nesmieme zabudnúť formátovací
+      reťazec. V opačnom prípade volanie <token>printf(i)</token> je síce
+      syntakticky správne, ale logicky nekorektné. </para>
+
+      <para>Naučme sa zapnúť ladiace hlášky a varovania kompilátora, viď
+      http://ics.upjs.sk/~novotnyr/wiki/CLanguage/NastavenieNetBeans.</para>
+
+      <para>Takáto chyba súvisí so smerníkmi, ale na tie si nechajme dostatok
+      času.</para>
+    </section>
+
+    <section>
+      <title>Malá násobilka do 10</title>
+
+      <para>Vypíšte malú násobilku od 1 po 10. </para>
+
+      <para>Využime na to vnorené cykly. Podotknime, že obe premenné musia byť
+      deklarované na začiatku funkcie a dohodnime konvenciu, že každá premenná
+      je deklarovaná na samostatnom riadku.</para>
+
+      <para>Využime formátovací reťazec:<programlisting>printf("%d x %d = %d, i, j, i * j);</programlisting></para>
+    </section>
+
+    <section>
+      <title>Hľadanie väčšieho čísla z dvojice</title>
+
+      <para>Majme dané dve čísla v dvoch premenných, vypíšte väčšie z nich.
+      (Zatiaľ neriešme vstup z klávesnice.)</para>
+
+      <para>Použime podmienku <token>if</token>. Pripomeňme, že test rovnosti
+      sa používa pomocou <token>==</token> a nie pomocou (=). Poznamenajme, že
+      v C neexistuje dátový typ <type>boolean</type> a podmienka
+      <token>if</token> testuje, či výraz nadobúda nenulovú hodnotu.
+      "Nenulové" hodnoty sú pravdivé.<note>
+          <para>V céčku je podmienka <token>if(i = 0)</token> syntakticky
+          korektná konštrukcia. Priraďovací príkaz vracia hodnotu a teda tento
+          príkaz je ekvivalentný príkazu <code>if(0)</code>. V kombinácii s
+          predošlou zásadou to znamená, že takáto podmienka sa vždy vyhodnotí
+          na "nepravdu", ale môže to mať vedľajšie efekty (nechcenú zmenu
+          obsahu premennej.)</para>
+        </note></para>
+    </section>
+
+    <section>
+      <title>Hľadanie maxima v poli</title>
+
+      <para>Z poľa čísiel zadaných v kóde vypíšte najväčšiu hodnotu (maximum).
+      Zatiaľ sa venujme poliam celých čísiel. Syntax je o niečo odlišná od
+      konvencie v Jave. <programlisting>int pole[] = {2, 3, 5, -2};</programlisting></para>
+
+      <para>Ak nepoznáme hodnoty pri inicializácii, použime syntax</para>
+
+      <programlisting>int[4] pole;</programlisting>
+
+      <note>
+        <para>Java podporuje aj túto syntax, ale konvenciou je deklarovať pole
+        nasledovne (všimnime si zátvorky)<programlisting>int[] pole = {2, 3, 5, -2}</programlisting>Deklarácia
+        poľa bez inicializácie sa v Jave realizuje konštruktorom, ale v C
+        samozrejme operátor <token>new</token> neexistuje.</para>
+      </note>
+
+      <para>Pri hľadaní maxima v poli musíme inicializovať pomocnú premennú
+      pre dosiaľ nájdené maximum. Pre jednoduchosť ju môžeme inicializovať
+      hodnotou napr. -127.<note>
+          <para>Letmo treba poznamenať niečo o portabilite programov a o
+          rozsahu integeru. Pre korektnosť môžeme include-núť
+          <token>limits.h</token> a využiť preddefinované konštanty.</para>
+        </note></para>
+
+      <para>Poznamenajme, že na rozdiel od Javy nemajú polia definovanú dĺžku
+      (v porovnaní s vlastnosťou <token>.length</token>). V uvedenom prípade
+      musíme už v čase kompilácie poznať dĺžku poľa (pre jednoduchosť pracujme
+      s fixným počtom 5 čísiel v poli). <note>
+          <para>Nekomplikujme výklad poznámkou o <token>sizeof</token>, ani
+          výkladom o dynamicky alokovaných poliach - na to je ešte čas.</para>
+        </note></para>
+
+      <para>Vysvetlime, že Céčko zásadne nekontroluje medze polí. Ak máme
+      päťprvkové pole, nič nám nezabráni iterovať cez prvých 100 prvkov,
+      akurát od istého prvku budeme pristupovať do cudzej pamäte, čo môže mať
+      nepredvídateľné následky -- od čítania nezmyselných či náhodných dát, po
+      pád programu na chybe SEGFAULT.</para>
+    </section>
+
+    <section>
+      <title>Vypíšte parametre zadané z príkazového riadku</title>
+
+      <para>Funkcia <function>main()</function> sprístupňuje dva parametre:
+      <parameter>argv</parameter> a <parameter>argc</parameter>. Nebudeme
+      komentovať dátové typy, vysvetlíme zatiaľ, že
+      <parameter>argv</parameter> je pole reťazcov (reťazce nepitveme,
+      nepúšťame sa do debát, že je to pointer na <type>char</type> a
+      pod.)</para>
+
+      <para>Ak chceme uviesť do NetBeansu parametre príkazového riadka pre
+      program, použijeme nastavenia projektu:<screenshot>
+          <screeninfo>Nastavenie príkazového riadka - dáta pre
+          <varname>argv</varname></screeninfo>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="netbeans-run-command-argv.png" />
+            </imageobject>
+          </mediaobject>
+        </screenshot></para>
+
+      <para>Pole <varname>argv</varname> preiterujeme <token>for</token>
+      cyklom a vypíšeme pomocou <code>printf()</code>. Vo formátovacom reťazci
+      použijeme <token>%s</token>, zodpovedajúce reťazcom.<note>
+          <para>V prípade, že vypisujeme čisté reťazce, môžeme použiť
+          <function>printf()</function> tak, že reťazec bude sám sebe
+          formátovacím reťazcom. Kvôli bezpečnosti a konzistentnosti sa
+          odporúča vždy použiť formátovací reťazec s parametrom.</para>
+        </note></para>
+    </section>
+  </section>
+</article>
