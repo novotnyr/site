@@ -6,3 +6,5 @@ theme = "hugo-classic"
 
 pygmentsCodeFences = true
 pygmentsStyle = "murphy"
+
+ignoreFiles = [ "___src" ]
