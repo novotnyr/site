@@ -74,16 +74,11 @@ TECO je totiž znakovo orientovaný editor. Celý textový súbor považuje za o
 
 Akurát trochu terminológie:
 
-- **pointer** je kurzor. Ale: pointer ukazuje *medzi znaky*. Pointer na pozícii `1` hovorí, že „naľavo od pointeru je 1 znak“, teda pointer stojí medzi prvým a druhým znakom súboru..
+- **pointer** je kurzor. Ale: pointer ukazuje *medzi znaky*. Pointer na pozícii `1` hovorí, že „naľavo od pointeru je 1 znak“, teda pointer stojí medzi prvým a druhým znakom buffera.
 - **súbor** zodpovedá obrovskej páske, kde na políčkach sú znaky. (Turingov stroj, *anyone*?). Začiatok súboru má index 0.
-- **riadky** sú *sociálny konštrukt*, teda falat súboru medzi dvoma znakmi konca riadku. TECO považuje za koniec riadku dvojicu znakov CR-LF (bez ohľadu na platformu).
+- **riadky** sú *sociálny konštrukt*, teda falat buffera medzi dvoma znakmi konca riadku. TECO považuje za koniec riadku dvojicu znakov CR-LF (bez ohľadu na platformu).
 
-Jak skončiť toto trápenie?
---------------------------
-
-Z `teco` sa vylieza dvojitým `Ctrl+C`. `Ctrl+C`.
-
-Načítanie a výpis súboru
+Načítanie a výpis súboru v bufferi
 ------------------------
 
 Na hrajkanie si urobme cvičný súbor `lorem.txt`, zo shellu:
@@ -110,12 +105,12 @@ Ukážkový *session*, kde `*` je prompt a `$` reprezentuje stlačenie `Esc`:
 *Y$$
 ```
 
-Súbor sa otvoril a načítal! Po otvorení súboru je pointer na začiatku súboru, na indexe 0.
+Súbor sa otvoril a načítal! Po otvorení súboru je pointer na začiatku buffera, na indexe 0.
 
-`HT` — výpis obsahu súboru
+`HT` — výpis obsahu buffera
 --------------------------
 
-Výpis celého súboru získame príkazom `HT`:
+Výpis celého buffera získame príkazom `HT`:
 
 ```plain
 HT$$
@@ -136,6 +131,11 @@ amet
 TECO vypísalo obsah celého buffera.
 
 Mnemotechnika kríva, ale neskôr si povieme, že v skutočnosti sme práve použili dva (!) príkazy. Ale detaily neskôr.
+
+Please no more. Is kruel joke.
+------------------------------
+
+Z `teco` sa vylieza dvojitým `Ctrl+C`. `Ctrl+C`.
 
 `.=` – zistenie aktuálnej polohy
 ------------------------------
@@ -173,7 +173,7 @@ Celý session vrátane dekorácie:
 Lorem
 ```
 
-Keďže pointer je na začiatku súboru (a na začiatku prvého riadku), samotný `T` vypíše prvý riadok.
+Keďže pointer je na začiatku buffera (a na začiatku prvého riadku), samotný `T` vypíše prvý riadok.
 
 `T` je štandardný debugovací nástroj. Kto je stratený, nech si `T`-čkne.
 
@@ -259,25 +259,25 @@ Skok pred tretí znak?
 
 ### Skok na koniec
 
-Skok na koniec súboru vyriešime kúzlom:
+Skok na koniec buffera vyriešime kúzlom:
 
 ```plain
 ZJ
 ```
 
-#### `Z` — index konca súboru
+#### `Z` — index konca buffera
 
-Príkaz `Z` vracia index konca súboru. A samozrejme, výsledok použime ako parameter pre *jump*! Normálny zápis v normálnom jazyku by vyzeral:
+Príkaz `Z` vracia index konca buffera. A samozrejme, výsledok použime ako parameter pre *jump*! Normálny zápis v normálnom jazyku by vyzeral:
 
 ```plain
-jump(endOfFileIndex())
+jump(endOfBufferIndex())
 ```
 
 Ale normálne jazyky neboli vynájdené!
 
 ### Konce riadkov sú dva riadky!
 
-Pozor na to, že konce riadkov sú dva znaky: `CR` a `LF`! Index konca súboru tak môže byť väčšie číslo než je dĺžka súboru v Linuxe!
+Pozor na to, že konce riadkov sú dva znaky: `CR` a `LF`! Index konca bufferu tak môže byť väčšie číslo než je dĺžka súboru v Linuxe!
 
 Funkcie pre indexy
 ------------------
@@ -297,7 +297,7 @@ Posun zo začiatku na ďalší riadok?
 L
 ```
 
-Ak sme na začiatku súboru, posunieme sa o riadok ďalej a pointer sa posunie *za* prvý `CR-LF`.
+Ak sme na začiatku buffera, posunieme sa o riadok ďalej a pointer sa posunie *za* prvý `CR-LF`.
 
 Overme si to výpisom:
 
@@ -329,7 +329,7 @@ Ak sa nachádzame na začiatku buffera a použijeme
 - následne odENTERujeme 
 - a následne ukončíme príkaz cez `Esc`, `Esc`, 
 
-Vložíme na začiatok súboru nový riadok:
+Vložíme na začiatok buffera nový riadok:
 
 ```plain
 ILipsum<enter>$$
@@ -349,7 +349,7 @@ HT
 ```
 
 - `J` presunieme sa na začiatok buffera
-- `K` vymaže od začiatku súboru po najbližší `CR`-`LF` (vrátane)
+- `K` vymaže od začiatku buffera po najbližší `CR`-`LF` (vrátane)
 - a overíme si výpisom.
 
 Príkaz berie aj parametre. Ak chceme vymazať od pointra, dva riadky, stačí `2K`.
@@ -370,7 +370,7 @@ J$$
 D
 ```
 
-`D` berie parametre, takže `3D` nie je trojrozmerné TECO, ale mazanie troch znaky napravo od pointera.
+`D` berie parametre, takže `3D` nie je trojrozmerné TECO, ale mazanie troch znakov napravo od pointera.
 
 Mínusové argumenty mažú naľavo! `-5D` zmaže päť znakov naľavo od pointra.
 
@@ -443,7 +443,7 @@ Mazanie posledného riadku
 ZJ-LK$$
 ```
 
-* `ZJ` nás hodí na koniec súboru:
+* `ZJ` nás hodí na koniec buffera:
   *  `J` skáče, 
   * `Z` je parameter skoku zvaný „na koniec buffera“. Kurzor sa ocitne na úplnom konci, za posledným prázdnym riadkom.
 * `-L` nás posunie o riadok vyššie, teda pred `amet`.
@@ -455,7 +455,7 @@ Poďme hrať TECO golf! Ušetrime jeden znak:
 ZJ-K$$
 ```
 
-- `ZJ` nás hodí na koniec súboru: `J` skáče, `Z` je parameter skoku zvaný „na koniec buffera“
+- `ZJ` nás hodí na koniec buffera: `J` skáče, `Z` je parameter skoku zvaný „na koniec buffera“
 - `-K` maže celý predošlý riadok. `K` killuje, mínus hovorí „jeden riadok naľavo“.
 
 Vtip do prestávky
@@ -470,14 +470,14 @@ Prepisovanie textu
 
 TECO nepodporuje prepisovanie textu. Ale vieme mazať a vkladať!
 
-Zmeňme `Lorem` na začiatku súboru na `lorem`.
+Zmeňme `Lorem` na začiatku buffera na `lorem`.
 
 ```plain
 JDIl$$
 ```
 
-- `J` skáče na začiatok súboru.
-- `D` zmaže znak napravo od pointera. Získame `orem`. Pointer stojí medzi začiatkom súboru a `o`.
+- `J` skáče na začiatok buffera.
+- `D` zmaže znak napravo od pointera. Získame `orem`. Pointer stojí medzi začiatkom buffera a `o`.
 - `Il` vloží znak `l` (el) napravo od pointera. Získame `lorem`. Kurzor bude medzi `l` a `o`.
 
 ## Nejednoznačnosti v kombách
@@ -564,8 +564,8 @@ Doteraz sme videli viacero funkcií, ktoré vracali polohu:
 
 - `0` vráti nultý index.
 - `.` vráti index pointera
-- `B` (*beginning*) vráti index na začiatku súboru
-- `Z` (posledné písmeno abecedy) vráti index konca súboru
+- `B` (*beginning*) vráti index na začiatku buffera
+- `Z` (posledné písmeno abecedy) vráti index konca buffera
 - `H` (*wHole*) vráti usporiadanú dvojicu (*0*, *index konca súboru*)
 
 To sa dá kombinovať! A to je dôvod, prečo:
@@ -576,13 +576,13 @@ To sa dá kombinovať! A to je dôvod, prečo:
 Opakovania a cykly
 ------------------
 
-TECO podporuje opakovania! Chceme vložiť na začiatok súboru päť hviezdičiek?
+TECO podporuje opakovania! Chceme vložiť na začiatok buffera päť hviezdičiek?
 
 ```plain
 J$5<I*$>$$
 ```
 
-- `J` skočí na začiatok súboru
+- `J` skočí na začiatok buffera
 - `5<I*$>`
   - `5` určuje počet iterácií.
   - `<`…`>` obsahujú kód, ktorý sa má vykonať.
@@ -598,7 +598,7 @@ Opakovanie sa dá použiť pri masovom nahrádzaní! Chceme v celom súbore nahr
 J<FSm$n$;>$$
 ```
 
-- `J` skáče na začiatok súboru.
+- `J` skáče na začiatok buffera.
 - `<`…`>` obsahuje cyklus. Keďže nemáme počet opakovaní, máme prakticky `while`.
 - `FS` nahrádza:
   - `m` je nahrádzaný text
