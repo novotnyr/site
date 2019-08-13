@@ -1,3 +1,10 @@
+---
+title: Ťahák k počítačovým sieťam
+date: 2019-08-13
+---
+
+
+
 Prehľad
 =======
 
