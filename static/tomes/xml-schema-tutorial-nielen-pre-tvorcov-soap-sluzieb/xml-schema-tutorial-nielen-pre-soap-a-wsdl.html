@@ -461,15 +461,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#_schéma_s_komplexnými_vnorenými_elementami">Schéma s komplexnými vnorenými elementami</a></li>
-<li><a href="#_schéma_s_viacnásobne_vnorenými_elementami">Schéma s viacnásobne vnorenými elementami</a>
-<ul class="sectlevel2">
-<li><a href="#_štýl_matrioška">Štýl matrioška</a></li>
-</ul>
-</li>
+<li><a href="#_schéma_s_viacnásobne_vnorenými_elementami">Schéma s viacnásobne vnorenými elementami</a></li>
 <li><a href="#_schéma_s_viacerými_koreňovými_elementami">Schéma s viacerými koreňovými elementami</a></li>
 <li><a href="#_schéma_s_opakujúcimi_sa_elementami">Schéma s opakujúcimi sa elementami</a></li>
 <li><a href="#_schéma_s_vlastnými_jednoduchými_typmi">Schéma s vlastnými jednoduchými typmi</a></li>
-<li><a href="#_inštancie_a_automatické_priradenie_schémy">Inštancie a automatické priradenie schémy</a></li>
+<li><a href="#_inštancie_a_automatické_priradenie_schémy">Inštancie a automatické priradenie schémy</a>
+<ul class="sectlevel2">
+<li><a href="#_lokácie_xml_schém_dokumentu">Lokácie XML schém dokumentu</a></li>
+<li><a href="#_atribút_schemalocation">Atribút <code>schemaLocation</code></a></li>
+</ul>
+</li>
 <li><a href="#_alternatívne_zápisy_schémy">Alternatívne zápisy schémy</a></li>
 <li><a href="#_schéma_s_elementami_ktoré_majú_atribúty">Schéma s elementami, ktoré majú atribúty</a>
 <ul class="sectlevel2">
@@ -573,10 +574,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Schéma má koreňový element <code>&lt;schema&gt;</code>.</p>
 </li>
 <li>
-<p>Všetky elementy jazyka XML schémy patria do menného priestoru <code><a href="http://www.w3.org/2001/XMLSchema" class="bare">http://www.w3.org/2001/XMLSchema</a></code>.</p>
+<p>Atribút <code>xmlns</code> udáva implicitný menný priestor pre elementy.
+Keďže tento dokument popisuje XML schému, jeho elementy budú patriť do menného priestoru špecifikácie <em>XML Schema</em>, ktorým je <code><a href="http://www.w3.org/2001/XMLSchema" class="bare">http://www.w3.org/2001/XMLSchema</a></code>.</p>
 </li>
 <li>
-<p>Atribút <code>targetNamespace</code> hovorí, do ktorého menného priestoru budú patriť elementy dokumentu popisovaného schémou.</p>
+<p>Atribút <code>targetNamespace</code> (<em>cieľový menný priestor</em>) hovorí, do ktorého menného priestoru budú patriť elementy dokumentu popisovaného schémou.</p>
 </li>
 </ul>
 </div>
@@ -605,16 +607,23 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;calendar</span> <span class="na">xmlns=</span><span class="s">"urn:example:calendar"</span><span class="nt">&gt;</span>
-    3 events
+<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;calendar</span> <span class="na">xmlns=</span><span class="s">"urn:example:calendar"</span><span class="nt">&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+    3 events <i class="conum" data-value="2"></i><b>(2)</b>
 <span class="nt">&lt;/calendar&gt;</span></code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Dokument má jediný (koreňový) element <code>&lt;calendar&gt;</code>, ktorého obsahom je reťazec.</p>
-</div>
-<div class="paragraph">
-<p>Element navyše patrí do menného priestoru (<em>namespace</em>) <code>urn:example:calendar</code>.</p>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Dokument má jediný (koreňový) element <code>&lt;calendar&gt;</code>, ktorý patrí do menného
+priestoru (<em>namespace</em>) <code>urn:example:calendar</code>.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Obsahom elementu je text (reťazec, <em>string</em>).</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Schéma, ktorá popisuje uvedený dokument, vyzerá nasledovne:</p>
@@ -829,12 +838,12 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 <div class="quoteblock">
 <blockquote>
 <div class="paragraph">
-<p>XML schéma v štandardnom správaní (<code>elementFormDefault</code> s hodnotou <code>unqualified</code> ) hovorí, že žiadny z lokálnych elementov nesmie byť kvalifikovaný.</p>
+<p>XML schéma v štandardnom správaní (<code>elementFormDefault</code> s hodnotou <code>unqualified</code>) zakazuje kvalifikovanie lokálnych elementov.</p>
 </div>
 </blockquote>
 </div>
 <div class="paragraph">
-<p>Inštancia, ktorá spĺňa schému s vynechaným atribútom <code>elementFormDefault</code>, musí vyzerať takto:</p>
+<p>Inštancia, ktorá spĺňa schému bez atribútu <code>elementFormDefault</code>, musí vyzerať takto:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -855,7 +864,7 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Element <code>calendar</code> je kvalifikovaný: <code>{urn:example:calendar}calendar}</code>. Podľa schémy ide o globálny element.</td>
+<td>Element <code>calendar</code> je kvalifikovaný: <code>{urn:example:calendar}calendar</code>. Podľa schémy ide o globálny element.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -876,7 +885,7 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 </div>
 </div>
 <div class="paragraph">
-<p>Chybová hláška hovorí o porušení pravidla XML schémy. Element <code>&lt;event&gt;</code>, ktorý je v schéme lokálny, je v XML inštancii kvalifikovaný (patrí do menného priestoru), čo nie je povolené.</p>
+<p>Chybová hláška hovorí o porušení pravidla XML schémy. Element <code>&lt;event&gt;</code>, ktorý je v schéme lokálny, je v XML inštancii kvalifikovaný (patrí do menného priestoru <code>urn:example:calendar</code>), čo nie je povolené.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1046,27 +1055,29 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 <pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;schema</span> <span class="na">xmlns=</span><span class="s">"http://www.w3.org/2001/XMLSchema"</span>
         <span class="na">targetNamespace=</span><span class="s">"urn:example:calendar"</span>
         <span class="na">elementFormDefault=</span><span class="s">"qualified"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"calendar"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;complexType&gt;</span>
-            <span class="nt">&lt;sequence&gt;</span>
-                <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"event"</span> <span class="na">minOccurs=</span><span class="s">"0"</span> <span class="na">maxOccurs=</span><span class="s">"unbounded"</span><span class="nt">&gt;</span>
-                    <span class="nt">&lt;complexType&gt;</span>
-                        <span class="nt">&lt;sequence&gt;</span>
-                            <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"date"</span> <span class="na">type=</span><span class="s">"dateTime"</span> <span class="nt">/&gt;</span>
-                            <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"description"</span> <span class="na">type=</span><span class="s">"string"</span> <span class="nt">/&gt;</span>
-                            <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participants"</span> <span class="na">minOccurs=</span><span class="s">"0"</span><span class="nt">&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
-                                <span class="nt">&lt;complexType&gt;</span>
-                                    <span class="nt">&lt;sequence&gt;</span>
-                                        <span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participant"</span> <span class="na">type=</span><span class="s">"string"</span> <span class="na">maxOccurs=</span><span class="s">"unbounded"</span> <span class="nt">/&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
-                                    <span class="nt">&lt;/sequence&gt;</span>
-                                <span class="nt">&lt;/complexType&gt;</span>
-                            <span class="nt">&lt;/element&gt;</span>
-                        <span class="nt">&lt;/sequence&gt;</span>
-                    <span class="nt">&lt;/complexType&gt;</span>
-                <span class="nt">&lt;/element&gt;</span>
-            <span class="nt">&lt;/sequence&gt;</span>
-        <span class="nt">&lt;/complexType&gt;</span>
-    <span class="nt">&lt;/element&gt;</span>
+	<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"calendar"</span><span class="nt">&gt;</span>
+		<span class="nt">&lt;complexType&gt;</span>
+			<span class="nt">&lt;sequence&gt;</span>
+				<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"event"</span> <span class="na">minOccurs=</span><span class="s">"0"</span> <span class="na">maxOccurs=</span><span class="s">"unbounded"</span><span class="nt">&gt;</span>
+					<span class="nt">&lt;complexType&gt;</span>
+						<span class="nt">&lt;sequence&gt;</span>
+							<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"date"</span> <span class="na">type=</span><span class="s">"dateTime"</span> <span class="nt">/&gt;</span>
+							<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"description"</span> <span class="na">type=</span><span class="s">"string"</span> <span class="nt">/&gt;</span>
+							<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participants"</span> <span class="na">minOccurs=</span><span class="s">"0"</span><span class="nt">&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
+								<span class="nt">&lt;complexType&gt;</span>
+									<span class="nt">&lt;sequence&gt;</span>
+										<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participant"</span>
+										         <span class="na">type=</span><span class="s">"string"</span>
+										         <span class="na">maxOccurs=</span><span class="s">"unbounded"</span> <span class="nt">/&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
+									<span class="nt">&lt;/sequence&gt;</span>
+								<span class="nt">&lt;/complexType&gt;</span>
+							<span class="nt">&lt;/element&gt;</span>
+						<span class="nt">&lt;/sequence&gt;</span>
+					<span class="nt">&lt;/complexType&gt;</span>
+				<span class="nt">&lt;/element&gt;</span>
+			<span class="nt">&lt;/sequence&gt;</span>
+		<span class="nt">&lt;/complexType&gt;</span>
+	<span class="nt">&lt;/element&gt;</span>
 <span class="nt">&lt;/schema&gt;</span></code></pre>
 </div>
 </div>
@@ -1082,14 +1093,23 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 </tr>
 </table>
 </div>
-<div class="sect2">
-<h3 id="_štýl_matrioška">Štýl matrioška</h3>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="title">Štýl matrioška</div>
 <div class="paragraph">
 <p>V schéme máme jeden globálny element <code>&lt;calendar&gt;</code> a viacero lokálnych elementov: <code>&lt;event&gt;</code>, v ňom <code>&lt;date&gt;</code>, <code>&lt;description&gt;</code> a <code>&lt;participants&gt;</code>, a v rámci neho účastníka <code>&lt;participant&gt;</code>.</p>
 </div>
 <div class="paragraph">
 <p>Tento štýl vnárania elementov sa niekde nazýva <strong>matrioška</strong> podľa slávnej ruskej bábiky, ktorá obsahuje bábiky, ktoré obsahujú bábiky.</p>
 </div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
@@ -1167,7 +1187,9 @@ XML schéma v štandardnom správaní hovorí, že <em>žiadny z lokálnych elem
 							<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participants"</span> <span class="na">minOccurs=</span><span class="s">"0"</span><span class="nt">&gt;</span>
 								<span class="nt">&lt;complexType&gt;</span>
 									<span class="nt">&lt;sequence&gt;</span>
-										<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participant"</span> <span class="na">type=</span><span class="s">"string"</span> <span class="na">maxOccurs=</span><span class="s">"unbounded"</span> <span class="nt">/&gt;</span>
+										<span class="nt">&lt;element</span> <span class="na">name=</span><span class="s">"participant"</span>
+										         <span class="na">type=</span><span class="s">"string"</span>
+										         <span class="na">maxOccurs=</span><span class="s">"unbounded"</span> <span class="nt">/&gt;</span>
 									<span class="nt">&lt;/sequence&gt;</span>
 								<span class="nt">&lt;/complexType&gt;</span>
 							<span class="nt">&lt;/element&gt;</span>
@@ -1372,16 +1394,39 @@ Element '{urn:example:calendar}description': 'A Very Long Conference Name With M
 <p>prvá časť dvojice reprezentuje <strong>menný priestor</strong>, ku ktorému priradíme XML schému</p>
 </li>
 <li>
-<p>druhá časť dvojice predstavuje adresu <strong>URL</strong>, na ktorej sa nachádza XML schéma k predošlému mennému priestoru. Adresa môže byť absolútna, napríklad <code><a href="https://www.w3.org/2009/XMLSchema/XMLSchema.xsd" class="bare">https://www.w3.org/2009/XMLSchema/XMLSchema.xsd</a></code> alebo relatívna vzhľadom k inštancii XML dokumentu. V príklade máme relatívnu adresu, kde sa očakáva, že schéma je v rovnakom "adresári" ako samotná inštancia. Validátor pristúpi, či stiahne schému dostupnú na danej adrese a použije ju pri validácii.</p>
+<p>druhá časť dvojice predstavuje adresu <strong>URL</strong>, na ktorej sa nachádza XML schéma k predošlému mennému priestoru.</p>
 </li>
 </ul>
 </div>
+<div class="sect2">
+<h3 id="_lokácie_xml_schém_dokumentu">Lokácie XML schém dokumentu</h3>
+<div class="paragraph">
+<p>Lokácia XML schémy je adresa URL, ktorá musí byť dohľadateľná a stiahnuteľná validátorom.
+Validátor získa súbor schémy z danej adresy a použije ju pri validácii inštancie XML.</p>
+</div>
+<div class="paragraph">
+<p>Adresa musí byť:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>absolútna</strong>, napr. <code><a href="https://www.w3.org/2009/XMLSchema/XMLSchema.xsd" class="bare">https://www.w3.org/2009/XMLSchema/XMLSchema.xsd</a></code></p>
+</li>
+<li>
+<p><strong>relatívna</strong>, kde sa očakáva, že cesta k schéme je uvedená vzhľadom k lokácii inštancie. V príklade čakáme, že schéma <code>calendar.xsd</code> je v rovnakom „adresári“ ako dokument XML.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_atribút_schemalocation">Atribút <code>schemaLocation</code></h3>
 <div class="paragraph">
 <p>Samotný atribút <code>schemaLocation</code> je plne kvalifikovaný a patrí do menného priestoru <code><a href="http://www.w3.org/2001/XMLSchema-instance" class="bare">http://www.w3.org/2001/XMLSchema-instance</a></code>. Ak ho chceme použiť v dokumente, musíme sa naňho odkázať cez prefix menného priestoru, ktorý je podľa konvencie <code>xsi</code>. To je dôvod, prečo musíme deklarovať mapovanie medzi prefixom a menným priestorom:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="rouge highlight"><code>xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -1892,7 +1937,7 @@ Importované súčasti musia byť z iného menného priestoru ako má cieľový 
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Schéma pre kalendár <code>schema.xsd</code> deklaruje elementy do cieľového menného priestoru <code>urn:example:calendar</code>. Zároveň deklarujeme mapovanie prefixu <code>e</code> na menný priestor udalostí z importovanej schémy.</td>
+<td>Schéma pre kalendár <code>calendar.xsd</code> deklaruje elementy do cieľového menného priestoru <code>urn:example:calendar</code>. Zároveň deklarujeme mapovanie prefixu <code>e</code> na menný priestor udalostí z importovanej schémy.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -1911,9 +1956,9 @@ Importované súčasti musia byť z iného menného priestoru ako má cieľový 
 <div class="title">calendar.xml</div>
 <div class="content">
 <pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;calendar</span> <span class="na">xmlns=</span><span class="s">"urn:example:calendar"</span>
-          <span class="na">xmlns:e=</span><span class="s">"urn:example:event"</span>
-          <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
-          <span class="na">xsi:schemaLocation=</span><span class="s">"urn:example:calendar calendar.xsd"</span><span class="nt">&gt;</span><i class="conum" data-value="1"></i><b>(1)</b>
+    <span class="na">xmlns:e=</span><span class="s">"urn:example:event"</span>
+    <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
+    <span class="na">xsi:schemaLocation=</span><span class="s">"urn:example:calendar calendar.xsd"</span><span class="nt">&gt;</span><i class="conum" data-value="1"></i><b>(1)</b>
 
     <span class="nt">&lt;e:event&gt;</span> <i class="conum" data-value="2"></i><b>(2)</b>
         <span class="nt">&lt;e:date&gt;</span>2019-05-30T09:00:00<span class="nt">&lt;/e:date&gt;</span>
@@ -1926,7 +1971,7 @@ Importované súčasti musia byť z iného menného priestoru ako má cieľový 
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Kalendár má koreňový element s celým kvalifikovaným menom <code>{urn:example:calendar}calendar}</code>. Validácia sa bude riadiť schémou <code>schema.xsd</code>.</td>
+<td>Kalendár má koreňový element <code>&lt;calendar&gt;</code> s celým kvalifikovaným menom <code>{urn:example:calendar}calendar</code>. Validácia sa bude riadiť schémou <code>calendar.xsd</code>.</td>
 </tr>
 <tr>
 <td><i class="conum" data-value="2"></i><b>2</b></td>
@@ -1947,7 +1992,7 @@ Importované súčasti musia byť z iného menného priestoru ako má cieľový 
 <div class="listingblock">
 <div class="title">calendar.xml</div>
 <div class="content">
-<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;c:calendar</span> <span class="na">xmlns:c=</span><span class="s">"urn:example:calendar"</span>
+<pre class="rouge highlight"><code data-lang="xml"><span class="nt">&lt;cal:calendar</span> <span class="na">xmlns:cal=</span><span class="s">"urn:example:calendar"</span>
             <span class="na">xmlns:e=</span><span class="s">"urn:example:event"</span>
             <span class="na">xmlns:xsi=</span><span class="s">"http://www.w3.org/2001/XMLSchema-instance"</span>
             <span class="na">xsi:schemaLocation=</span><span class="s">"urn:example:calendar calendar.xsd"</span><span class="nt">&gt;</span>
@@ -1955,7 +2000,7 @@ Importované súčasti musia byť z iného menného priestoru ako má cieľový 
         <span class="nt">&lt;e:date&gt;</span>2019-05-30T09:00:00<span class="nt">&lt;/e:date&gt;</span>
         <span class="nt">&lt;e:description&gt;</span>Test<span class="nt">&lt;/e:description&gt;</span>
     <span class="nt">&lt;/e:event&gt;</span>
-<span class="nt">&lt;/c:calendar&gt;</span></code></pre>
+<span class="nt">&lt;/cal:calendar&gt;</span></code></pre>
 </div>
 </div>
 <div class="ulist">
@@ -1997,7 +2042,7 @@ Oba prefixy sme namapovali na príslušné menné priestory v koreňovom element
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-10-06 23:41:34 +0200
+Last updated 2019-10-07 10:32:18 +0200
 </div>
 </div>
 <style>
