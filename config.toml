@@ -8,3 +8,6 @@ pygmentsCodeFences = true
 pygmentsStyle = "murphy"
 
 ignoreFiles = [ "___src" ]
+
+[params]
+  custom_css= [ "asciidoctor.css" ]
