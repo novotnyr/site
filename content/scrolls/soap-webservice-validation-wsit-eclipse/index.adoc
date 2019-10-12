@@ -19,7 +19,12 @@ WS-IT.org outages are very common.
 Even with caching turned on, Eclipse IDE might not be able to reach the validation services (see https://bugs.eclipse.org/bugs/show_bug.cgi?id=535813[Eclipse Bug 535813]).
 Sadly, unlike SOAP UI or other GUI tools, validation profiles are always downloaded from the web, and not provided offline.
 
-Workaround? Download the necessary files and launch a local HTTP server.
+Eclipse IDE requires at least the following:
+
+* http://www.ws-i.org/Testing/Tools/2004/12/AP10_BP11_SSBP10_TAD.xml.
+* http://www.ws-i.org/Testing/Tools/2004/12/BasicSecurityTestAssertions.xml
+
+Workaround? Download the necessary files from a mirror and launch a local HTTP server.
 
 == Roadmap
 
@@ -29,7 +34,7 @@ Workaround? Download the necessary files and launch a local HTTP server.
 
 === Cloning the repo
 
-The https://github.com/novotnyr/ws-i_org[`novotnyr/ws-i_org`] repository contains the minimal necessary files that should be provided locally.
+The https://github.com/novotnyr/ws-i_org[`novotnyr/ws-i_org`] repository is a partial mirror of WS-I.org with files that are necessary for validation.
 
 === Running the HTTP
 
