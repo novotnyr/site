@@ -81,10 +81,10 @@ Akurát trochu terminológie:
 Načítanie a výpis súboru v bufferi
 ------------------------
 
-Na hrajkanie si urobme cvičný súbor `lorem.txt`, zo shellu:
+Na hrajkanie si urobme cvičný súbor `ozymandias.txt`, zo shellu:
 
 ```shell
-printf "%s\n" Lorem ipsum dolor sit amet > lorem.txt
+printf "Som Ozymandias, vsetkych kralov kral.\nHlad, mocny, zufaj, vidiac moje dielo\041\n --Percy Bysshe Shelley: Ozymandias (1818)\n" > ozymandias.txt
 ```
 
 Bežné TECO neberie parametre z príkazového riadka. (Príkazový riadok nebol vynájdený.)
@@ -101,7 +101,7 @@ Na vykonanie príkazu sa nepoužíva *Enter* (Enter nebol vynájdený), ale **dv
 Ukážkový *session*, kde `*` je prompt a `$` reprezentuje stlačenie `Esc`:
 
 ```
-*EBlorem.txt$$
+*EBozymandias.txt$$
 *Y$$
 ```
 
@@ -120,11 +120,9 @@ Celý session vyzerá nasledovne:
 
 ```
 *HT$$
-Lorem
-ipsum
-dolor
-sit
-amet
+Som Ozymandias, vsetkych kralov kral.
+Hlad, mocny, zufaj, vidiac moje dielo!
+ --Percy Bysshe Shelley: Ozymandias (1818)
 *
 ```
 
@@ -170,7 +168,7 @@ Celý session vrátane dekorácie:
 
 ```plain
 *T$$
-Lorem
+Som Ozymandias, vsetkych kralov kral.
 ```
 
 Keďže pointer je na začiatku buffera (a na začiatku prvého riadku), samotný `T` vypíše prvý riadok.
@@ -194,16 +192,16 @@ Príkaz `C` hýbe pointerom po ~~páske~~ ~~bufferi~~ súbore. Ak chceme pointer
 C
 ```
 
-Zrazu máme kurzor medzi indexami 0 a 1, inak povedané, v ukážke medzi písmenami `L` a `o`:
+Zrazu máme kurzor medzi indexami 0 a 1, inak povedané, v ukážke medzi písmenami `S` a `o`:
 
 ```plain
-L|orem
+S|om Ozymandias, vsetkych kralov kral.
 ```
 
 To si môžeme overiť:
 
 - `.=` vráti `1`
-- `T` vráti `orem`, pretože vypisujeme od pointra (index 1) do konca riadka.
+- `T` vráti `om Ozymandias, vsetkych kralov kral.`, pretože vypisujeme od pointra (index 1) do konca riadka.
 
 ### Parametre príkazu
 
@@ -219,7 +217,7 @@ Príkaz `C` berie počet znakov, o ktoré sa máme pohnúť doprava. Napr. `1C` 
 ```plain
 *1C$$
 *T$$
-orem
+om Ozymandias, vsetkych kralov kral.
 ```
 
 Posúvať sa môžeme aj doľava, cez záporné indexy! `-1C` posunie pointer o mínus jeden znak doprava. Teda o jeden znak doľava.
@@ -227,7 +225,7 @@ Posúvať sa môžeme aj doľava, cez záporné indexy! `-1C` posunie pointer o 
 ```plain
 *-1C$$
 *T$$
-Lorem
+Som Ozymandias, vsetkych kralov kral.
 ```
 
 Plus jedna a mínus jedna sú zabudované. `C` znamená automaticky `1C` a `-C` znamená `-1C`.
@@ -305,7 +303,7 @@ Overme si to výpisom:
 T
 ```
 
-Uvidíme výpis od aktuálneho pointera do konca riadku, teda `ipsum`.
+Uvidíme výpis od aktuálneho pointera do konca riadku, teda `Hlad, mocny, zufaj, vidiac moje dielo!`.
 
 ### Posun o viacero riadkov
 
@@ -323,19 +321,32 @@ Príkaz `I` (**insert**) vkladá text pod pointer.
 
 Berie jeden parameter a to *text*, čo sa má vložiť. Tento parameter však nejde *pred* príkaz (nie je to poloha), ale *za* príkaz.
 
-Ak sa nachádzame na začiatku buffera a použijeme
+Ak sa nachádzame na začiatku buffera a chceme vložiť dekoračnú čiaru, použime:
 
--  `I` s parametrom `lipsum`, 
+-  `I` s parametrom `--------------------`, 
 - následne odENTERujeme 
 - a následne ukončíme príkaz cez `Esc`, `Esc`, 
 
 Vložíme na začiatok buffera nový riadok:
 
 ```plain
-ILipsum<enter>$$
+I--------------------<enter>$$
 ```
 
 Súbor si vypíšme klasickým `HT`.
+
+Celý *session* vyzerá potom nasledovne:
+
+```
+*I--------------
+$$
+*HT$$
+--------------
+Som Ozymandias, vsetkych kralov kral.
+Hlad, mocny, zufaj, vidiac moje dielo!
+ --Percy Bysshe Shelley: Ozymandias (1818)
+ *
+```
 
 `K` — kill – mazanie textu
 -------------------
@@ -390,7 +401,7 @@ Teda
 Ctrl-C
 Ctrl-C
 teco
-EBlorem.txt$$
+EBozymandias.txt$$
 Y$$
 HT$$
 ```
@@ -402,36 +413,41 @@ TECO je v skutočnosti arkádovka: vľavo pisár, vpravo súbor, a kombá naklad
 
 Príkazy môžu rovno nasledovať za sebou a ukončia sa **Esc/Esc**.
 
-Dajme si prípravu: päť riadkov a jeden prázdny na konci:
+Dajme si prípravu, kde sekerou rozporcujeme Shelleyho jambický pentameter na päť riadkov a jeden prázdny na konci:
 
 ```plain
-Lorem
-ipsum
-dolor
-sit
-amet
+Som Ozymandias, 
+vsetkych kralov kral.
+Hlad, mocny, 
+zufaj, 
+vidiac moje dielo!
 
 ```
 
 Pre Linux/Mac to vyzerá:
 
 ```
-od -bc lorem.txt
-0000000   114 157 162 145 155 012 151 160 163 165 155 012 144 157 154 157
-           L   o   r   e   m  \n   i   p   s   u   m  \n   d   o   l   o
-0000020   162 012 163 151 164 012 141 155 145 164 012
-           r  \n   s   i   t  \n   a   m   e   t  \n
-0000033
+0000000   123 157 155 040 117 172 171 155 141 156 144 151 141 163 054 040
+           S   o   m       O   z   y   m   a   n   d   i   a   s   ,
+0000020   012 166 163 145 164 153 171 143 150 040 153 162 141 154 157 166
+          \n   v   s   e   t   k   y   c   h       k   r   a   l   o   v
+0000040   040 153 162 141 154 056 012 110 154 141 144 054 040 155 157 143
+               k   r   a   l   .  \n   H   l   a   d   ,       m   o   c
+0000060   156 171 054 040 012 172 165 146 141 152 054 040 012 166 151 144
+           n   y   ,      \n   z   u   f   a   j   ,      \n   v   i   d
+0000100   151 141 143 040 155 157 152 145 040 144 151 145 154 157 041 012
+           i   a   c       m   o   j   e       d   i   e   l   o   !  \n
+0000120
 ```
 
 Pre TECO to však vyzerá s CR-LF:
 
 ```
-Lorem<CR><LF>
-ipsum<CR><LF>
-dolor<CR><LF>
-sit<CR><LF>
-amet<CR><LF>
+Som Ozymandias,<CR><LF>
+vsetkych kralov kral.<CR><LF>
+Hlad, mocny,<CR><LF>
+zufaj,<CR><LF>
+vidiac moje dielo!<CR><LF>
 ```
 
 A teraz kombo tajm!
@@ -446,7 +462,7 @@ ZJ-LK$$
 * `ZJ` nás hodí na koniec buffera:
   *  `J` skáče, 
   * `Z` je parameter skoku zvaný „na koniec buffera“. Kurzor sa ocitne na úplnom konci, za posledným prázdnym riadkom.
-* `-L` nás posunie o riadok vyššie, teda pred `amet`.
+* `-L` nás posunie o riadok vyššie, teda pred `vidiac moje dielo!`.
 * `K` maže celý aktuálny riadok.
 
 Poďme hrať TECO golf! Ušetrime jeden znak:
@@ -470,15 +486,15 @@ Prepisovanie textu
 
 TECO nepodporuje prepisovanie textu. Ale vieme mazať a vkladať!
 
-Zmeňme `Lorem` na začiatku buffera na `lorem`.
+Zmeňme `Som` na začiatku buffera na `som`.
 
 ```plain
-JDIl$$
+JDIs$$
 ```
 
 - `J` skáče na začiatok buffera.
-- `D` zmaže znak napravo od pointera. Získame `orem`. Pointer stojí medzi začiatkom buffera a `o`.
-- `Il` vloží znak `l` (el) napravo od pointera. Získame `lorem`. Kurzor bude medzi `l` a `o`.
+- `D` zmaže znak napravo od pointera. Získame `om Ozymandias,`. Pointer stojí medzi začiatkom buffera a `o`.
+- `Is` vloží znak `s` (es) napravo od pointera. Získame `som ozymandias`. Kurzor bude medzi `s` a `o`.
 
 ## Nejednoznačnosti v kombách
 
@@ -501,7 +517,7 @@ Niekedy sa pointer ocitne uprostred riadku. Napríklad po poslednom príklade:
 
 Výsledok bude 1.
 
-Ak vypíšeme riadok cez `T`, získame text od pointera do konca riadka, takže `orem`. Kde je `L`?
+Ak vypíšeme riadok cez `T`, získame text od pointera do konca riadka, takže `om ozymandias`. Kde je `S`?
 
 Kombináciou dvoch príkazov vypíšeme celý aktuálny riadok:
 
@@ -518,10 +534,17 @@ Kombináciou dvoch príkazov vypíšeme celý aktuálny riadok:
 TECO vie vyhľadávať! `S` berie jeden argument s textom, ktorý sa má hľadať:
 
 ```plain
-Sdolor$$
+Skral$$
 ```
 
-TECO nájde reťazec a postaví pointer za hľadaný text.
+TECO nájde reťazec a postaví pointer za hľadaný text. 
+
+Ak sa pozrieme navôkol, kurzor bude za prvým výskytom reťazca `kral`:
+
+```
+*T$$
+ov kral.
+```
 
 `FS` – find / substitute – vyhľadávanie a nahrádzanie
 -----------------------------------------------------
@@ -529,10 +552,12 @@ TECO nájde reťazec a postaví pointer za hľadaný text.
 `FS` má dva parametre oddelené **Esc**: *čo* hľadať a *čím* nahradiť.
 
 ```plain
-FSdolor$doom$$
+FSOzymandias$Ozzy$$
 ```
 
-Po nahradení sa kurzor objaví za nahradeným textom.
+Po nahradení sa kurzor objaví za nahradeným textom. 
+
+Pozor, hľadá sa od aktuálnej pozície kurzora! Ak sme práve skončili príkaz s vyhľadávaním, radšej skočme na začiatok súboru.
 
 `EX` – ukončenie a zápis zmien
 ------------------------------
@@ -576,17 +601,17 @@ To sa dá kombinovať! A to je dôvod, prečo:
 Opakovania a cykly
 ------------------
 
-TECO podporuje opakovania! Chceme vložiť na začiatok buffera päť hviezdičiek?
+TECO podporuje opakovania! Chceme vložiť na začiatok buffera dvadsať pomlčiek?
 
 ```plain
-J$5<I*$>$$
+J$5<I-$>$$
 ```
 
 - `J` skočí na začiatok buffera
-- `5<I*$>`
+- `5<I-$>`
   - `5` určuje počet iterácií.
   - `<`…`>` obsahujú kód, ktorý sa má vykonať.
-    - pomocou `I` vložíme hviezdičku `*` a príkaz ukončíme **Esc**
+    - pomocou `I` vložíme pomlčku `-` a príkaz ukončíme **Esc**
 - **Esc Esc** vykoná program.
 
 Masové nahrádzanie
@@ -609,10 +634,10 @@ J<FSm$n$;>$$
 
 ---
 
-Q-Registre –s premenné
+Q-Registre – premenné
 --------------------
 
-TECO nemá premenné. Namiesto toho má **Q-registre**, čo je 36 chlievikov od *á* po *zet*  a od nuly po 9.Každý chlievik **Q-register** môže obsahovať reťazec a nezávisle od toho číslo. 
+TECO nemá premenné. Namiesto toho má **Q-registre**, čo je 36 chlievikov od *á* po *zet*  a od nuly po 9. Každý chlievik **Q-register** môže obsahovať reťazec a nezávisle od toho číslo. 
 
 Prečo `Q`? Lebo toto písmeno ostalo nepoužité.
 
