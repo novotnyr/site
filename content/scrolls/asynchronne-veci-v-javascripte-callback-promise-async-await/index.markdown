@@ -149,18 +149,20 @@ Poznámka: natívne promisy v ES2015 neposkytujú spôsob, ako zistiť ich stav.
 Metóda `then()`
 ---------------
 
-*	berie dva parametre, **handlery** (a.k.a *callbacky*) 
-	*	funkciu `onFulfilled`:
-		*	zavolaná po splnení prísľubu
-		*	prvým parametrom je hodnota prísľubu
-	*	funkciu `onRejected`
-		*	zavolaná po zamietnutí prísľubu
-		*	prvým parametrom je dôvod zamietnutia
-	*	obe funkcie nebudú mať definovaný `this` (sú to čisté funkcie)
-*	metódu `then` možno reťaziť:
-	*	handlery sa budú volať v poradí registrácie
-*	vracia nový promise, ktorý je splnený po dobehnutí handlera pre splnenie, či po dobehnutí zamietacieho handlera.
-*	hodnota z handlera pre splnenie je fulfillment hodnota pre nový promise
+Metóda `then()` na promise berie dva parametre, tzv. **callbacky** (niekde tiež *handlery*), reprezentujúce dve funkcie.
+
+*	funkcia `onFulfilled`:
+	*	zavolaná po splnení prísľubu
+	*	prvým parametrom je hodnota prísľubu
+*	funkcia `onRejected`
+	*	zavolaná po zamietnutí prísľubu
+	*	prvým parametrom je dôvod zamietnutia (obvykle výnimka)
+
+### Návratová hodnota `then()`
+
+Po zavolaní metódy `then()` získame nový promise, ktorý je splnený po dobehnutí handlera pre splnenie, či zamietnutý po dobehnutí zamietacieho handlera. V prípade úspechu je hodnota v splnenom promise prevzatá z návratovej hodnoty callbacku.
+
+To nám dáva možnosť reťaziť prísľuby, o čom si povieme podrobnejšie v sekcii *Reťazenie promisov*.
 
 ### Použitie `then` s dvoma callbackmi
 
@@ -191,14 +193,14 @@ Callback (funkcia, ktorá je parametrom pre `then()`) môže vracať tri veci:
 
 *	nič
 *	bežnú hodnotu
-*	prísľub
+*	promise
 *	vyhodiť výnimku
 
-Ak callback nevracia nič, alebo vracia nejakú hodnotu, je prísľub vrátený funkciou `then` [automaticky splnený](https://promisesaplus.com/#point-64).
+Ak callback nevracia nič, alebo vracia nejakú hodnotu, je promise vrátený funkciou `then` [automaticky splnený](https://promisesaplus.com/#point-64).
 
 Ak callback vyhodí výnimku, promise je zamietnutý.
 
-Ak callback prísľubu P vracia iný prísľub Q, prísľub P prevezme stav vráteného prísľubu Q (prísľub P musí byť *pending* dovtedy, kým je *pending* vrátený prísľub Q. Podobne sa spriahne aj prechod do splneného či zamietnutého vzťahu. Podrobnosti určuje [špecifikácia](https://promisesaplus.com/#point-49).). 
+Ak callback promisu P vracia iný promise Q, promise P prevezme stav vráteného promisu Q (promise P musí byť v stave *pending* dovtedy, kým je v stave *pending* vrátený promise Q. Podobne sa spriahne aj prechod do splneného či zamietnutého vzťahu. Podrobnosti určuje [špecifikácia](https://promisesaplus.com/#point-49).). 
 
 ### Ukážka reťazenia
 
@@ -210,8 +212,8 @@ fetch('http://jsonplaceholder.typicode.com/albums')
     .then(json => console.log(json))
 ```
 
-1. Prvý callback vracia JSON z odpovede. Keďže metóda [`json()`](https://developer.mozilla.org/en-US/docs/Web/API/Body/json) vracia `Promise`, stav prísľubu vráteného z prvého `then` sa spriahne s prísľubom `json()`. 
-2. Druhý callback prevezme parameter `json`, obsahujúci odbalenú hodnotu z predošlého promisu, teda samotný objekt s dátami, a vypíše ho. Callback nevracia nič, ale prísľub vrátený z druhej `then` už ani nepotrebujeme.
+1. Prvý callback vracia JSON z odpovede. Keďže metóda [`json()`](https://developer.mozilla.org/en-US/docs/Web/API/Body/json) vracia `Promise`, stav promisu vráteného z prvého `then` sa spriahne s prísľubom `json()`. 
+2. Druhý callback prevezme parameter `json`, obsahujúci odbalenú hodnotu z predošlého promisu, teda samotný objekt s dátami, a vypíše ho. Callback nevracia nič, ale promise vrátený z druhej `then` už ani nepotrebujeme.
 
 ### Volanie `catch()` odchytáva výnimky
 
@@ -479,8 +481,14 @@ async function findFullAlbums() {
 })();
 ```
 
+Repozitár v Gite
+================
+
+Ukážkový kód sa nachádza v repozitári na GitHube, v repe [`novotnyr/javascript-async-rest-client`](https://github.com/novotnyr/javascript-async-rest-client).
+
 Pramene
 ========
+
 * [Asynchrónne veci v JavaScripte cez Promises](http://ics.upjs.sk/~novotnyr/blog/1996/asynchronne-veci-v-javascripte-cez-promises) — staršia verzia článku z roku 2014, pred príchodom promisov do jadra JavaScriptu.
 
 * [Promises, Promises (slides)](http://www.slideshare.net/domenicdenicola/promises-promises)
