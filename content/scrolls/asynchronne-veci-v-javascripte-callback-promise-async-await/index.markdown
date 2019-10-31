@@ -149,7 +149,7 @@ Poznámka: natívne promisy v ES2015 neposkytujú spôsob, ako zistiť ich stav.
 Metóda `then()`
 ---------------
 
-Metóda `then()` na promise berie dva parametre, tzv. **callbacky** (niekde tiež *handlery*), reprezentujúce dve funkcie.
+Metóda `then()` na promise berie dva parametre, tzv. **callbacky** (niekde tiež *handlery*), reprezentujúce dve funkcie.
 
 *	funkcia `onFulfilled`:
 	*	zavolaná po splnení prísľubu
@@ -194,7 +194,7 @@ Callback (funkcia, ktorá je parametrom pre `then()`) môže vracať tri veci:
 *	nič
 *	bežnú hodnotu
 *	promise
-*	vyhodiť výnimku
+*	alebo vyhodiť výnimku
 
 Ak callback nevracia nič, alebo vracia nejakú hodnotu, je promise vrátený funkciou `then` [automaticky splnený](https://promisesaplus.com/#point-64).
 
