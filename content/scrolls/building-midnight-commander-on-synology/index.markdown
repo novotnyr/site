@@ -231,7 +231,7 @@ vim /opt/bin/mc-run.sh
 The contents will be simple:
 
 ```shell
-export TERMINFO=/opt/share/terminfo TERM=xterm LANG="en_US.UTF-8" LC_COLLATE="en_US.UTF-8" LC_CTYPE="en_US.UTF-8" LC_MESSAGES="en_US.UTF-8" LC_MONETARY="en_US.UTF-8" LC_NUMERIC="en_US.UTF-8" LC_TIME="en_US.UTF-8" LC_ALL="";mc -c
+export TERMINFO=/opt/share/terminfo TERM=xterm LANG="en_US.UTF-8" LC_COLLATE="en_US.UTF-8" LC_CTYPE="en_US.UTF-8" LC_MESSAGES="en_US.UTF-8" LC_MONETARY="en_US.UTF-8" LC_NUMERIC="en_US.UTF-8" LC_TIME="en_US.UTF-8" LC_ALL="";mc -c "$@"
 ```
 
 ## Aliasing
