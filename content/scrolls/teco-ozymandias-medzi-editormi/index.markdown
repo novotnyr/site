@@ -313,8 +313,6 @@ Posúvať sa môžeme dopredu i dozadu. Napríklad posun o dva riadky dopredu:
 2L
 ```
 
-Uvidíme zrejme `sit`.
-
 ## `I` – insert – vkladanie textu
 
 Príkaz `I` (**insert**) vkladá text pod pointer.
