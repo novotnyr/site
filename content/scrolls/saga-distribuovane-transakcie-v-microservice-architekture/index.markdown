@@ -1,6 +1,6 @@
 ---
-title: Saga - distribuované transakcie v nezávislých databázach
-date: 2019-11-23T10:28:31+01:00
+title: Saga – distribuované transakcie v nezávislých databázach
+date: 2019-11-23
 ---
 
 > „Povedzte učiteľovi, že nemám ságy,“ úctivo odpovedal Ostap.
@@ -371,7 +371,7 @@ Ak máme nasledovný sled krokov:
 
 1. Červená transakcia autorizuje Ireninu kartu.
 2. Modrá transakcia vytvorí novú Ireninu objednávku.
-3. Červený transakcia zistí, že Irenina karta nebola autorizovaná.
+3. Červená transakcia zistí, že Irenina karta nebola autorizovaná.
 4. Modrá transakcia autorizuje Ireninu kartu.
 
 Ak sa tieto operácie uložia do verzovacieho súboru, môžeme odstrániť duplicitnú autorizáciu karty.
