@@ -1,6 +1,7 @@
 ---
 title: Podpora webových služieb SOAP v Java 9 a novšej
 date: 2019-10-02T08:42:32+01:00
+lastmod: 2020-09-21T20:42:32+01:00
 ---
 
 Ak chceme v Jave zverejniť webovú službu v protokole SOAP, máme k dispozícii základnú špecifikáciu  [JSR 224: JavaTM API for XML-Based Web Services (JAX-WS) 2.0](http://jcp.org/en/jsr/detail?id=224). Stačí si vybrať jednu zo štyroch knižníc alebo bezpočtu aplikačných serverov, v ktorej službu implementujeme.
@@ -9,8 +10,8 @@ Rokmi overená istota, ktorú si ukážeme, je SOAP služba implementovaná v kn
 
 Ukážeme si:
 
-* vytvorenie serverovskej časti, od kódu ku automaticky generovanému popisu služby cez WSDL.
-* vytvorenie klientskej časti, vygenerovaním kódu klienta na základe WSDL.
+1. Vytvorenie serverovskej časti: od kódu ku automaticky generovanému popisu služby cez WSDL.
+2. Vytvorenie klientskej časti: vygenerovaním kódu klienta na základe WSDL.
 
 Historické okienko
 ==================
@@ -28,7 +29,7 @@ Programátorov však viac zasiahli následné zmeny:
 Serverovská časť
 ================
 
-Server vytvoríme štyroma krokmi:
+Server vytvoríme v štyroch krokoch:
 
 1. Pridáme závislosti na knižnici Metro.
 2. Vytvoríme triedu so serverovským kódom.
@@ -44,48 +45,51 @@ Serverovskú časť vytvoríme s použitím Mavenu, ktorý zavedie všetky nutn�
 <dependency>
     <groupId>com.sun.xml.ws</groupId>
     <artifactId>jaxws-rt</artifactId>
-    <version>2.3.2</version>
+    <version>2.3.3</version>
 </dependency>
 ```
 
-Netreba sa čudovať, hoci názov skupiny (_group id_) je staručký `com.sun.xml.ws`, samotný kód verzie 2.3.2 už pochádza z nadácie Eclipse.
+Netreba sa čudovať, hoci názov skupiny (*group id*) je staručký `com.sun.xml.ws`, samotný kód verzie 2.3.3 už pochádza z nadácie Eclipse.
+
+Nastavenie použitia Javy 11
+---------------------------
+V `pom.xml` nezabudnime zapnúť podporu pre Javu 11:
+
+```xml
+<properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+</properties>
+```
 
 Kód serverovskej časti
 ----------------------
 
-Serverovský časť je úplne bežná trieda, s úplne bežnými metódami:
+Serverovská časť je úplne bežná trieda, s úplne bežnými metódami:
 
 ```java
+package sk.upjs.ics.kopr.soap.server;
+
+import javax.jws.WebService;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@WebService
 public class DefaultTermService {
     private List<Term> terms = new ArrayList<Term>();
 
     public DefaultTermService() {
-        terms.add(new Term(new Date(107, 12, 12), "UINF/PAZ1c", 100));
-        terms.add(new Term(new Date(107, 12, 15), "UINF/PAZ1c", 75));
-        terms.add(new Term(new Date(107, 12, 12), "UINF/TVY1a", 50));
+        terms.add(new Term(LocalDate.of(2020, 12, 12), "UINF/PAZ1c", 100));
+        terms.add(new Term(LocalDate.of(2020, 12, 15), "UINF/PAZ1c", 75));
+        terms.add(new Term(LocalDate.of(2021, 1, 5), "UINF/TVY1a", 50));
     }
 
     public List<Term> getTerms(String courseCode) {
-        List<Term> filteredTerms = new ArrayList<Term>();
-        for (Term term : terms) {
-            if (term.getCourseCode().equals(courseCode)) {
-                filteredTerms.add(term);
-            }
-        }
-        return filteredTerms;
-    }
-
-    public boolean signup(
-            String courseCode, Date date) {
-        for (Term term : terms) {
-            if (term.getCourseCode().equals(courseCode)
-                    && term.getDate().equals(date)
-                    && term.getFreeSlots() > 0) {
-                term.setFreeSlots(term.getFreeSlots() - 1);
-                return true;
-            }
-        }
-        return false;
+        return terms.stream()
+                .filter(term -> term.getCourseCode().equals(courseCode))
+                .collect(Collectors.toList());
     }
 }
 ```
@@ -105,7 +109,7 @@ Publikovanie služby
 
 Službu vypublikujeme zavolaním statickej metódy `publish` na triede `Endpoint`.
 
-```
+```java
 import javax.xml.ws.Endpoint;
 
 public class Server {
@@ -151,38 +155,34 @@ Namiesto neho použijeme mavenovský plugin.
 Na generovanie použijeme mavenovský plugin `jaxws-maven-plugin`. Do klientskeho `pom.xml` dodáme:
 
 ```xml
-<plugin>
-    <groupId>com.sun.xml.ws</groupId>
-    <artifactId>jaxws-maven-plugin</artifactId>
-    <version>2.3.2</version>
-    <executions>
-        <execution>
-            <id>wsimport</id>
-            <goals>
-                <goal>wsimport</goal>
-            </goals>
-            <configuration>
-                <wsdlUrls>
-                    <wsdlUrl>http://localhost:8888/terms?wsdl</wsdlUrl>
-                </wsdlUrls>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<plugins>
+    <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jaxws-maven-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+            <wsdlUrls>
+                <wsdlUrl>http://localhost:8888/terms?wsdl</wsdlUrl>
+            </wsdlUrls>
+        </configuration>
+    </plugin>
+</plugins>
 ```
 
 Samozrejme, predpokladáme, že i klientsky projekt obsahuje:
 
-* závislosť na `com.sun.xml.ws:jaxws-rt:2.3.2`
+* závislosť na `com.sun.xml.ws:jaxws-rt:2.3.3`
 * a je pripravený pre zostavenie nad Javou 11
 
-Spusťme klasický zostavovací proces:
+Nechajme si vygenerovať zdrojové kódy pre klienta:
 
 ```
-mvn compile
+mvn clean jaxws:wsimport compile
 ```
 
 Plugin vygeneruje niekoľko súborov, ktoré sa ocitnú v adresári `target/generated-sources/wsimport`. Keďže ide o automaticky generované triedy, niektoré názvy môžu byť čudesné (napríklad `DefaultTermServiceService`).
+
+Následne ich priamo skompiluje, čím ich sprístupní v zdrojových kódoch klienta, ktorého ihneď vytvoríme.
 
 ### Použitie klienta v kóde
 
@@ -213,7 +213,6 @@ Napriek tomu je však už i takáto jednoduchá podpora minimálne ekvivalentná
 Ukážkové projekty
 =================
 
-Repozitár [novotnyr/metro-java11-demo](https://github.com/novotnyr/metro-java11-demo) na GitHube obsahuje dva nezávislé projekty:
+* **Serverovský** repozitár [novotnyr/kopr-soap-server-2020](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje SOAP server.
+* **Klientsky** repozitár  [novotnyr/kopr-soap-klient-2020](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje podporu pre generovanie kódu klienta s ukážkovým použitím.
 
-- **server** pre spustenie SOAP servera
-- **klient** s podporou pre generovanie kódu klienta s ukážkovým použitím.
