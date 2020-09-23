@@ -213,6 +213,6 @@ Napriek tomu je však už i takáto jednoduchá podpora minimálne ekvivalentná
 Ukážkové projekty
 =================
 
-* **Serverovský** repozitár [novotnyr/kopr-soap-server-2020](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje SOAP server.
-* **Klientsky** repozitár  [novotnyr/kopr-soap-klient-2020](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje podporu pre generovanie kódu klienta s ukážkovým použitím.
+* **Serverovský** repozitár [novotnyr/kopr-soap-server-2020)](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje SOAP server
+* **Klientsky** repozitár  [novotnyr/kopr-soap-klient-2020)](https://github.com/novotnyr/kopr-soap-server-2020) obsahuje podporu pre generovanie kódu klienta s ukážkovým použitím.
 
