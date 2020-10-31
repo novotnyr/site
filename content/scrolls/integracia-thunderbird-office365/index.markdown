@@ -62,3 +62,21 @@ Kolujú anektodálne historky, ako používatelia rozbehali podporu pre pozvánk
 Thunderbird verzie 78 je značne odlišný od predošlých verzií a TBSync rovnako nedoimplementoval podporu pre všetky okrajové prípady.
 
 Kombinácia týchto troch doplnkov je preverená a funguje aj na modernom Thunderbirde, čo sa výmenou za pár eúr ročne oplatí.
+
+Pokročilé koncepty
+==================
+
+Beta verzie TBSync a EAS
+------------------------
+Ak chcete žiť na hrane, môžete si ručne stiahnuť baličky XPI pre TBSync a EAS a pridať si ich do Thunderbirdu. Tieto verzie často obsahujú vlastnosti, ktoré na oficiálnom portáli ešte nie sú zverejnené.
+
+Archív je k dispozícii na https://tbsync.jobisoft.de/beta/TB78/.
+
+TBSync má zdrojové kódy uverejnené na [GitHube](https://github.com/jobisoft/TbSync).
+
+
+Povolenie ActiveSync v Exchange
+-------------------------------
+Váš správca možno vie povoliť ActiveSync a tým odstráni nutnosť používať Owl. [Dokumentácia pre Exchange Server](https://docs.microsoft.com/en-us/exchange/clients/exchange-activesync/activesync-mailbox-access?view=exchserver-2019
+) využíva buď klikanie v UI pre Exchange Server alebo cmdlet `Set-CasMailbox`.
+
