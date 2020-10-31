@@ -5,16 +5,86 @@ date: 2020-10-31T00:50:08+01:00
 
 Thunderbird sa dokáže integrovať s Office 365 podobným spôsobom ako Outlook. 
 
-Budeme potrebovať tri doplnky (add-ons):
+K dispozícii je integrácia kalendára, kontaktov a za poplatok aj spracovávanie pozvánok na udalosti .
 
-- [TBSync](https://addons.thunderbird.net/en-US/thunderbird/addon/tbsync/) --  integrácia kontaktov, kalendáre a úlohy
-- [EAS Sync pre TBSync](https://github.com/jobisoft/EAS-4-TbSync/wiki/Compatibility-list-(EAS)) -- podpora pre Exchange ActiveSync, ktorou z Office 365 vytiahneme kontakty
+Budeme pracovať s troma add-onmi (doplnkami).
+
+- [TBSync](https://addons.thunderbird.net/en-US/thunderbird/addon/tbsync/) --  integrácia kontaktov, kalendáre a úlohy.
+- [EAS Sync pre TBSync](https://github.com/jobisoft/EAS-4-TbSync/wiki/Compatibility-list-(EAS)) -- podpora pre Exchange ActiveSync, ktorou z Office 365 vytiahneme kontakty.
 - [OWL for Exchange](https://addons.thunderbird.net/en-US/thunderbird/addon/owl-for-exchange/) -- platený plugin pre e-maily a pozvánky na udalosti pre protokol Outlook Web Access (OWA).
 
-TBSync + EAS Sync: adresár kontaktov
-------------------------------------
 
-Hoci TBSync vieme použiť pre kalendáre a služby založené na protokole ActiveSync, mnoho zamestnávateľov využívajúcich Office 365 tento protokol nepovoľuje a tým redukuje tento add-on na adresár s kontaktami.
+Ako sa rozhodnúť?
+==================
+
+* Stačí mi len e-mail, firemné kontakty a kalendár určený len na čítanie? Použime štandardné vytváranie účtu cez protokoly IMAP alebo POP3 a add-ony **TBSync** + **EAS Sync**.
+* Potrebujem e-mail, kontakty, kalendár a vybavovať pozvánky na udalosti a chcem zaplatiť 10 dolárov ročne? Použime add-on **Owl** na vytvorenie e-mailového účtu cez protokol Exchange, pričom cez neho vybavíme aj kalendár a udalosti, a add-on **TBSync** spolu s **EAS Sync** využijeme na synchronizáciu firemných kontaktov.
+
+Variant I: Nastavenie Thunderbirdu cez protokol POP/IMAP
+========================================================
+
+V Thunderbirde vytvoríme nový účet - či už pri štarte alebo dodatočne cez **Tools | Account Settings** a tlačidlo **Account Actions** a možnosť **Add Mail Account...**
+
+![](thunderbird-autodiscovery1.png)
+
+Vyplníme meno a e-mailovú adresu, ale heslo neuvádzajme. Ak používame štandardného zamestnávateľa, mnoho z nich je v internej databáze Thunderbirdu a dokáže svoje nastavenia poskytnúť automaticky.
+
+Thunderbird doplní nastavenia, my vyplníme heslo a sme pripravení.
+
+![](thunderbird-autodiscovery2.png)
+
+Štandardné nastavenia serverov pre Office 365
+---------------------------------------------
+
+* POP
+    * Server: outlook.office365.com
+    * Port: 995
+    * Encryption Method: TLS/SSL
+* IMAP
+    * Server: outlook.office365.com
+    * Port: 993
+    * Encryption Method: TLS/SSL
+* SMTP
+    * Server: outlook.office365.com
+    * Port: 587
+    * Encryption Method: STARTTLS
+
+### Autentifikácia 
+
+V závislosti od zamestnávateľa môžeme na autentifikáciu použiť buď priamo login a heslo alebo autorizáciu cez OAuth 2. Implicitné nastavenie využíva **Normal Password**.
+
+Nastavenie kontaktov a kalendára
+---------------------------------
+
+Teraz môžeme nastaviť kontakty a kalendár pomocou dvojice add-onov **TBSync** a **EAS Sync**.
+
+Variant II: Owl For Exchange: maily, kalendár a udalosti cez protokol OWA
+=============================================================
+Owl for Exchange je platený add-on pre integráciu mailov, kalendárov a udalostí cez protokol OWA. Stojí síce 10 dolárov ročne (s mesačnou skúšobnou lehotou), ale podporíte dlhoročného prispievateľa do zdrojákov Thunderbirdu.
+
+Okrem toho získame podporu pre obsluhu pozvánok na udalosti priamo z okna Thunderbirdu.
+
+**Pozor!** Ak konfigurujeme nový účet v Thunderbirde, použime buď OWL alebo predošlé riešene cez protokol IMAP/POP/SMTP!
+
+![UI s pozvánkami cez Owl](thunderbird-owl.png)
+
+Owl je dokonca propagovaný v Thunderbirde. Ak vytvárame nový účet a zvolíme typ Exchange, dostaneme ponuku pre inštaláciu tohto add-onu.
+
+![Zakladanie nového účtu cez Owl](owl-new-account.png)
+
+Prihlásenie sa realizuje cez OAuth, čiže zrejme opäť uvidíme prihlasovací screen svojho zamestnávateľa.
+
+Owl zavedie účet medzi štandardné účty spravovateľné cez *Tools -> Account Settings* presne tak ako akýkoľvek iný účet. Prihlásenie je riešené špecificky, cez metódu **Open Login web page**.
+
+
+
+TBSync + EAS Sync: kontakty a kalendáre
+=======================================
+
+Táto dvojica pluginov dokáže:
+
+* poskytnúť firemné kontakty a kalendáre, ak sme použili bezplatný variant s IMAP/POP3
+* poskytnúť len firemné kontakty, ak sme využili OWL a protokol OWA.
 
 Kalendár síce vieme prepojiť a zobraziť do rozhrania Thunderbirdu, ale udalosti v mailoch nebudeme vedieť ani schváliť ani zamietnuť. Vždy keď príde pozvánka na udalosť, dostaneme mail s textom:
 
@@ -22,7 +92,9 @@ Kalendár síce vieme prepojiť a zobraziť do rozhrania Thunderbirdu, ale udalo
 
 Na jeseň 2020 je podpora zvláštna -- toto nastavenie sa v Outloooku na webovej verzii Office 365 vôbec nenachádza.
 
-Kalendár / úlohy radšej prepojíme v ďalšej sekcii cez add-on Owl.
+Niektorí zamestnávatelia dokážu povoliť pre kalendáre a udalosti protokol ActiveSync a tým umožniť týmto add-onom pracovať aj s udalosťami, ale v praxi je to skôr výnimka (pozri tiež zdroje na konci článku!).
+
+Ak to náš zamestnávateľ nedokáže, musíme použiť add-on Owl, a **TBSync / EAS Sync** použijeme len na synchronizáciu kontaktov.
 
 ### Konfigurácia
 
@@ -32,27 +104,14 @@ Konfigurácia add-onu sa rieši cez separátny dialóg. V hlavnom menu *Tools ->
 
 Prihlásime sa do účtu a akceptujeme dialógové okna implementujúce login cez protokol OAuth - čo pravdepodobne vyvolá autentifikáciu cez prihlasovacie okno vášho zamestnávateľa.
 
-V následnom dialógu vypneme synchronizáciu položiek a ponecháme len kontakty (Contacts). Kalendár a ostatné položky vyriešime iným add-onom (cez Owl), a ak by sme na to zabudli, zistili by sme, že máme duplicitné kalendáre (z Owl a TBSync).
+Ak používame Owl, v následnom dialógu vypneme synchronizáciu položiek a ponecháme len kontakty (Contacts), pretože nechceme duplicitný kalendár (z Owl a TBSync).
 
 ![TBSync a účet Office365](tbsync-config.png)
 
+Ak Owl nechceme používať, môžeme synchronizovať všetky položky.
+
 Nezabudneme nastaviť periódu synchronizácie -- štandardná nula zodpovedá ručnej synchronizácii, ale je lepšie použiť napr. hodinový interval.
 
-Owl For Exchange: maily, kalendár a udalosti
----------------------------------------------
-Owl for Exchange je platený add-on pre integráciu mailov, kalendárov a udalostí cez protokol OWA. Stojí síce 10 dolárov ročne (s mesačnou skúšobnou lehotou), ale podporíte dlhoročného prispievateľa do zdrojákov Thunderbirdu.
-
-Okrem toho získame podporu pre obsluhu pozvánok na udalosti priamo z okna Thunderbirdu.
-
-![UI s pozvánkami cez Owl](thunderbird-owl.png)
-
-Owl je dokonca propagovaný v Thunderbirde. Ak vytvárame nový účet a zvolíme typ Exchange, dostaneme ponuku pre inštaláciu tohto add-onu.
-
-![Zakladanie nového účtu cez Owl](owl-new-account.png)
-
-Prihlásenie sa realizuje rovnako cez OAuth, čiže zrejme opäť uvidíme prihlasovací screen svojho zamestnávateľa.
-
-Owl zavedie účet medzi štandardné účty spravovateľné cez *Tools -> Account Settings* presne tak ako akýkoľvek iný účet. Prihlásenie je riešené špecificky, cez metódu **Open Login web page**.
 
 Záver
 =====
