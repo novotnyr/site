@@ -135,7 +135,7 @@ do
              ;;
           t) TYPE="$OPTARG"
              ;;
-          \?) echo "Unsupported parameter $OPT"
+          ?) echo "Unsupported parameter $OPT"
              ;;
   esac
 done
