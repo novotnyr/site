@@ -212,7 +212,7 @@ Formálne:
     g(b) = h
     h(c) = výsledok
     
-Všimnime si ešte ako bonus, že kariovanie binárnej funkcie je rovnaké ako čiastočná aplikácia binárnej funkcie: výsledkom po prvom kroku je unárna funkcia a po druhom výsledok. 
+Všimnime si ešte ako bonus, že kariovanie binárnej funkcie je rovnaké ako čiastočná aplikácia binárnej funkcie: v prvom kroku používame unárnu funkciu, ktorej výsledkom je unárna funkcia a po druhom kroku získavame rovno výsledok. 
 Pri ternárnych a viacargumentových funkciách to už nemusí platiť!    
 
 ## Prevody v kóde
