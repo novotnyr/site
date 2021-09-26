@@ -20,10 +20,10 @@ Monáda potrebuje:
 
 Vyrobme si teraz monadický zoznam prvkov a nazvime ho **superzoznam** `SuperList`, pretože bude omnoho lepší než klasický zoznam!
 
-- obalíme ľubovoľný typ `T` a pripravíme si:
+- obalíme ľubovoľný dátový typ `T` a pripravíme si:
     - konštruktor, ktorý vie prevziať kolekciu prvkov typu `T`
     - pomocnú statickú metódu, ktorou vybudujeme superlist na základe viacerých prvkov
-- pripravíme si zabaľovaco-vybaľovaco-spracovateľskú metódu, ale teraz sa nebude volať `then`, ale `bind`.
+- pripravíme si zabaľovaco-vybaľovaco-spracovateľskú metódu, ale teraz sa nebude volať `then`, ale `bind` (bude to lepšie vyzerať).
 
 ## Metóda `bind`
 Metóda `then`, teda `bind` bude vyzerať nasledovne:
@@ -170,7 +170,7 @@ Máme teda zoznam troch zoznamov:
 
 Funkcia `bind` zoberie tri čiastkové superzoznamy a zlepí ich dohromady do jedného veľkého superzoznamu:
 
-## Susedia a duplikácie!
+# Susedia a duplikácie!
 
 
 Môžeme si urobiť aj iný test, kde zistíme susedov a každého z nich zduplikujeme!
@@ -190,7 +190,7 @@ void testNeighboursAndDuplicate() {
 
 Z čísla 7 vzniknú susedia 6, 7 a 8, a keď ich zduplikujeme, očakávame 12, 14 a 16!
 
-# Alternatívny bind - skratka pre prevod prvku na prvok
+# Jednoduchší bind - skratka pre prevod prvku na prvok
 
 Metóda `bind` očakávala funkciu, ktorá vráti superzoznam, teda monadický zoznam. 
 Mnohokrát sme však leniví a vieme, že každý prvok zoznamu budeme premieňať na iný prvok zoznamu.
