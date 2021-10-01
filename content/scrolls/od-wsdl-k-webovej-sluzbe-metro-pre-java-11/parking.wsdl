@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<wsdl:definitions
+        name="parking"
+
+        xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+        xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+
+        targetNamespace="http://www.example.org/parking"
+        xmlns:tns="http://www.example.org/parking"
+>
+
+    <wsdl:types>
+        <xsd:schema targetNamespace="http://www.example.org/parking">
+            <xsd:include schemaLocation="parking.xsd" />
+        </xsd:schema>
+    </wsdl:types>
+
+    <wsdl:message name="request">
+        <wsdl:part name="part" element="tns:parkingRequest" />
+    </wsdl:message>
+
+    <wsdl:message name="response">
+        <wsdl:part name="part" element="tns:parkingTicket" />
+    </wsdl:message>
+
+    <wsdl:portType name="ParkingPortType">
+        <wsdl:operation name="getTicket">
+            <wsdl:input message="tns:request" />
+            <wsdl:output message="tns:response" />
+        </wsdl:operation>
+    </wsdl:portType>
+
+    <wsdl:binding name="ParkingBinding" type="tns:ParkingPortType">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+
+        <wsdl:operation name="getTicket">
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+
+    <wsdl:service name="ParkingServices">
+        <wsdl:port name="ParkingService" binding="tns:ParkingBinding">
+            <soap:address location="http://localhost:8888/parking"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

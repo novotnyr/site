@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        targetNamespace="http://www.example.org/parking"
+        elementFormDefault="qualified">
+
+    <element name="parkingRequest">
+        <complexType>
+            <sequence>
+                <element name="carId" type="string" />
+                <element name="zone" type="int" />
+            </sequence>
+        </complexType>
+    </element>
+
+    <element name="parkingTicket">
+        <complexType>
+            <sequence>
+                <element name="id" type="string" />
+                <element name="validUntil" type="dateTime" />
+            </sequence>
+        </complexType>
+    </element>
+</schema>
