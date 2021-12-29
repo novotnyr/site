@@ -102,12 +102,9 @@ public interface MovieReservationPortType {
 
 }
 ```
-Máme teda interfejs webovej služby, potrebujeme však aj jeho implementáciu. V princípe máme dve možnosti: 
+Máme teda interfejs webovej služby, potrebujeme však aj jeho implementáciu.
+Vytvoríme triedu s príslušnými metódami a anotujeme tu tak, aby ukazovala na interfejs, ktorá má anotáciu `@WebService`.
 
-1.  vytvoriť triedu, ktorá implementuje interfejs `MovieReservationType` a dopísať príslušný kód
-1.  vytvoriť triedu s príslušnými metódami a anotovať tu tak, aby ukazovala na interfej, ktorá má anotáciu `@WebService`.
-
-Zvolíme si druhú možnosť:
 ```java
 package sk.novotnyr.movie.ws;
 
