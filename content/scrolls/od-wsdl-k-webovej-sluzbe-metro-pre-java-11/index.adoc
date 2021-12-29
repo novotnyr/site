@@ -101,6 +101,7 @@ Jeho funkcionalitu nahraďme pluginom pre Maven:
     </configuration>
 </plugin>
 ----
+
 <1> Definujme odkaz na názov WSDL, z ktorého vygenerujeme kód.
 <2> Uvedieme cestu k adresáru v projekte, z ktorého vytiahneme WSDL súbor.
 <3> Aby sa v generovanom kóde zbytočne neobjavovali celé cesty k lokálnemu súborovému systému používateľa, uveďme explicitnú adresu ku kódu.
@@ -251,7 +252,7 @@ public static void main(String[] args) throws Exception {
 
 Toto je klasický jednoduchý spôsob, ktorý ale vygeneruje WSDL automaticky na základe zdrojového kódu.
 
-== Spustenie servera s našim WSDL
+== Spustenie servera s naším WSDL
 
 Ak chceme použiť existujúce WSDL a to zverejniť klientovi, musíme prispôsobiť nasadenie služby.
 
@@ -260,33 +261,34 @@ Budeme predpokladať, že v CLASSPATH máme aj WSDL (`parking.wsdl`) aj XSD (`pa
 [source,java]
 ----
 public static void main(String[] args) throws Exception {
-    List<Source> metadata = new ArrayList<Source>(); <!--1-->
+    List<Source> metadata = new ArrayList<Source>(); //<1>
 
-    var wsdlSource = new StreamSource(ParkingServiceImpl.class.getResourceAsStream("/parking.wsdl")); <!--2-->
-    wsdlSource.setSystemId("http://www.example.org/parking.wsdl"); <!--3-->
-    metadata.add(wsdlSource); <!--4-->
+    var wsdlSource = new StreamSource(ParkingServiceImpl.class.getResourceAsStream("/parking.wsdl")); //<2>
+    wsdlSource.setSystemId("http://www.example.org/parking(parking.wsdl"); //<3>
+    metadata.add(wsdlSource); //<4>
 
-    var xsdSource = new StreamSource(ParkingServiceImpl.class.getResourceAsStream("/parking.xsd"));<!--2-->
-    xsdSource.setSystemId("http://www.example.org/parking.xsd");<!--3-->
-    metadata.add(xsdSource);<!--4-->
+    var xsdSource = new StreamSource(ParkingServiceImpl.class.getResourceAsStream("/parking.xsd"));//<2>
+    xsdSource.setSystemId("http://www.example.org/parking/parking.xsd");//<3>
+    metadata.add(xsdSource);//<4>
 
 
     var filter = new HashMap<String, Object>();
-    filter.put(Endpoint.WSDL_SERVICE, new QName("http://www.example.org/parking", "ParkingServices")); <!--5-->
-    filter.put(Endpoint.WSDL_PORT, new QName("http://www.example.org/parking", "ParkingService")); <!--6-->
+    filter.put(Endpoint.WSDL_SERVICE, new QName("http://www.example.org/parking", "ParkingServices")); //<5>
+    filter.put(Endpoint.WSDL_PORT, new QName("http://www.example.org/parking", "ParkingService")); //<6>
 
-    var endpoint = Endpoint.create(new ParkingServiceImpl()); <!--7-->
-    endpoint.setProperties(filter); <!--8-->
-    endpoint.setMetadata(metadata);  <!--9-->
+    var endpoint = Endpoint.create(new ParkingServiceImpl()); //<7>
+    endpoint.setProperties(filter); //<8>
+    endpoint.setMetadata(metadata);  //<9>
 
-    endpoint.publish("http://localhost:8888/parking");  <!--10-->
+    endpoint.publish("http://localhost:8888/parking"); //<10>
 }
 ----
+
 <1> Musíme si pripraviť zoznam pre metadáta: teda WSDL a XSD.
 <2> Vytvoríme objekt `Source` reprezentujúci XML súbor pre WSDL či schému.
 Tento objekt načítame z `CLASSPATH`: to je reprezentované lomkou v argumente `getResourceAsStream`.
 <3> Každý takýto objekt `Source` potrebuje jednoznačný identifikátor v tvare URL s použitím protokolu `HTTP` alebo `file`.
-Keďže na konkrétnej hodnote nezáleží, vytvoríme si vymyslený ukážkový identifikátor
+Keďže na konkrétnej hodnote nezáleží, vytvoríme si vymyslený ukážkový identifikátor.
 <4> Súbor dodáme do metadát.
 <5> Pomocou `properties` definujeme filter na službu _service_ a _port_ z WSDL, na ktorý použijeme naše metadáta, teda na ktorom zmeníme WSDL a XML schému XSD.
 Pomocou `WSDL_SERVICE` určíme kvalifikované meno (menný priestor a názov elementu) pre element `wsdl:service` z WSDL.
