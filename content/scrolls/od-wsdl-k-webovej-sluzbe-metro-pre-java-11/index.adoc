@@ -215,15 +215,28 @@ import org.example.parking.ParkingPortType;
 import org.example.parking.ParkingRequest;
 import org.example.parking.ParkingTicket;
 
-@WebService
-public class ParkingServiceImpl implements ParkingPortType {
+@WebService(endpointInterface = "org.example.parking.ParkingPortType") //<2>
+public class ParkingServiceImpl implements ParkingPortType { //<1>
 
-	public ParkingTicket getTicket(ParkingRequest part) {
+    public ParkingTicket getTicket(ParkingRequest part) {
         // implementacia metody
-		return new ParkingTicket();
-	}
+        return new ParkingTicket(); //<3>
+    }
 }
 ----
+<1> Implementujeme interfejs, ktorý vznikol generovaním kódu.
+<2> V atribúte `endpointInterface` uvedieme interfejs s kontraktom webovej služby pre JAX-WS.
+<3> Pripravíme implementáciu metódy -- v tomto prípade veľmi jednoduchú.
+
+[IMPORTANT]
+====
+Interfejs `ParkingPortType` sa uvádza na dvoch miestach:
+
+. V `implements`, kde určuje metódy, ktoré v Jave naprogramujeme.
+. V `endpointInterface`, kde spárujeme implementáciu s nagenerovaným kontraktom webovej služby.
+
+Ak vynecháme atribút `endpointInterface`, môže sa stať, že server nageneruje kontrakt a WSDL na základe implementácie -- teda „v protismere“ od kódu k WSDL, čo rozhodne nechceme!
+====
 
 == Spustenie servera
 
