@@ -11,3 +11,9 @@ ignoreFiles = [ "___src" ]
 
 [params]
   custom_css= [ "asciidoctor.css" ]
+
+[markup]
+  defaultMarkdownHandler = 'goldmark'
+
+[security.exec]
+    allow = ['asciidoctor']
