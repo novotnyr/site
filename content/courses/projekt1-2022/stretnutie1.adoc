@@ -1,0 +1,134 @@
+---
+title: Stretnutie 1
+date: 2022-02-17
+---
+
+== GitLab
+
+GitLab je mnohoúčelová platforma pre:
+
+- *verzovací nástroj* pre https://git-scm.com/[Git], kde si tím môže zdieľať zdrojové kódy projektov
+- sledovanie incidentov -- **issue tracking** -- úlohy/chyby/problémy, ktoré treba v projekte vyriešiť
+- continuous integration / continuous delivery (*CI/CD*) -- automatizované nasadzovanie projektov na servery a ich doručovanie zákazníkovi
+
+NOTE: Každý účastník má login a heslo do prírodovedeckého Gitlabu na https://gitlab.science.upjs.sk/.
+
+=== Zakladanie projektov
+
+Každý účastník má svoju vlastnú skupinu (_group_), teda priestor, v ktorom si môže do vôle navytvárať vlastné projekty.
+
+TIP: Podrobnosti uvádza https://docs.gitlab.com/ee/user/project/working_with_projects.html#create-a-project[dokumentácia GitLabu].
+
+.Osobné projekty
+====
+Používateľ `novotnyr` má vlastnú skupinu `novotnyr` a môže si vytvoriť vzorový osobný projekt (_personal project_) https://gitlab.science.upjs.sk/novotnyr/sandbox
+
+Do tohto projektu nemá prístup nik, okrem zakladateľa.
+====
+
+=== Adresa projektu
+
+Projekt má svoje sídlo v GitLabe a zároveň cestu k repozitáru.
+
+====
+Ukážkový osobný projekt:
+
+Sídlo v GitLabe:: https://gitlab.science.upjs.sk/novotnyr/sandbox
+Cesta k repozitáru:: https://gitlab.science.upjs.sk/novotnyr/sandbox.git
+====
+
+== Správcovia balíčkov
+
+Každý rozumný operačný systém má svojho správcu balíčkov (_package manager_).
+
+NOTE: Správca balíčkov automatizuje inštaláciu softvéru.
+
+Namiesto hľadania projektového webu, sťahovania inštalačky, klikania _Next_ v sprievodcovi sta použije jediný príkaz, ktorý nainštaluje celý projekt.
+
+Špeciálne je to vidno pri závislostiach: ak napríklad Tomcat potrebuje Javu, pri požiadavke na inštaláciu Tomcatu sa stiahne a nainštaluje aj Java.
+
+Operačné systémy majú svoje obľúbené inštalácie:
+
+Linux:: apt, yum, pacman
+Windows:: https://chocolatey.org/[Chocolatey]
+MacOS:: https://brew.sh/[Homebrew]
+
+=== Chocolatey
+
+Chocolatey umožňuje na Windowse nainštalovať obľúbené balíčky.
+
+Nainštalujte ho podľa https://chocolatey.org/install#individual[návodu] kde sa využíva PowerShell.
+
+Napr. `git` možno nainštalovať:
+
+    choco install git
+
+== IntelliJ IDEA
+
+IntelliJ IDEA je najpopulárnejšie prostredie pre vývoj aplikácií pre Java platformu.
+
+K dispozícii sú dve verzie:
+
+- bezplatná komunitná edícia (_Community Edition_)
+- platená edícia s pokročilými vlastnosťami (_Ultimate Edition_)
+
+TIP: Študenti majú nárok na bezplatný prístup k _Ultimate Edition_. Podrobnosti sú v https://www.jetbrains.com/community/education/#students[licenčných podmienkach].
+
+Nainštalujte:
+
+    choco install intellijidea-community
+
+=== Inštalácia `git`
+
+Git možno na lokálny stroj nainštalovať:
+
+- pomocou *správcu balíčkov*
+- ako lokálnu inštaláciu v IntelliJ IDEA. V nastaveniach zvoľte v strome _Version Control_ > _Git_ a doinštalujte Git.
+
+=== Inštalácia Javy
+
+Git možno na lokálny stroj nainštalovať:
+
+- pomocou *správcu balíčkov*
+- ako lokálnu inštaláciu v IntelliJ IDEA. Pri vytváraní projektu zvoľte z rozbaľovacieho menu _Project SDK_ možnosť _Download JDK_ a stiahnite príslušnú verziu.
+
+=== Vytvorenie projektu a prepojenie s GitLabom
+
+. Vytvorte nový projekt
+. Z menu *VCS* zvoľte _Enable Version Control Integration_ a vyberte Git
+. Komitnite zmeny: `Commit` zasiela zmeny do lokálneho repozitára.
+. Pomocou `Push` dostanete zmeny z lokálneho repozitára na vzdialený repozitár. Pomocou _Define Remote_ definujte vzdialené úložisko na GitLabe. Uveďte cestu k repozitáriu (tú s príponou `git`)
+
+Sledujte, ako sa zmeny objavili na serveri pomocou prehliadača na webe projektového GitLabu.
+
+TIP: Nacvičte si prácu s Gitom v IntelliJ IDEA podľa https://www.jetbrains.com/help/idea/using-git-integration.html[manuálu].
+
+== Dokumentácia projektu
+
+Projektová dokumentácia -- referenčná príručka, súbory README, kostra webu -- sa vytvára v jednom z viacerých textových formátov.
+
+Výhodou je:
+
+- žiadna potreba pre špeciálny editor - tvorí sa v textovom editore
+- zjednodušená syntax -- netreba ovládať HTML
+- jednoduchá verzovanosť v Gite
+- možnosť generovať výstupy vo viacerých formátoch: HTML, PDF, ePub
+
+Typické technológie:
+
+- https://daringfireball.net/projects/markdown/[Markdown] -- minimalistický zápis ako v e-mailoch
+- https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc] -- podobný štýl ako Markdown, mnoho pokročilých vlastností, slúži na písanie rozsiahlych dokumentácií
+
+=== Asciidoc
+
+AsciiDoc je formát s textovým zápisom pre rozsiahle formátované dokumenty.
+
+NOTE: Pozrite si syntax v https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[ťaháku] na projektovom webe.
+
+TIP: Doinštalujte si do IntelliJ IDEA plugin pre AsciiDoc. Použite _Preferences_ > _Plugins_ > Asciidoc. Získate podporu pre náhľad v HTML, zvýrazňovanie syntaxe a klávesové skratky.
+
+. Vytvorte si v projekte súbor `README.adoc`
+. Komitnite a pushnite do projektu.
+. Sledujte, ako vám GitLab automaticky vyrenderuje README.adoc do HTML podoby.
+
+NOTE: Neskôr si ukážeme, ako je možné pomocou AsciiDoc vytvárať celý projektový web, a to automaticky po každom pushnutí.
