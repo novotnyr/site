@@ -1,0 +1,309 @@
+---
+title: Od WSDL k webovej službe — generovanie servera a klienta pomocou Metro na Java 17
+date: 2022-10-31
+---
+
+:icons: font
+
+== Úvod
+
+Navrhli sme webovú službu pre SOAP pomocou *contract-first*?
+Máme teda kontrakt reprezentovaný súborom WSDL?
+
+Poďme vygenerovať kód pre server SOAP na kombinácii:
+
+- Java 17
+- špecifikáciu https://eclipse-ee4j.github.io/metro-jax-ws/[Jakarta XML Web Services 4.0] (nástupca JAX-WS)
+- referenčnú implementáciu _Eclipse Metro_.
+- plugin pre Maven z knižnice Eclipse Metro.
+
+== Príklad a štruktúra dát
+
+Vybudujme si službu pre objednanie parkovania.
+V požiadavke pošleme EČV vozidla a parkovaciu zónu a v odpovedi získame identifikátor parkovacieho lístka a dátum platnosti.
+
+Pripravíme si:
+
+- schému pre správy v tvare XSD (_XML Schema_)
+- popisný súbor WSDL
+- mavenovský projekt s `pom.xml` pre serverovskú časť.
+
+== XML schéma
+
+Vezmeme schému pre správy pomocou *XML Schemy*.
+
+NOTE: Kompletný súbor schémy `parking.xsd` nájdeme na konci článku, resp. na GitHube[https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.xsd]
+
+
+== WSDL súbor
+
+Vezmeme si hotový súbor pre WSDL.
+
+NOTE: Kompletný súbor schémy `parking.wsdl` nájdeme na konci článku, resp. na GitHube[https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.wsdl]
+
+== Projekt pre serverovskú časť
+
+Založme si nový projekt založený na buildovacom nástroji Maven.
+
+V `pom.xml` definujeme:
+
+- verziu kódu pre kompilátor: použijeme Javu 17
+- závislosť na knižnici Eclipse Metro
+- Maven plugin pre generovanie kódu servera
+
+=== Verzia kompilátora
+
+Dodajme nasledovné projektové vlastnosti:
+
+[source,xml]
+.pom.xml
+----
+<properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+</properties>
+----
+
+=== Závislosť na knižnici Metro
+
+Pridajme si závislosť na knižnici Metro:
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>org.glassfish.metro</groupId>
+    <artifactId>webservices-rt</artifactId>
+    <version>4.0.1</version>
+</dependency>
+----
+
+=== Maven Plugin
+
+Generovanie kostry serverovskej časti projektu, teda generovanie zdrojových kódov podľa dodaného WSDL súboru uskutočníme cez mavenovský plugin.
+
+[source,xml]
+.pom.xml
+----
+<plugin>
+    <groupId>com.sun.xml.ws</groupId>
+    <artifactId>jaxws-maven-plugin</artifactId>
+    <version>4.0.0</version>
+    <configuration>
+        <wsdlDirectory>src/main/resources</wsdlDirectory><!--2-->
+       <wsdlFiles>
+           <wsdlFile>parking.wsdl</wsdlFile><!--1-->
+       </wsdlFiles>
+        <wsdlLocation>/parking.wsdl</wsdlLocation><!--3-->
+    </configuration>
+</plugin>
+----
+<1> Definujme odkaz na názov WSDL, z ktorého vygenerujeme kód.
+<2> Uvedieme cestu k adresáru v projekte, z ktorého vytiahneme WSDL súbor.
+<3> Aby sa v generovanom kóde zbytočne neobjavovali celé cesty k lokálnemu súborovému systému používateľa, uveďme explicitnú adresu ku kódu.
+
+[NOTE]
+====
+Ak umiestnime WSDL súbor medzi prostriedky (_resources_), objaví sa vo výslednom JAR archíve a teda v ceste `CLASSPATH` (v koreni).
+Takto sa na tento súbor odkážeme z bežiaceho servera a vieme ho poskytnúť klientovi.
+====
+
+NOTE: Lokácia `wsdlLocation` s lomkou na začiatku znamená, že WSDL súbor pri budovaní klientskeho kódu sa vytiahne z cesty `CLASSPATH`.
+
+=== Celý pom.xml
+
+TIP: Celý súbor `pom.xml` nájdeme na https://github.com/novotnyr/kopr-wsdl-server-2021/blob/main/pom.xml[na GitHube].
+
+== Rozmiestnenie súborov
+
+Oba súbory -- `parking.wsdl` aj `parking.xsd` umiestnime do `src/main/resources`, pretože tak sme to nastavili v `pom.xml` v adresári `wsdlDirectory`.
+
+== Zostavenie projektu
+
+Zdrojáky pre server nagenerujeme nasledovne:
+
+[source,bash]
+----
+mvn jaxws:wsimport package
+----
+
+CAUTION: Ak spúšťame Maven zo shellu, dajme si pozor, aby Java, v ktorej sa spúšťal Maven, bola vo verzii 17.
+
+Zdrojáky sa nagenerujú do priečinka:
+
+    target/generated-sources/wsimport/
+
+Pre naše WSDL sa vygeneruje nasledovná štruktúra:
+
+[source]
+----
+ org
+└── example
+   └── parking
+      ├── ObjectFactory.java
+      ├── package-info.java
+      ├── ParkingService.java
+      ├── ParkingRequest.java
+      ├── ParkingServices.java
+      └── ParkingTicket.java
+----
+
+NOTE: Názvy priečinkov / balíčkov sa odvodia z `targetNamespace` vo WSDL či schéme.
+
+== Konfigurácia projektu
+
+Adresár `target/generated-sources/wsimport/` je užitočné potrebné pridať do projektu ako miesto so zdrojovými kódmi.
+
+[TIP]
+====
+Eclipse:: Pravý klik na adresár v strome *Package List*, a z kontextového menu *Build Path | Use as Source Folder*.
+IntelliJ:: Pravý klik na adresár `target/generated-sources-wsimport` v projektovom strome, a z kontextového menu *Mark Directory As | Generated Sources Root*.
+====
+
+== Implementácia servera
+
+Implementácia servera znamená vytvorenie triedy, ktorá bude implementovať triedu `org.example.ParkingService`.
+
+
+[source,java]
+.DefaultParkingService.java
+----
+package com.github.novotnyr.soap;
+
+import jakarta.jws.WebService;
+import org.example.parking.ParkingRequest;
+import org.example.parking.ParkingService;
+import org.example.parking.ParkingTicket;
+
+@WebService(endpointInterface = "org.example.parking.ParkingService") //<2>
+public class DefaultParkingService implements ParkingService { //<1>
+    @Override
+    public ParkingTicket getTicket(ParkingRequest part) {
+        return new ParkingTicket(); //<3>
+    }
+}
+----
+<1> Implementujeme interfejs, ktorý vznikol generovaním kódu.
+<2> V atribúte `endpointInterface` uvedieme interfejs s kontraktom webovej služby pre JAX-WS.
+<3> Pripravíme implementáciu metódy -- v tomto prípade veľmi jednoduchú.
+
+[IMPORTANT]
+====
+Interfejs `ParkingService` sa uvádza na dvoch miestach:
+
+. V `implements`, kde určuje metódy, ktoré v Jave naprogramujeme.
+. V `endpointInterface`, kde spárujeme implementáciu s nagenerovaným kontraktom webovej služby.
+
+Ak vynecháme atribút `endpointInterface`, môže sa stať, že server nageneruje kontrakt a WSDL na základe implementácie -- teda „v protismere“ od kódu k WSDL, čo rozhodne nechceme!
+====
+
+== Spustenie servera
+
+Server môžeme spustiť jednoducho:
+
+[source,java]
+.ParkingSoapServer.java
+----
+package com.github.novotnyr.soap;
+
+import jakarta.xml.ws.Endpoint;
+
+public class ParkingSoapServer {
+    public static void main(String[] args) {
+        Endpoint.publish("http://localhost:8888/parking", new DefaultParkingService());
+    }
+}
+
+----
+
+Server beží na porte 8888 a spĺňa špecifikáciu WSDL.
+
+CAUTION: Táto služba zverejňuje WSDL na adrese `http://localhost:8888/parking?wsdl`.
+Toto WSDL je však autogenerované, čo popiera zmysel ručnej tvorby.
+
+== Spustenie servera s naším WSDL
+
+Ak chceme použiť existujúce WSDL a to zverejniť klientovi, musíme prispôsobiť nasadenie služby.
+
+Budeme predpokladať, že v CLASSPATH máme aj WSDL (`parking.wsdl`) aj XSD (`parking.xsd`).
+
+[source,java]
+----
+public static void main(String[] args) {
+    List<Source> metadata = new ArrayList<Source>(); //<1>
+
+    var wsdlSource = new StreamSource(DefaultParkingService.class.getResourceAsStream("/parking.wsdl")); //<2>
+    wsdlSource.setSystemId("http://www.example.org/parking/parking.wsdl"); //<3>
+    metadata.add(wsdlSource); //<4>
+
+    var xsdSource = new StreamSource(DefaultParkingService.class.getResourceAsStream("/parking.xsd"));//<2>
+    xsdSource.setSystemId("http://www.example.org/parking/parking.xsd");//<3>
+    metadata.add(xsdSource);//<4>
+
+    var filter = new HashMap<String, Object>();
+    filter.put(Endpoint.WSDL_SERVICE, new QName("http://www.example.org/parking", "ParkingServices")); //<5>
+    filter.put(Endpoint.WSDL_PORT, new QName("http://www.example.org/parking", "ParkingService")); //<6>
+
+    var endpoint = Endpoint.create(new DefaultParkingService()); //<7>
+    endpoint.setProperties(filter); //<8>
+    endpoint.setMetadata(metadata); //<9>
+    endpoint.publish("http://localhost:8888/parking"); //<10>
+}
+----
+
+<1> Musíme si pripraviť zoznam pre metadáta: teda WSDL a XSD.
+<2> Vytvoríme objekt `Source` reprezentujúci XML súbor pre WSDL či schému.
+Tento objekt načítame z `CLASSPATH`: to je reprezentované lomkou v argumente `getResourceAsStream`.
+<3> Každý takýto objekt `Source` potrebuje jednoznačný identifikátor v tvare URL s použitím protokolu `HTTP` alebo `file`.
+Keďže na konkrétnej hodnote nezáleží, vytvoríme si vymyslený ukážkový identifikátor.
+<4> Súbor dodáme do metadát.
+<5> Pomocou `properties` definujeme filter na službu _service_ a _port_ z WSDL, na ktorý použijeme naše metadáta, teda na ktorom zmeníme WSDL a XML schému XSD.
+Pomocou `WSDL_SERVICE` určíme kvalifikované meno (menný priestor a názov elementu) pre element `wsdl:service` z WSDL.
+<6> Pomocou `WSDL_PORT` určíme kvalifikované meno (menný priestor a názov elementu) pre element `wsdl:port` z WSDL.
+<7> Vytvoríme nový endpoint nad našou triedou s implementáciou servera.
+<8> Nastavíme filter cez _properties_.
+<9> Nastavíme nové metadáta služby.
+<10> Endpoint vypublikujeme na danej adrese.
+
+Backend teraz môžeme spustiť ako Java aplikáciu!
+
+TIP: Na adrese `http://localhost:8888/parking?wsdl` uvidíme našej ručne písané WSDL!
+
+[WARNING]
+====
+Pri deklarovaní filtra (_properties_) sa musia kvalifikované názvy presne zhodovať s názvami vo WSDL.
+
+- Menný priestor v kvalifikovanom mene `QName` sa preberá z atribútu `targetNamespace` vo WSDL.
+- Lokálne meno z atribútu `name` v elemente `wsdl:service`, resp. `wsdl:port`.
+====
+
+== Výsledný repozitár
+
+Výsledný repozitár je na GitHube, v repozitári https://github.com/novotnyr/jaxws-wsdl-server-2022[novotnyr/jaxws-wsdl-server-2022].
+
+== Zdrojáky
+
+=== XML Schéma
+
+[source,xml]
+.parking.xsd
+----
+include::content/scrolls/od-wsdl-k-webovej-sluzbe-metro-pre-java-17/parking.xsd[]
+----
+
+=== WSDL
+
+[source,xml]
+.parking.wsdl
+----
+include::content/scrolls/od-wsdl-k-webovej-sluzbe-metro-pre-java-17/parking.wsdl[]
+----
+
+=== Deskriptor pre Maven
+
+[source,xml]
+.pom.xml
+----
+include::content/scrolls/od-wsdl-k-webovej-sluzbe-metro-pre-java-17/pom.xml[]
+----
+
