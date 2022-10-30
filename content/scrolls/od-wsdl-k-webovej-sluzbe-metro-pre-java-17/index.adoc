@@ -1,6 +1,6 @@
 ---
 title: Od WSDL k webovej službe — generovanie servera a klienta pomocou Metro na Java 17
-date: 2022-10-31
+date: 2022-10-30
 ---
 
 :icons: font
@@ -32,14 +32,14 @@ Pripravíme si:
 
 Vezmeme schému pre správy pomocou *XML Schemy*.
 
-NOTE: Kompletný súbor schémy `parking.xsd` nájdeme na konci článku, resp. na GitHube[https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.xsd]
+NOTE: Kompletný súbor schémy `parking.xsd` nájdeme na konci článku, resp. https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.xsd[v repozitári na GitHube].
 
 
 == WSDL súbor
 
 Vezmeme si hotový súbor pre WSDL.
 
-NOTE: Kompletný súbor schémy `parking.wsdl` nájdeme na konci článku, resp. na GitHube[https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.wsdl]
+NOTE: Kompletný súbor schémy `parking.wsdl` nájdeme na konci článku, resp. https://github.com/novotnyr/jaxws-wsdl-server-2022/blob/main/src/main/resources/parking.wsdl[v repozitári na GitHube].
 
 == Projekt pre serverovskú časť
 
