@@ -1,0 +1,283 @@
+---
+title: Podpora webových služieb SOAP v Java 11 a novšej cez Eclipse Metro
+date: 2022-10-30
+---
+
+:icons: font
+
+Ak chceme v Jave 11 alebo novšej zverejniť webovú službu v protokole SOAP, máme k
+dispozícii základnú špecifikáciu https://jakarta.ee/specifications/xml-web-services/4.0/[Jakarta XML Web Services 4.0].
+
+Tá:
+
+- je pod dáždnikom špecifikácie https://blog.payara.fish/whats-new-in-jakarta-ee-10[Jakarta EE 10]
+- je evolúciou z overenej technológie Java XML Web Service 2.0 (JAX-WS 2.0)
+- vyžaduje aspoň Javu 11
+- funguje bez problémov aj na Jave 17
+- je postavená na balíčkoch `jakarta.`, ktoré sa budú naďalej vyvíjať a majú podporu vo frameworkoch.
+
+Ukážeme si:
+
+[arabic]
+. Vytvorenie serverovskej časti: od kódu ku automaticky generovanému
+popisu služby cez WSDL.
+. Vytvorenie klientskej časti: vygenerovaním kódu klienta na základe
+WSDL.
+
+IMPORTANT: Na tvorbu použijeme knižnicu https://github.com/eclipse-ee4j/metro-jax-ws[Eclipse Metro], ktorá je referenčnou implementáciou špecifikácie JAX-WS.
+
+== Serverovská časť
+
+Server vytvoríme v štyroch krokoch:
+
+[arabic]
+. Pridáme závislosti na knižnici Metro.
+. Vytvoríme triedu so serverovským kódom.
+. Pridáme anotáciu `@WebService`
+. Pripravíme triedu s metódou `main()`, kde spustíme server a
+publikujeme ho cez HTTP.
+
+=== Závislosti v Mavene
+
+Serverovskú časť vytvoríme s použitím Mavenu, ktorý zavedie všetky nutné
+knižnice. Do `pom.xml` stačí pridať závislosť pre Metro.
+
+[source,xml]
+----
+<dependency>
+  <groupId>com.sun.xml.ws</groupId><!--1-->
+  <artifactId>jaxws-rt</artifactId>
+  <version>4.0.0</version>
+</dependency>
+----
+<1> Netreba sa čudovať, hoci názov skupiny (_group id_) pochádza zo starého projektu `com.sun.xml.ws`, samotný kód verzie už pochádza z nadácie Eclipse.
+
+=== Nastavenie použitia Javy 17
+
+V `pom.xml` nezabudnime zapnúť podporu pre Javu 17:
+
+[source,xml]
+----
+<properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+</properties>
+----
+
+TIP: Celý súbor `pom.xml` je k dispozícii https://github.com/novotnyr/jaxws-soap-demo-2022/blob/master/jaxws-server/pom.xml[v repozitári zdrojových kódov] na GitHube.
+
+=== Kód serverovskej časti
+
+Serverovská časť je úplne bežná trieda, s úplne bežnými metódami:
+
+[source,java]
+.DefaultTermService.java
+----
+package com.github.novotnyr.soap.server;
+
+import jakarta.jws.WebService;//<2>
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@WebService //<1>
+public class DefaultTermService {
+    private List<Term> terms = new ArrayList<Term>();
+
+    public DefaultTermService() {
+        terms.add(new Term(LocalDate.of(2022, 12, 12), "UINF/PAZ1c", 100));
+        terms.add(new Term(LocalDate.of(2022, 12, 15), "UINF/PAZ1c", 75));
+        terms.add(new Term(LocalDate.of(2023, 1, 5), "UINF/TVY1a", 50));
+    }
+
+    public List<Term> getTerms(String courseCode) {//<3>
+        return terms.stream()
+                .filter(term -> term.getCourseCode().equals(courseCode))
+                .collect(Collectors.toList());
+    }
+}
+----
+<1> Vytvoríme štandardnú triedu, do ktorej dodáme anotáciu `@WebService`.
+<2> Anotácia `jakarta.jws.WebService` patrí do špecifikácie _Jakarta XML Web Services_.
+<3> Pridáme verejnú metódu, ktorá sa bude mapovať na _operáciu_ webovej služby-
+
+CAUTION: Predošlé verzie špecifikácie JAX-WS patrili do balíčka `javax.jws`.
+Po migrácii kódu do projektu Jakarta sa zmenili názov balíčka z `javax` na `jakarta`.
+
+=== Publikovanie služby
+
+Službu vypublikujeme zavolaním statickej metódy `publish()` na triede
+`Endpoint`.
+
+[source,java]
+----
+package com.github.novotnyr.soap.server;
+
+import jakarta.xml.ws.Endpoint;
+
+public class Server {
+    public static void main(String[] args) {
+        Endpoint.publish("http://localhost:8888/ws/terms", new DefaultTermService());
+    }
+}
+----
+
+Publikovanie potrebuje dva parametre:
+
+* URL adresu, na ktorej pobeží server. V ukážke máme lokálny server na
+porte 8888.
+* objekt služby s anotáciou `@WebService`, ktorá obslúži požiadavky.
+
+Spustime teraz metódu `main`, čím naštartujeme interný server nad HTTP.
+
+TIP: Navštívme adresu `http://localhost:8888/ws/terms`, ktorá obsahuje informačnú stránku s odkazom na metadáta webovej služby WSDL.
+
+
+==== Chybové hlášky? Hlásenia?
+
+Pri spustení možno uvidíme varovanie:
+
+....
+WARNING: WSS1542: ServletContext was not found
+....
+
+Túto hlášku ignorujeme.
+
+== Klientska časť
+
+Server zverejnil svoju službu na adrese `http://localhost:8888/ws/terms`, a zároveň poskytol aj WSDL.
+Vďaka tomu vieme automaticky vygenerovať klientsky kód!
+
+Vytvoríme si samostatný projekt, `jaxw-client`, v ktorom budeme udržiavať zdrojáky klientskej časti.
+
+=== Generujeme zdrojáky mavenovským pluginom
+
+Na generovanie použijeme mavenovský plugin `jaxws-maven-plugin`.
+
+Do klientskeho `pom.xml` dodáme:
+
+- kompilovanie pre Javu 17
+- závislosť na knižnici Eclipse Metro - presne ako na serverovskej časti
+- Maven Plugin
+
+Dodajme závislosť na Metre:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.sun.xml.ws</groupId>
+    <artifactId>jaxws-rt</artifactId>
+    <version>4.0.0</version>
+</dependency>
+----
+
+Zároveň dodajme podporu pre Maven Plugin:
+
+[source,xml]
+.pom.xml
+----
+<plugin>
+    <groupId>com.sun.xml.ws</groupId>
+    <artifactId>jaxws-maven-plugin</artifactId>
+    <version>4.0.0</version>
+</plugin>
+----
+
+
+TIP: Celý súbor `pom.xml` pre klientskú časť je k dispozícii https://github.com/novotnyr/jaxws-soap-demo-2022/blob/master/jaxws-client/pom.xml[v repozitári zdrojových kódov] na GitHube.
+
+Nechajme si vygenerovať zdrojové kódy pre klienta:
+
+[source,bash]
+----
+mvn clean jaxws:wsimport compile
+----
+
+Plugin vygeneruje niekoľko súborov, ktoré sa ocitnú v adresári `target/generated-sources/wsimport`.
+Keďže ide o automaticky generované triedy, niektoré názvy môžu byť čudesné (napríklad `DefaultTermServiceService`).
+
+Následne ich priamo skompiluje, čím ich sprístupní v zdrojových kódoch klienta, ktorého ihneď vytvoríme.
+
+.Kde je `wsimport`?
+****
+V predošlých verziách Javy existoval nástroj `wsimport`.
+Ten už v bežnej distribúcii nie je tak ľahko dostupný (zmenil sa na shellové skripty).
+
+Namiesto neho použijeme mavenovský plugin.
+****
+
+=== Použitie klienta v kóde
+
+[CAUTION]
+====
+Adresár `target/generated-sources/wsimport/` je užitočné potrebné pridať do projektu ako miesto so zdrojovými kódmi.
+
+V IntelliJ: Pravý klik na adresár `target/generated-sources-wsimport` v projektovom strome, a z kontextového menu *Mark Directory As | Generated Sources Root*.
+====
+
+Klienta použijeme jednoducho:
+
+[source,java]
+----
+package com.github.novotnyr.soap.client;
+
+import com.github.novotnyr.soap.server.DefaultTermService;
+import com.github.novotnyr.soap.server.DefaultTermServiceService;
+import com.github.novotnyr.soap.server.Term;
+
+import java.util.List;
+
+public class Client {
+    public static void main(String[] args) {
+        DefaultTermServiceService serviceLocator = new DefaultTermServiceService();//<1>
+        DefaultTermService termService = serviceLocator.getDefaultTermServicePort(); //<2>
+        List<Term> terms = termService.getTerms("UINF/PAZ1c"); //<3>
+        for (Term term : terms) {
+            System.out.printf("%s - %d slots left\n", term.getDate(), term.getFreeSlots());
+        }
+    }
+}
+----
+<1> Prístup ku klientovi reprezentuje akási _továreň_ s podivným názvom `DefaultTermServiceService`.
+Tento objekt dokáže poskytovať inštancie interfejsov, ktoré reprezentujú zoznam metód (_operácií_) webservisu.
++
+Niekde sa tento objekt nazýva aj _service locator_.
++Podivný názov pochádza z automatického generovania podľa WSDL.
+<2> Z lokátora získame inštanciu známej triedy `DefaultTermService`.
+<3> Na nej voláme štandardné operácie, akoby šlo o klasický lokálny objekt.
+
+CAUTION: Ak sú triedy zvýraznené s chybou, nezabudnime pridať zdrojový adresár s vygenerovanými súbormi do projektu!
+
+IMPORTANT: Klient sa bude pripájať k URL, ktorá sa prevezme z WSDL.
+
+Spustime klienta, teda triedu s metódou `main`.
+
+Uvidíme výstup:
+
+----
+com.github.novotnyr.soap.server.LocalDate@ae3540e - 100 slots left
+com.github.novotnyr.soap.server.LocalDate@51549490 - 75 slots left
+----
+
+Prebehla sieťová komunikácia a server vrátil údaje.
+
+CAUTION: Trieda `LocalDate` má problémy so serializáciou -- to je však mimo záber tohto článku.
+Na opravu je nutné zmeniť triedu na strane servera, pregenerovať WSDL a klienta.
+
+== Záver
+
+Takúto podporu webových služieb môžeme považovať za vhodnú pre mnoho
+jednoduchých prípadov (jednoduchá trieda, málo metód, HTTP binding, vyhovujúci HTTP server, žiadne závislosti).
+
+Samozrejme, v komplexnejších prípadoch si asi s touto verziou nevystačíme a budeme potrebovať použiť niektorú z ťažkotonážnejších implementácií, alebo jej zahrnutie do
+aplikačného servera s podporou Jakarta EE.
+
+
+== Ukážkové projekty
+
+* https://github.com/novotnyr/jaxws-soap-demo-2022[*Serverovský* repozitár `novotnyr/jaxws-soap-demo-2022`], adresár `jax-ws-server`.
+Obsahuje SOAP server.
+* https://github.com/novotnyr/jaxws-soap-demo-2022[*Klientsky* repozitár `novotnyr/jaxws-soap-demo-2022`], adresár `jax-ws-client`.
+Obsahuje podporu pre generovanie kódu klienta s ukážkovým použitím.
