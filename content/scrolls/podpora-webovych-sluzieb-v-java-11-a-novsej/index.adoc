@@ -87,7 +87,7 @@ public class DefaultTermService {
     private List<Term> terms = new ArrayList<Term>();
 
     public DefaultTermService() {
-        terms.add(new Term(LocalDate.of(2022, 12, 12), "UINF/PAZ1c", 100));
+        terms.add(new Term(LocalDate.of(2022, 12, 12), "UINF/PAZ1c", 100)); //<4>
         terms.add(new Term(LocalDate.of(2022, 12, 15), "UINF/PAZ1c", 75));
         terms.add(new Term(LocalDate.of(2023, 1, 5), "UINF/TVY1a", 50));
     }
@@ -102,6 +102,8 @@ public class DefaultTermService {
 <1> Vytvoríme štandardnú triedu, do ktorej dodáme anotáciu `@WebService`.
 <2> Anotácia `jakarta.jws.WebService` patrí do špecifikácie _Jakarta XML Web Services_.
 <3> Pridáme verejnú metódu, ktorá sa bude mapovať na _operáciu_ webovej služby-
+<4> Triedy `Term` je naša vlastná -- obsahuje dátum skúšky, kód predmetu a voľnú kapacitu.
+Celý zdrojový kód triedy nájdeme https://github.com/novotnyr/jaxws-soap-demo-2022/blob/235a2e1d7550a9c6fba213cc1becc3201c1ec801/jaxws-server/src/main/java/com/github/novotnyr/soap/server/Term.java[repozitári na GitHube].
 
 CAUTION: Predošlé verzie špecifikácie JAX-WS patrili do balíčka `javax.jws`.
 Po migrácii kódu do projektu Jakarta sa zmenili názov balíčka z `javax` na `jakarta`.
@@ -268,8 +270,7 @@ Na opravu je nutné zmeniť triedu na strane servera, pregenerovať WSDL a klien
 
 == Záver
 
-Takúto podporu webových služieb môžeme považovať za vhodnú pre mnoho
-jednoduchých prípadov (jednoduchá trieda, málo metód, HTTP binding, vyhovujúci HTTP server, žiadne závislosti).
+Takúto podporu webových služieb môžeme považovať za vhodnú pre mnoho jednoduchých prípadov (jednoduchá trieda, málo metód, HTTP binding, vyhovujúci HTTP server, žiadne závislosti).
 
 Samozrejme, v komplexnejších prípadoch si asi s touto verziou nevystačíme a budeme potrebovať použiť niektorú z ťažkotonážnejších implementácií, alebo jej zahrnutie do
 aplikačného servera s podporou Jakarta EE.
