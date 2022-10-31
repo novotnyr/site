@@ -204,7 +204,9 @@ IMPORTANT: V tomto adresári ho odhalí Maven plugin.
 <bindings version="3.0"
           xmlns="https://jakarta.ee/xml/ns/jaxb"
           xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
-          xmlns:xsd="http://www.w3.org/2001/XMLSchema"> <--1-->
+          xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+          xsi:schemaLocation="https://jakarta.ee/xml/ns/jaxb https://jakarta.ee/xml/ns/jaxb/bindingschema_3_0.xsd"
+> <--1-->
     <globalBindings> <!--2-->
         <xjc:javaType
                 xmlType="xsd:dateTime"
