@@ -14,6 +14,10 @@ ignoreFiles = [ "___src" ]
 
 [markup]
   defaultMarkdownHandler = 'goldmark'
+  [markup.asciidocExt]
+    safeMode = 'server'
+    [markup.asciidocExt.attributes]
+      allow-uri-read = true
 
 [security.exec]
     allow = ['asciidoctor']
