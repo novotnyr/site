@@ -1,0 +1,341 @@
+---
+title: SOAP, JAX-WS, Metro a serializácia dátumov a časov
+date: 2022-10-31
+---
+
+:icons: font
+
+Vytvorme SOAP web service pomocou JAX-WS 4.0 (Jakarta XML Web Services) a Eclipse Metro.
+
+Ak používame základné dátové typy, všetko je v poriadku.
+Vo chvíli, keď začneme používať dátumy a časy z knižnice `java.time`, nastanú problémy.
+
+== Príprava `pom.xml`
+
+Pripravme si mavenovský projekt, kde dodajme závislosti na Metre a podporu pre Javu 17.
+
+[source]
+.pom.xml
+----
+include::https://raw.githubusercontent.com/novotnyr/jaxws-java-util-time-server/0a522e9277bf2bfc6189648f6efeeee95deee102/pom.xml[Súbor `pom.xml` na GitHub repozitári]
+----
+<1> Dodajme závislosť na Eclipse Metro.
+<2> Explicitný `woodstox-core` uvádzame kvôli bezpečnostnej chybe v Eclipse Metro 4.0, kde použijeme novšiu verziu tejto knižnice s opravenou chybou.
+<3> Použijeme Javu 17.
+
+== Webservis v SOAP
+
+Pridajme si ukážkový SOAPový webservis, vrátane metódy `main()`:
+
+[source,java]
+.TimeService.java
+----
+include::https://raw.githubusercontent.com/novotnyr/jaxws-java-util-time-server/8d45a2429e3a4458d46d40d247915e3d79142eeb/src/main/java/com/github/novotnyr/soap/TimeService.java[]
+----
+<1> Metóda vracia objekt s dátumom a časom `java.time.LocalDateTime`.
+<2> Pripravíme si endpoint a publikujeme ho.
+
+== Ako vyzerá WSDL?
+
+WSDL a jeho stav? Jedným slovom: nie veľmi dobre.
+
+Pozrime sa na adresu http://localhost:18888/ws/now?xsd=1 a uvidíme zvláštnu schému:
+
+[source,xml]
+----
+<xs:complexType name="getNowResponse">
+    <xs:sequence>
+        <xs:element name="return" type="tns:localDateTime" minOccurs="0"/>
+    </xs:sequence>
+</xs:complexType>
+<xs:complexType name="localDateTime" final="extension restriction">
+    <xs:sequence/>
+</xs:complexType>
+----
+
+Operácia `getNowResponse` vracia akýsi XML dátový typ `localDateTime`, ktorá je definovaný ako prázdna sekvencia.
+
+IMPORTANT: JAX-WS síce vygenerovalo WSDL, ale nikto ho nevie normálne spracovať.
+
+Ak by sme skúsili požiadavku v SoapUI, dostaneme odpoveď:
+
+[source,xml]
+----
+<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+   <S:Body>
+      <ns2:getNowResponse xmlns:ns2="http://soap.novotnyr.github.com/">
+         <return/> <!--1-->
+      </ns2:getNowResponse>
+   </S:Body>
+</S:Envelope>
+----
+<1> Element `return` rozhodne neobsahuje nič užitočné, hoci by sme čakali aktuálny dátum.
+
+IMPORTANT: JAX-WS nevie normálne pracovať s objektami z balíčka `java.time`.
+
+== Knižnica `threeten-jaxb`, dostavte sa do projektu!
+
+[IMPORTANT]
+====
+Prevod medzi objektami a XML v _Jakarta XML Web Services_ zabezpečuje samostatná špecifikácia _JAXB_ (_Jakarta XML Binding_).
+
+Súčasťou Metra je aj jej referenčná implementácia.
+====
+
+Knižnica `threeten-jaxb` predstavuje _XML adaptéry_ pre konverziu tried, ktoré sa nedostali do jadra referenčnej implementácie JAXB`.
+Špeciálne je tam podpora pre dátumy a časy.
+
+Dodajme do `pom.xml` závislosť:
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>io.github.threeten-jaxb</groupId>
+    <artifactId>threeten-jaxb-core</artifactId>
+    <version>2.1.0</version>
+</dependency>
+----
+
+== Plán rekonštrukcie
+
+Na to, aby sme to rozbehali korektne, potrebujeme 4 kroky:
+
+. pridať závislosť na Three Ten: to sme spravili
+. vytvoriť vlastnú doménovú triedu, v ktorej vrátime aktuálny čas
+. vracať z SOAP operácie doménovú triedu
+. pripraviť anotáciu, ktorá prevedie všetky `LocalDateTime` na normálnu konštrukciu v XML
+
+=== Vlastná doménová trieda
+
+Vytvorme vlastnú doménovú triedu.
+
+[source,java]
+.CurrentLocalDateTime.java
+----
+package com.github.novotnyr.soap;
+
+import java.time.LocalDateTime;
+
+public class CurrentLocalDateTime {
+    private LocalDateTime dateTime;
+
+    public CurrentLocalDateTime() {
+        this.dateTime = LocalDateTime.now();
+    }
+
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
+    }
+}
+----
+Trieda je úplne bežná, neobsahuje nič špeciálne.
+
+=== Úprava operácie v SOAP webservise
+
+Operácia v SOAPovej webservice nech vracia našu doménovú triedu:
+
+[source,java]
+.TimeService.java
+----
+@WebService
+public class TimeService {
+    public CurrentLocalDateTime getNow() { //<1>
+        return new CurrentLocalDateTime();
+    }
+}
+----
+<1> Zrazu vraciame doménový objekt.
+
+=== Zapojenie XML adaptéra na prevod
+
+V balíčku `com.github.novotnyr.soap` vytvorme súbor `package-info.java`, kde zavedieme pravidlo pre prevody medzi `LocalDateTime` cez adaptér `LocalDateTimeXmlAdapter` z knižnice ThreeTen na reťazce.
+
+[source,java]
+----
+@XmlJavaTypeAdapters({
+        @XmlJavaTypeAdapter(value = LocalDateTimeXmlAdapter.class, //<1>
+                            type = LocalDateTime.class) //<2>
+})
+package com.github.novotnyr.soap;
+
+import io.github.threetenjaxb.core.LocalDateTimeXmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
+
+import java.time.LocalDateTime;
+----
+<1> Zavedieme adaptér `LocalDateTimeXmlAdapter.class`, ktorý sa použije na serializáciu a deserializáciu.
+<2> Budeme pracovať s objektami typu `LocalDateTime`.
+
+TIP: Anotácia je nad celým balíčkom s našim serverom.
+
+=== Reštart webservisy
+
+Reštartnime webservisu a pozrime sa, ako vyzerá XML schéma.
+
+Navštívme opäť http://localhost:18888/ws/now?xsd=1 a uvidíme:
+
+[source,xml]
+.filename.xml
+----
+<xs:complexType name="getNowResponse">
+    <xs:sequence>
+        <xs:element name="return" type="tns:currentLocalDateTime" minOccurs="0"/> <!--1-->
+    </xs:sequence>
+</xs:complexType>
+<xs:complexType name="currentLocalDateTime">
+    <xs:sequence>
+        <xs:element name="dateTime" type="xs:string" minOccurs="0"/> <!--2-->
+    </xs:sequence>
+</xs:complexType>
+----
+<1> Výstupný element je teraz typu `currentLocalDateTime`, ktorý sa rozoberie v ďalšom kroku.
+<2> Tento dátový typ v XML schéme obsahuje jediný atribút: `dateTime` typu `String`, ktorý môže byť vynechaný (`minOccurs=0`).
+
+IMPORTANT: Vďaka adaptéru sa budú dátumy a časy typu `LocalDateTime` prevádzať na reťazce v XML.
+
+Ak aktualizujeme definíciu SOAPovej služby v SoapUI, uvidíme inú odpoveď:
+
+[source,xml]
+----
+<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+   <S:Body>
+      <ns2:getNowResponse xmlns:ns2="http://soap.novotnyr.github.com/">
+         <return>
+            <dateTime>2022-10-30T22:26:07.848894</dateTime> <!--1-->
+         </return>
+      </ns2:getNowResponse>
+   </S:Body>
+</S:Envelope>
+----
+<1> Dátumy a čas už chodia ako reťazce vo formáte ISO-8601.
+
+== Ako by vyzeral klient?
+
+Ak by sme si vygenerovali SOAP klienta v Jave na základe WSDL, uvideli by sme triedu, kde je dátum a čas reprezentovaný ako reťazec:
+
+[source,java]
+.CurrentLocalDateTime.java
+----
+package com.github.novotnyr.soap;
+
+public class CurrentLocalDateTime {
+
+    protected String dateTime; //<1>
+
+    public String getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(String value) {
+        this.dateTime = value;
+    }
+}
+----
+<1> Dátum a čas je reprezentovaný ako reťazec.
+Je to presne preto, že v XML schéme máme uvedený dátový typ `xsd:string`.
+
+== Ako upraviť XML schému?
+
+Vieme upraviť serverovský kód tak, aby v schéme XML vo WSDL vracal dátum a čas?
+Veď existuje primitívny dátový typ https://www.w3.org/TR/xmlschema-2/#dateTime[dateTime]!
+
+Na toto musíme dodať ďalšiu anotáciu do serverovskej doménovej triedy.
+
+[source,java]
+.CurrentLocalDateTime.java
+----
+import jakarta.xml.bind.annotation.XmlSchemaType;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public class CurrentLocalDateTime {
+    //...
+    @XmlSchemaType(name = "dateTime", type = LocalDate.class) //<1>
+    public LocalDateTime getDateTime() {
+        //...
+    }
+    //...
+----
+<1> Do _gettera_ doménového objektu dodáme anotáciu `@XmlSchemaType`.
+Uvedieme dve vlastnosti:
++
+- `name`: názov dátového typu zo XML schémy.
+Uvádzame ho ako reťazec.
+- `type`: dátový typ z Javy, na ktorý sa namapuje typ z XML schémy.
+
+CAUTION: Anotáciu dávame nad _getter_, nie nad inštančnú premennú, pretože inak uvidíme chybu s duplicitnou deklaráciou atribútu `dateTime`.
+
+Reštartnime SOAP server a pozrime si schému pre XSD na http://localhost:18888/ws/now?xsd=1.
+
+Uvidíme pozitívne zmeny:
+
+[source,xml]
+----
+<xs:complexType name="currentLocalDateTime">
+    <xs:sequence>
+        <xs:element name="dateTime" type="xs:dateTime" minOccurs="0"/> <!--1-->
+    </xs:sequence>
+</xs:complexType>
+----
+<1> Element `dateTime` je už zo štandadného primitívneho typu zo XML schémy `xs:dateTime` a nie reťazec!
+
+== Pregenerovanie XML klienta
+
+Ak pregenerujeme klienta cez JAX-WS 4.0, uvidíme zmeny:
+
+[source,java]
+.CurrentLocalDateTime.java
+----
+package com.github.novotnyr.soap;
+
+import javax.xml.datatype.XMLGregorianCalendar;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlSchemaType;
+import jakarta.xml.bind.annotation.XmlType;
+
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlType(name = "currentLocalDateTime", propOrder = {
+    "dateTime"
+})
+public class CurrentLocalDateTime {
+
+    @XmlSchemaType(name = "dateTime") //<2>
+    protected XMLGregorianCalendar dateTime; //<1>
+
+    public XMLGregorianCalendar getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(XMLGregorianCalendar value) {
+        this.dateTime = value;
+    }
+}
+----
+<1> Generátor klienta vytvoril premennú typu https://docs.oracle.com/javase/7/docs/api/javax/xml/datatype/XMLGregorianCalendar.html[XMLGregorianCalendar]
+<2> Premennú namapoval na dátový typ `dateTime` zo XML schémy.
+
+V kóde potom vieme previesť `XMLGregorianCalendar` na `LocalDateTime`:
+
+[source,java]
+----
+//...zavoláme webservis
+CurrentLocalDateTime currentLocalDateTime = timeService.getNow();
+XMLGregorianCalendar dateTime = currentLocalDateTime.getDateTime(); //<1>
+LocalDateTime localDateTime = dateTime
+                                .toGregorianCalendar()
+                                .toZonedDateTime()
+                                .toLocalDateTime(); //<2>
+System.out.println(localDateTime);
+----
+<1> Získame surový XML objekt s dátumom a časom.
+<2> Prevedieme ho na `LocalDateTime`.
+
+TIP: Ak by sme sa chceli zbaviť komplikovaného ručného prevodu, museli by sme použiť mechanizmus _JAXB Bindings_, resp. _XJC Bindings_, ktorý je ale už mimo záber tohto článku.
