@@ -4,12 +4,12 @@ date: 2008-07-14T12:22:32+01:00
 ---
 V predošlom dieli sme si ukázali príklad popisovača webovej služby v podobe WSDL súboru. Ak máme tento súbor, môžeme použiť niektoré z existujúcich nástrojov na vygenerovanie zdrojového kódu pre serverovskú časť služby i pre klienta, ktorý k nej bude pristupovať.
 
-Tento spôsob je k dispozícii vo všetkých významných Java frameworkoch pre webové služby - teda aj v [Glassfish Metro](http://cxf.apache.org/ | Apache CXF]], [[http://ws.apache.org/axis/ | Axis1]] / [[http://ws.apache.org/axis/ | Axis2]], [[https://metro.dev.java.net/ ). 
+Tento spôsob je k dispozícii vo všetkých významných Java frameworkoch pre webové služby - teda aj v [Apache CXF](http://cxf.apache.org/), [Axis 1](http://ws.apache.org/axis), [Axis 2](http://ws.apache.org/axis/) a [Glassfish Metro](https://metro.dev.java.net/).
 
-Samotná Java poskytuje na prístup k webovým službám viacero API združených pod rôznymi špecifikáciami. Najnovšou je v súčasnosti [JAX-WS 2.0](http://jcp.org/en/jsr/detail?id=224 ) (JSR-224), ktorá je už súčasťou JEE 5 a pri návrhu a implementácii webových služieb používa všetky vymoženosti Javy 5. Aplikačný rámec Glassfish Metro, ktorá bude pracovať nad triedami a interfejsmi JAX-WS budeme demonštrovať práve v tejto časti.
+Samotná Java poskytuje na prístup k webovým službám viacero API združených pod rôznymi špecifikáciami. Najnovšou je v súčasnosti [JAX-WS 2.0](http://jcp.org/en/jsr/detail?id=224) (JSR-224), ktorá je už súčasťou JEE 5 a pri návrhu a implementácii webových služieb používa všetky vymoženosti Javy 5. Aplikačný rámec Glassfish Metro, ktorá bude pracovať nad triedami a interfejsmi JAX-WS budeme demonštrovať práve v tejto časti.
 
 # Inštalácia
-Z [domovskej stránky Metra](https://metro.dev.java.net/ ) si stiahneme príslušný JAR, rozbalíme na vhodné miesto, vytvoríme systémovú premennú `METRO_HOME` ukazujúcu na adresár inštalácie a voliteľne si dodáme cestu k skriptom do `PATH`u.
+Z [domovskej stránky Metra](https://metro.dev.java.net/) si stiahneme príslušný JAR, rozbalíme na vhodné miesto, vytvoríme systémovú premennú `METRO_HOME` ukazujúcu na adresár inštalácie a voliteľne si dodáme cestu k skriptom do `PATH`u.
 
 # Generovanie serverovskej časti
 Predpokladajme, že máme k dispozícii WSDL súbor z predošlej časti seriálu. Java triedy vygenerujeme nasledovným spôsobom:
