@@ -72,9 +72,9 @@ Pridajme si závislosť na knižnici Metro:
 .pom.xml
 ----
 <dependency>
-    <groupId>org.glassfish.metro</groupId>
-    <artifactId>webservices-rt</artifactId>
-    <version>4.0.1</version>
+    <groupId>com.sun.xml.ws</groupId>
+    <artifactId>jaxws-rt</artifactId>
+    <version>4.0.0</version>
 </dependency>
 ----
 
