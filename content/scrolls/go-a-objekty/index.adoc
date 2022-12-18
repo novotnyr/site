@@ -1,0 +1,372 @@
+---
+title: Go a zádrhele pri objektoch
+date: 2022-12-18
+---
+
+:source-highlighter: pygments
+
+
+== Go, štruktúry a správanie
+
+Objekty sú hlavne o správaní.
+
+A to bez ohľadu na jazyk, v ktorom ich používame, čiže aj v jazyku Go.
+
+=== Geometrické útvary
+Zoberme si také geometrické útvary, ktorým chceme rátať plochu.
+
+[source,go]
+----
+type Shaper interface {
+	Area() float64
+}
+----
+Vyrobíme teda interfejs, ktorý reprezentuje kontrakt pre akýkoľvek objekt, ktorý dokáže vyrátať svoju plochu.
+
+=== Najprv štvorce
+
+Prvým takýmto útvarom bude útvar -- *štvorec*.
+Na výpočet plochy potrebujeme jediný _stav_: veľkosť jeho strany `side`.
+
+[source,go]
+----
+type Square struct {
+	side float64
+}
+----
+
+Ak má štvorec implementovať interfejs `Shaper`, stačí mu dodať príslušnú metódu:
+
+[TIP]
+====
+V Go neexistuje kľúčové slovo `implements` či dvojbodka z iných jazykov.
+Ak má štruktúra všetky metódy daného interfejsu, implementuje ho automaticky.
+
+Toto je niekde nazývané „duck typing“ -- ak to kváka ako kačka, a chodí ako kačka, tak je to kačka.
+
+U nás: ak to vie zrátať plochu, tak je to interfejs `Shaper`.
+====
+
+[source,go]
+----
+func (s Square) Area() float64 {
+	return s.side * s.side
+}
+----
+
+TIP: Budeme používať metódy na prijímači, ktorý je hodnotou (_receiver_ je typu _value_) a nie smerníkom (_pointer_).
+
+Testovať vieme jednoducho:
+
+[source,go]
+----
+blueSquare := Square{side: 2}
+println(blueSquare.Area())
+----
+
+Urobme funkciu, ktorá vypíše plochu útvaru na konzolu:
+
+[source,go]
+----
+func printArea(s Shaper) {
+	fmt.Printf("%.2f\n", s.Area())
+}
+----
+
+Testujme:
+
+[source,go]
+----
+func main() {
+	blueSquare := Square{side: 2}
+	printArea(blueSquare)
+}
+----
+
+Uvidíme:
+
+[source]
+----
+4.0
+----
+
+Funkcia zobrala skutočný objekt typu `Square`, ktorý vyhovuje interfejsu `Shaper`.
+
+Slovom, štvorec kváka ako interfejs `Shaper` (má všetky -- jednu -- jeho metódu) a teda sa dá použiť na každom mieste, ktoré pracuje s interfejsom `Shaper`.
+
+=== Kruhy
+
+Zaveďme kruhy:
+
+[source,go]
+----
+type Circle struct {
+	diameter float64
+}
+
+func (c Circle) Area() float64 {
+	return math.Pi * math.Pow(c.diameter, 2)
+}
+----
+
+Kruh spĺňa interfejs `Shaper` a preto ho môžeme ho poslať do funkcie `printArea`.
+
+[source,go]
+----
+redCircle := Circle{diameter: 3}
+printArea(redCircle)
+----
+
+Uvidíme:
+
+[source]
+----
+28.27
+----
+
+Urobme si rez útvarov a iterujme:
+
+[source,go]
+----
+shapes := []Shaper{blueSquare, redSquare, redCircle}
+for _, shape := range shapes {
+    printArea(shape)
+}
+----
+
+Premenná `shapes` je typu `[]Shaper` a obsahuje tri položky -- dve sú typu `Square` a jednu typu `Circle`.
+
+Vďaka interfejsom máme podtypy a polymorfizmus: premenná `shape` v cykle sa správa raz tak, raz onak.
+
+=== Pomenované útvary
+
+Zaveďme pomenované útvary.
+
+[source,go]
+----
+type NamedShape struct {
+	name string
+}
+----
+
+Vyhlásme štvorec za pomenovaný útvar:
+
+[source,go]
+----
+type Square struct {
+	side float64
+	NamedShape
+}
+----
+
+Toto síce vyzerá ako dedičnosť, ale Go ju nemá.
+V skutočnosti je to *embedding* („zapustenie“) či *kompozícia*, ktorá dedičnosť simuluje.
+
+Zmeňme tvorbu štvorcov:
+
+[source,go]
+----
+blueSquare := Square{2, NamedShape{"Blue"}}
+redSquare := Square{1000, NamedShape{"Red"}}
+----
+
+Vytvorme rez pomenovaných štvorcov:
+
+[source,go]
+----
+squares := []Square{blueSquare, redSquare}
+----
+
+Vytlačme ich mená:
+
+[source,go]
+----
+for _, square := range squares {
+    fmt.Printf("Name: %s\n", square.name)
+}
+----
+
+Premenná `square` je typu `Square`, ale „zdedila“ premennú `name` od „rodičovského“ typu `NamedShape`.
+Úvodzovky sú namieste, lebo v skutočnosti štruktúra `Square` je zložená z typu `NamedShape` a pristupuje k jeho stavu rovnako ako keby ho mala sama.
+
+==== Polymorfizmus
+
+Ukážme si polymorfizmus -- zaveďme funkciu pre výpis mena pomenovaného útvaru.
+
+[source,go]
+----
+func printName(s NamedShape) {
+	fmt.Printf("Name: %s\n", s.name)
+}
+----
+
+Skúsme teraz vypisovať mená:
+
+[source,go]
+----
+squares := []Square{blueSquare, redSquare}
+for _, square := range squares {
+    printName(square)
+}
+----
+
+Uvidíme chybu!
+
+[source]
+----
+Cannot use 'square' (type Square) as the type NamedShape
+----
+
+Takýto typ polymorfizmu v Go nefunguje.
+Hoci štruktúra `Square` „dedí“ od štruktúry `NamedShape` -- presnejšie „je s ňou zložená“, nevieme ju použiť v metóde, ktorá berie parameter `NamedSquare`.
+
+TIP: Takýto _subtyping_ funguje len pri interfejsoch, nie pri kompozícii!
+
+Vytvorme si teraz rez pomenovaných útvarov:
+
+[source,go]
+----
+squares := []NamedShape{blueSquare, redSquare}
+----
+
+Tiež uvidíme kýbel chýb:
+
+[source]
+----
+Cannot use 'blueSquare' (type Square) as the type NamedShape
+Cannot use 'redSquare' (type Square) as the type NamedShape
+----
+
+Obísť to môžeme interfejsom:
+
+[source,go]
+----
+type Namer interface {
+	Name() string
+}
+----
+
+Pridajme pomenovanému útvaru metódu na získanie mena:
+
+[source,go]
+----
+func (n NamedShape) Name() string {
+	return n.name
+}
+----
+
+TIP: Štruktúra `NamedShape` bude implementovať interfejs `Namer`.
+
+Upravme funkciu tak, že jej zmeníme typ z konkrétnej štruktúry na interfejs.
+
+[source,go]
+----
+func printName(n Namer) {
+	fmt.Printf("Name: %s\n", n.Name())
+}
+----
+
+Toto sme v skutočnosti vylepšili na viacerých úrovniach.
+Funkcia na tlačenie mena nepotrebuje pomenovaný útvar, ale akúkoľvek všeobecnú vec, ktorá má meno -- a toto meno je získateľné cez metódu `Name()`.
+
+Ak by sme si vymysleli pomenované zvieratá, vedeli by sme ich vypisovať tiež!
+
+Vytvorme teraz rez pomenovaných vecí typu `[]Namer` a vypíšme ho:
+
+[source,go]
+----
+squares := []Namer{blueSquare, redSquare}
+for _, square := range squares {
+    printName(square)
+}
+----
+
+Toto funguje korektne, lebo využívame podtypy cez interfejsy.
+
+Štvorec `Square` „dedí“ od `NamedShape` a keďže `NamedShape` implementuje `Namer` s metódou `Name`, i na štvorci môžeme volať metódu `Name()`.
+
+Jej implementácia je „zdedená“ od `NamedShape`, teda vypisuje názov štvorca.
+
+Upravme teraz výpis mena na štruktúre `Square`.
+
+Dodajme štvorcu metódu:
+
+[source,go]
+----
+func (s Square) Name() string {
+	return "Square " + s.name
+}
+----
+
+Týmto sme prekryli (_override_) metódu `Name()` rodičovského `NamedShape` a poskytli vlastnú implementáciu.
+
+Ak spustíme výpis nanovo, uvidíme:
+
+[source]
+----
+Name: Square Blue
+Name: Square Red
+----
+
+=== Pomenované kruhy
+
+Použime aj pomenované kruhy:
+
+[source,go]
+----
+type Circle struct {
+	diameter float64
+	NamedShape
+}
+----
+
+Implementujme prekrytú metódu `Name`:
+
+[source,go]
+----
+func (c Circle) Name() string {
+	return "Circle " + c.name
+}
+----
+
+Urobme si rez pomenovaných útvarov:
+
+[source,go]
+----
+namedShapes := []Namer{blueSquare, redSquare, redCircle}
+for _, shape := range namedShapes {
+    printName(shape)
+}
+----
+
+Uvidíme výpis:
+
+[source]
+----
+Name: Square Blue
+Name: Square Red
+Name: Circle
+----
+
+Kruh nemá meno, pretože ... sme mu pri konštrukcii nepriradili meno.
+
+Môžeme tiež vyrobiť interfejs pre pomenované veci s plochou:
+
+[source,go]
+----
+type NamedShaper interface {
+	Namer
+	Shaper
+}
+----
+
+Potom vieme urobiť rez pomenovaných útvarov!
+
+[source,go]
+----
+namedShapes := []NamedShaper{blueSquare, redSquare, redCircle}
+for _, shape := range namedShapes {
+    printName(shape)
+    printArea(shape)
+}
+----
