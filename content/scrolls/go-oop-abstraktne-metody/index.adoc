@@ -1,0 +1,268 @@
+---
+title: Go a simulácia abstraktných metód
+date: 2022-12-19
+---
+
+:source-highlighter: pygments
+
+= Abstraktné metódy neexistujú
+
+V Go neexistujú abstraktné metódy.
+To často spôsobuje prekvapivé správanie.
+
+Vytvorme si útvar s menom:
+
+```go
+type Shape struct {
+	name string
+}
+
+func (s *Shape) Name() string {
+	return s.name
+}
+```
+
+Použime ho:
+
+```go
+func main() {
+	s := Shape{"some square"}
+	fmt.Println(s.Name())
+}
+```
+
+Vyrobme na pomenovanom útvare metódu, ktorá popíše jeho vlastnosti ako reťazec, pričom detaily o útvare zabezpečí príslušný útvar, ktorý embedduje `Shape` -- kruh uvedie polomer, štvorec uvedie dĺžku strany a pod.
+
+Dodajme:
+
+```go
+func (s *Shape) Describe() string {
+	desc := s.DoDescribe()
+	if desc != "" {
+		desc = " " + desc
+	}
+	return "<" + s.Name() + desc + ">"
+}
+
+func (s *Shape) DoDescribe() string {
+	return ""
+}
+```
+
+Následne skúsme:
+
+```go
+func main() {
+	s := Shape{"some square"}
+	fmt.Println(s.Describe())
+}
+```
+
+Uvidíme výpis v lomených zátvorkách:
+
+```go
+<some square>
+```
+
+Metóda `DoDescribe` je „abstraktná“ a jej kód majú dodať potomkovské štruktúry.
+
+== Štvorec a jeho popis
+
+Dodajme štvorec a jeho popis.
+
+```go
+type Square struct {
+	side float64
+	Shape
+}
+
+func (s *Square) DoDescribe() string {
+	return fmt.Sprintf("Square %s, side %.2f", s.Name(), s.side)
+}
+```
+
+Štvorec embedduje („dedí“) od útvaru `Shape` a pokúša sa prekryť „abstraktnú“ metódu `DoDescribe`, žiaľ, neúspešne.
+
+Použime:
+
+```go
+redSquare := Square{
+    2,
+    Shape{"Red"},
+}
+fmt.Println(redSquare.Describe())
+```
+
+Čo uvidíme? Očakávame, že uvidíme podrobnosti o štvorci, ale namiesto toho vidíme výsledok rodičovskej metódy:
+
+```
+<Red>
+```
+
+Samotný štvorec `Square` nemá metódu `Describe`, takže sa zavolá rodičovská metóda z `Shape`.
+
+V bežných objektovo orientovaných jazykov by metóda `Describe` zavolala metódu `DoDescribe` na skutočnom type premennej -- teda na `Square`.
+
+Toto však v Go nefunguje.
+
+V skutočnosti sa volá metóda `DoDescribe` na tom type, ktorý naozaj obsahuje metódu `Describe`.
+
+
+== Trik pre abstraktné metódy
+
+Obídeme to elegantným trikom z https://hackthology.com/object-oriented-inheritance-in-go.html[z blogu Hackthology].
+
+=== Konštruktory
+
+Najprv si však pripravme funkciu, čo sa bude tváriť ako konštruktor:
+
+```go
+func NewSquare(side float64, name string) *Square {
+	s := new(Square)
+	s.side = 0
+	s.Shape = Shape{name}
+
+	return s
+}
+```
+
+Následne ju použijeme:
+
+```go
+redSquare := NewSquare(2, "Red")
+fmt.Println(redSquare.Describe())
+```
+
+Situácia sa nezlepšila, ale otvorili sme si priestor na ďalšie zmeny.
+
+== Funkcia pre abstraktné volanie
+
+Dodajme do útvaru stav reprezentujúci funkciu pre jeho popis.
+
+Funkcie sú v Go rovnoprávne dátové typy, s ktorými možno veselo narábať ako s premennými!
+
+```go
+type Shape struct {
+	name string
+	describer func() string
+}
+```
+
+Následne upravme konštruktor pre štvorec:
+
+```go
+func NewSquare(side float64, name string) *Square {
+	s := new(Square)
+	s.side = side //<1>
+	s.name = name //<2>
+	s.describer = s.DoDescribe //<3>
+
+	return s
+}
+```
+<1> Štvorcu priradíme dĺžku strany.
+<2> Zároveň štvorec pomenujeme, pričom využijeme premennú `name` „zdedenú“ z útvaru `Shape`.
+<3> Funkcii, ktorá dokáže vrátiť popis, priradíme metódu (!) `DoDescribe` zo štvorca.
+
+Štvorec `Square`, ktorý má metódu `DoDescribe` ju môže použiť ako funkciu.
+Keďže `DoDescribe` neberie žiaden parameter a vracia reťazec, je možné ju považovať za príslušnú funkciu s 0 parametrami a s návratovou hodnotou `string` a teda ju priradiť do premennej v útvare `Shape`.
+
+TIP: Táto vlastnosť sa nazýva https://go.dev/ref/spec#Method_values[Method Value].
+Metódu štruktúry dokážeme považovať na samostatne stojacu funkciu.
+
+Aby to naozaj fungovalo, musíme ešte upraviť metódu `Describe` na útvare `Shape`.
+
+```go
+func (s *Shape) Describe() string {
+	desc := s.describer() //<1>
+	if desc != "" {
+		desc = " " + desc
+	}
+	return "<" + s.Name() + desc + ">"
+}
+```
+<1> Dôležité informácie o útvare z konkrétnej implementácie už nezískame priamo -- volaním metódy `DoDescribe`, ale „dokola“ -- z funkcie v premennej `describer`.
+
+Ak zavoláme príslušný kód, uvidíme správny výsledok.
+
+```
+<Red Square Red, side 2.00>
+```
+
+Ak chceme naozaj vybudiť dojem, že metóda `DoDescribe` na útvare `Shape` je „abstraktná”, dodáme ju.
+
+```go
+func (s *Shape) Describe() string {
+	desc := s.DoDescribe() //<1>
+	if desc != "" {
+		desc = " " + desc
+	}
+	return "<" + s.Name() + desc + ">"
+}
+
+func (s *Shape) DoDescribe() string {
+	return s.describer() //<2>
+}
+```
+<1> Voláme „abstraktnú“ metódu `DoDescribe`, ktorá na útvare `Shape` len deleguje vykonávanie do medzifunkcie v premennej `describer`.
+<2> Metóda `DoDescribe()` rieši zavolanie medzifunkcie.
+
+NOTE: Metóda `DoDescribe` je na konkrétnom útvare -- napr. štvorci -- prekrytá korektne.
+Medzifunkcia je inicializovaná v konštruktore štvorca -- teda v metóde `NewSquare`, kde sa do nej priradí metóda `DoDescribe` štvorca `Square`.
+
+== Kruhy
+
+Kruhy už urobíme v podobnom duchu.
+
+```go
+// Circle
+type Circle struct {
+	diameter float64
+	Shape
+}
+
+func NewCircle(diameter float64, name string) *Circle {
+	c := &Circle{diameter, Shape{name: name}} //<1>
+	c.describer = c.DoDescribe //<2>
+	return c
+}
+
+func (c *Circle) DoDescribe() string { //<3>
+	return fmt.Sprintf("Circle with diameter %.2f", c.diameter)
+}
+```
+<1> Inicializáciu urobíme na jeden riadok.
+<2> Chýbajúcu medzifunkciu dodáme samostatne.
+Nezabudnime, že `describer` je „zdedený“ z útvaru `Shape` a preto ho môžeme zavolať.
+<3> Pridáme vlastný popis kruhu.
+
+WARNING: Metóda `DoDescribe` musí byť volaná na prijímači typu smerník -- teda _method receiver_ musí byť pointrový `*Circle`!
+Inak tento trik nebude fungovať.
+
+== Abstraktný útvar
+
+Pozor na to, že útvar `Shape` nie je určený na vytváranie premenných napriamo.
+
+```go
+blob := Shape{name: "blob"}
+fmt.Println(blob.Describe())
+```
+
+Výsledok bude „segmentaiton fault“:
+
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x108e9bd]
+
+goroutine 1 [running]:
+main.(*Shape).DoDescribe(...)
+```
+
+Je to preto, že funkcia v premennej `describer` nie je inicializovaná.
+Útvar `Shape` nebol korektne inicializovaný a preto pokus o volanie nedefinovanej medzifunkcie (`nil`) zlyhá.
+
+
+== Zdroje
+
+- https://hackthology.com/object-oriented-inheritance-in-go.html
+- https://www.toptal.com/go/golang-oop-tutorial
