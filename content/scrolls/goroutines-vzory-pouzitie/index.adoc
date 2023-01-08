@@ -1,0 +1,470 @@
+---
+title: Recepty starých materí pre gorutiny
+date: 2023-01-07
+---
+
+:icons: font
+
+== Čo je gorutina?
+
+Gorutina je ľahučké vlákenko na vykonávanie paralelných úloh v Go.
+
+Spustime desaťtisíc gorutín, ktoré si sekundu pospia a potom vypíšu bodku.
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+)
+
+func main() {
+	for i := 0; i < 10000; i++ {
+		go func() {
+			time.Sleep(1 * time.Second)
+			log.Printf(".\n")
+		}()
+	}
+}
+```
+Ak to však spustíme, neuvidíme nič.
+
+Nie je to preto, že spúšťame desaťtisíc paralelných úloh, ale preto, že *hlavná gorutina* vo funkcii `main()` je pomerne rýchla a nebude čakať na ich dobehnutie.
+
+== Čakanie cez `WaitGroup`
+
+*WaitGroup* sa dá použiť na vyčkávanie dobehnutia gorutín.
+
+NOTE: V Jave je ekvivalentom `CountdownLatch`.
+
+_WaitGroup_ má nasledovné schopnosti:
+
+- `Add`: zvýši interné počítadlo.
+Používané pri spustení novej gorutiny.
+- `Done`: gorutina po dobehnutí zníži počítadlo
+- `Wait`: v hlavnej gorutine čakáme, kým sa počítadlo nezníži na nulu.
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+func main() {
+	var wg sync.WaitGroup //<1>
+	for i := 0; i < 10000; i++ {
+		wg.Add(1) //<2>
+		go func() {
+			time.Sleep(1 * time.Second)
+			log.Printf(".\n")
+			wg.Done() //<3>
+		}()
+	}
+	wg.Wait() //<4>
+}
+```
+<1> Pripravíme si premennú typu `WaitGroup`.
+<2> Pred každým spustením gorutiny navýšime počítadlo.
+<3> V rámci gorutiny indikujeme, že gorutina dobehla, čím znížime počítadlo.
+<4> Čakáme -- blokujeme hlavnú gorutinu -- kým všetkých desaťtisíc gorutín nedobehne.
+
+Ak to spustíme, uvidíme desaťtisíc logovacích záznamov s bodkami.
+
+Ak chceme vidieť podrobnosti, upravme logovacie záznamy.
+
+```go
+package main
+
+import (
+	"log"
+	"sync"
+	"time"
+)
+
+func main() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds) //<1>
+	var wg sync.WaitGroup
+	for i := 0; i < 10000; i++ {
+		wg.Add(1)
+		go func() {
+			time.Sleep(1 * time.Second)
+			log.Printf("%d\n", i) //<2>
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+```
+<1> Vypisujme mikrosekundy pri logovacích záznamoch.
+<2> Vypíšme identifikátor gorutiny pomocou indexu, ktorý spôsobil jej spustenie.
+
+[IMPORTANT]
+====
+Prostredie nás upozorní, že použitie premennej `i`, ktorá sa iteruje v cykle, nie je korektné.
+
+    Loop variables captured by 'func' literals in 'go' statements might have unexpected values
+
+Opravme to!
+====
+
+```go
+log.SetFlags(log.Ltime | log.Lmicroseconds)
+var wg sync.WaitGroup
+for i := 0; i < 10000; i++ {
+    wg.Add(1)
+    i := i //<1>
+    go func() {
+        time.Sleep(1 * time.Second)
+        log.Printf("%d\n", i) //<2>
+        wg.Done()
+    }()
+}
+wg.Wait()
+```
+<1> Vytvorme lokálnu premennú, ktorý vyrieši problém s použitím iteračnej premennej vo vnútri gorutiny.
+<2> Použijeme lokálnu premennú namiesto iteračnej z cyklu `for`.
+
+Teraz uvidíme štrúdlik výpisov:
+
+----
+00:11:36.038469 9988
+00:11:36.038472 9990
+00:11:36.038474 9994
+00:11:36.038483 9998
+00:11:36.038482 9996
+----
+Vidíme, že poradie výpisu sa nemusí dodržať -- hodnoty sa vypisujú paralelne!
+
+== Spracujme riadky reťazca
+
+Skúsme spracovať riadky reťazca skenerom, kde každý z nich pošleme do vlastnej korutiny.
+
+```go
+package main
+
+import (
+	"bufio"
+	"log"
+	"strings"
+	"sync"
+	"time"
+)
+
+func main() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+
+	var wg sync.WaitGroup
+	scanner := bufio.NewScanner(strings.NewReader(input)) //<1>
+	for scanner.Scan() {
+		wg.Add(1)
+		line := scanner.Text() //<2>
+		go func() {
+			time.Sleep(1 * time.Second)
+			log.Printf("%s\n", line) //<3>
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+var input = `A ty mor ho! — hoj mor ho! detvo môjho rodu,
+kto kradmou rukou siahne na tvoju slobodu;
+a čo i tam dušu dáš v tom boji divokom:
+Mor ty len, a voľ nebyť, ako byť otrokom.`
+```
+<1> Skenujme riadky z pevného reťazca.
+<2> Získajme jeden riadok zo vstupu v každej iterácii.
+<3> V gorutine vypíšeme riadok.
+
+Uvidíme riadky vypísané zrejme na preskáčku:
+
+----
+00:27:44.307242 kto kradmou rukou siahne na tvoju slobodu;
+00:27:44.307245 Mor ty len, a voľ nebyť, ako byť otrokom.
+00:27:44.307244 A ty mor ho! — hoj mor ho! detvo môjho rodu,
+00:27:44.307247 a čo i tam dušu dáš v tom boji divokom:
+----
+
+== Počítajme dĺžky riadkov
+
+Poďme počítať dĺžky riadkov a agregovať to do celkovej dĺžky vstupu.
+Slovom, simulujme `wc -c` z linuxového shellu.
+
+Na celkovú dĺžku by sme mohli použiť atomické počítadlo, ale radšej si ukážme kanály.
+
+== Komunikácia cez kanály
+
+Kanál (_channel_) je rúra, ktorou tečú typované dáta.
+
+Do jedného konca lejeme dáta -- zapisujeme -- z druhého konca dáta vytekajú -- čítame ich.
+
+Kanály umožňujú bezpečnú komunikáciu medzi gorutinami bez nutnosti riešiť konkurentné problémy s prístupom k spoločným dátam.
+
+```go
+results := make(chan int) //<1>
+
+var wg sync.WaitGroup
+scanner := bufio.NewScanner(strings.NewReader(input))
+for scanner.Scan() {
+    wg.Add(1)
+    line := scanner.Text()
+    go func() {
+        time.Sleep(1 * time.Second)
+        log.Printf("%s\n", line)
+        results <- len(line) //<2>
+        wg.Done()
+    }()
+}
+wg.Wait()
+```
+<1> Vytvorme komunikačný _kanál_, ktorým budú tiecť celé čísla `int`.
+<2> Pre každý riadok zistime jeho dĺžku a zapíšme do kanála.
+
+Ak spustíme kód, uvidíme 4 riadky a nakoniec pád:
+
+```
+fatal error: all goroutines are asleep - deadlock!
+
+goroutine 6 [chan send]:
+main.main.func1()
+```
+
+V programe sa deje viacero vecí.
+
+. Gorutiny zapisujú do spoločného kanála paralelne -- predstavujú producentov.
+. Kanál, ktorý používame, je nebufferovaný (_unbuffered_) a teda každý _producent_ čaká (_blokuje_) na zápis dovtedy, kým sa z kanála nečíta.
+
+Z kanála `results` však nikto nečíta -- keďže sme nič také nenaprogramovali -- a teda nastáva _deadlock_, pretože _producenti_ (_gorutiny_) čakajú so zápisom na *Go*-dotov, ktorí nikdy neprídu.
+
+Tento fenomén Go dokázal identifikovať počas behu, a teda ukončil program s fatálnou chybou.
+
+== Konzument výsledkov
+
+Pripravme si funkciu, ktorá bude konzumovať výsledky:
+
+[source,go]
+----
+func aggregateResults(results <-chan int) { //<1>
+	for result := range results { //<2>
+		log.Printf("%d\tPartial\n", result)
+	}
+}
+----
+<1> Funkcia berie parameter typu `chan int`.
+Ak použijeme šípku pred `chan`, znamená to, že z kanála *čítame*.
++
+V skratke, premenná `results` „číta (`<-`) z kanála celých čísiel `(chan int`)“.
+<2> Pomocou cyklu vieme postupne čítať hodnoty z kanála.
+
+Použime funkciu `aggregateResults` v kóde.
+
+IMPORTANT: Je veľmi dôležité, kde ju použijeme a ako ju použijeme.
+Veľmi ľahko si vieme vyrobiť deadlock!
+
+Tento kód niekedy fungovať bude, niekedy nie.
+
+```go
+func main() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+
+	results := make(chan int)
+
+	var wg sync.WaitGroup
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for scanner.Scan() {
+		wg.Add(1)
+		line := scanner.Text()
+		go func() {
+			time.Sleep(1 * time.Second)
+			log.Printf("%s\n", line)
+			results <- len(line)
+			wg.Done()
+		}()
+	}
+	aggregateResults(results) //<1>
+	wg.Wait()
+}
+```
+<1> Funkciu spustíme klasicky po spracovaní výsledkov.
+
+Uvedený kód sa správa nepredvídateľne, napríklad pri niektorom behu, ale aspoň beží.
+
+----
+00:55:46.352436 Mor ty len, a voľ nebyť, ako byť otrokom.
+00:55:46.352772 44      Partial
+00:55:46.352468 a čo i tam dušu dáš v tom boji divokom:
+00:55:46.352471 kto kradmou rukou siahne na tvoju slobodu;
+00:55:46.352486 A ty mor ho! — hoj mor ho! detvo môjho rodu,
+00:55:46.352802 43      Partial
+00:55:46.352890 42      Partial
+00:55:46.352895 47      Partial
+fatal error: all goroutines are asleep - deadlock!
+----
+
+Vidíme štyri podvýsledky a potom deadlock.
+
+IMPORTANT: Funkcia `aggregateResult` číta 4 čiastočné výsledky z kanála a potom deadlockne -- začne čakať na piaty výsledok, ktorý nikdy nepríde, pretože program sa ukončí.
+
+[IMPORTANT]
+====
+Je dôležité najprv agregovať výsledky a potom čakať na dobehnutie korutín.
+
+Ak by sme najprv čakali na korutiny a potom agregovali výsledky, máme _deadlock_ -- waitgroup by čakala na dobehnutie korutín, ktoré by čakali na konzumovanie kanála z `aggregateResult` -- ale toto čítanie by sa uskutočnilo až po zavolaní `Wait()`.
+====
+
+Bez ohľadu na to, čí máme najprv `aggregateResult` a potom `Wait()`, alebo naopak, vytvoríme nejaký druh deadlocku.
+
+Ak to má fungovať korektne, potrebujeme:
+
+. Pustiť `aggregateResult` asynchrónne v gorutine, aby uvoľnil vzájomné čakanie v podobe deadlocku.
+. Počkať s hlavnou gorutinou na spracovanie výsledku.
+. Korektne ukončiť `aggregateResult`.
+
+=== Pustime agregáciu výsledkov asynchrónne
+
+```go
+results := make(chan int)
+
+var wg sync.WaitGroup
+scanner := bufio.NewScanner(strings.NewReader(input))
+for scanner.Scan() {
+    wg.Add(1)
+    line := scanner.Text()
+    go func() {
+        log.Printf("%s\n", line)
+        results <- len(line)
+        wg.Done()
+    }()
+}
+go aggregateResults(results) //<1>
+wg.Wait()
+```
+<1> Agregácia výsledkov pobeží asynchrónne.
+
+Zbavili sme sa síce deadlocku, ale stále máme _race condition_, teda stav, kde beh programu závisí od náhodných okolností.
+
+TIP: „Race condition“ niekedy ukáže tri výstupy `Partial`, inokedy menej, ohehdy viac.
+
+----
+01:32:10.503698 A ty mor ho! — hoj mor ho! detvo môjho rodu,
+01:32:10.503860 47      Partial
+01:32:10.503699 kto kradmou rukou siahne na tvoju slobodu;
+01:32:10.503866 42      Partial
+01:32:10.503734 a čo i tam dušu dáš v tom boji divokom:
+01:32:10.503869 43      Partial
+01:32:10.503758 Mor ty len, a voľ nebyť, ako byť otrokom.
+----
+
+Skrátka, v niektorých prípadoch sa program skončí skôr ako sa spracujú všetky výsledky.
+
+=== Čakanie na spracovanie výsledku a ukončenie spracovania
+
+Čakanie sme tu už raz mali -- v podobe _WaitGroup_, ktorá vyčkávala na dobehnutie viacerých korutín.
+
+Ak chceme vyčkávať na jedinú korutinu, nemusíme spúšťať ďalšiu _waitgroup_-u; stačí použiť nebufferovaný kanál so synchrónnym zápisom a čítaním.
+
+```go
+func aggregateResults(results <-chan int, done chan <- int) { //<1>
+	for result := range results {
+		log.Printf("%d\tPartial\n", result)
+	}
+	done <- 0 //<2>
+}
+```
+<1> Pridáme parameter pre výstupný kanál.
+Čítame „`done` je typu kanál (`chan`), do ktorého zapíšeme (`<-`) celé čísla (`int`)“.
+<2> Po dobehnutí cyklu zapíšeme do výstupného kanála `0` ako znamenie úspechu.
+
+
+Upravme potom hlavnú funkciu:
+
+```
+func main() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+
+	results := make(chan int)
+
+	var wg sync.WaitGroup
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for scanner.Scan() {
+		wg.Add(1)
+		line := scanner.Text()
+		go func() {
+			log.Printf("%s\n", line)
+			results <- len(line)
+			wg.Done()
+		}()
+	}
+	done := make(chan int) //<1>
+	go aggregateResults(results, done) //<2>
+	wg.Wait()
+	close(results) //<3>
+	<-done //<4>
+}
+```
+<1> Vytvorme kanál pre indikáciu spracovania výsledkov.
+<2> Použime kanál argument pre agregáciu výsledkov.
+<3> Potom, čo všetky gorutiny dobehnú, uzavrieme kanál s výsledkami.
++
+Dobehnutá gorutina určite zapísala výsledok do `results` a vďaka synchronicite tohto kanála tento výsledok musel niekto prečítať -- bola ním funkcia  `aggregateResult`.
++
+Po úspešnom `Wait()` sa teda nielen zapísali všetky výsledky, ale určite sa aj spracovali a kanál `result` je možné uzavrieť.
++
+Uzavretím kanála zároveň ukončíme cyklus `for` vo funkcii `aggregateResult`, pretože `range` nad kanálom vždy skončí uzavretím kanála.
+<4> Čakáme (blokujeme), kým `aggregateResult` neskončí tým, že do kanála zapíše nulu.
+
+== Upratovanie
+
+Upracme ešte v kóde. Predovšetkým, kód v korutine odsuňme do samostatnej funkcie.
+
+```go
+func spawnWorker(line string, results chan<- int, wg *sync.WaitGroup) {//<1>
+	log.Printf("%s\n", line)
+	results <- len(line)
+	wg.Done()
+}
+```
+<1> Funkcia berie:
+. Reťazec s riadkom.
+. Kanál pre výsledky, do ktorého sa bude zapisovať. Čítame „`results` je typu kanál (`chan`), do ktorého zapíšeme (`<-`) celé čísla (`int`)“.
+. _WaitGroup_, ktorú *musíme* odovzdať pomocou pointera, pretože to vyžaduje dokumentácia.
+
+IMPORTANT: `WaitGroup` odovzdávaná ako parameter musí ísť vždy ako _pointer_.
+
+Upravme zvyšok kódu:
+
+```go
+
+func main() {
+	log.SetFlags(log.Ltime | log.Lmicroseconds)
+
+	results := make(chan int)
+
+	var wg sync.WaitGroup
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for scanner.Scan() {
+		wg.Add(1)
+		line := scanner.Text()
+		go spawnWorker(line, results, &wg) //<1>
+	}
+	done := make(chan int)
+	go aggregateResults(results, done)
+	wg.Wait()
+	close(results)
+	<-done
+}
+```
+<1> Zavoláme našu funkciu.
+Nezabudnime odovzdať _workgroup_ ako pointer, teda pomocou ampersandu _referencovať_ (zistiť adresu) štruktúry `wg`.
+
+== Hotovo
+
+Náš program je hotový -- komunikuje obojsmerne s gorutinou, korektne rieši čakanie a ďalšie konkurentné problémy.
+
+Nezabudnime, že v programe sa spustí toľko gorutín, koľko je riadkov v súbore.
+
+To je možné optimalizovať pomocou _worker pool_ -- teda fixným počtom gorutín, ktoré postupne spracovávajú úlohy.
