@@ -20,3 +20,16 @@ table{border-collapse:collapse;border-spacing:0}
 pre .conum[data-value]{position:relative;top:-.125em}
 b.conum *{color:inherit!important}
 .conum:not([data-value]):empty{display:none}
+
+
+@media (prefers-color-scheme: dark) {
+  .admonitionblock {
+    background: #4b5256;
+  }
+  .admonitionblock>table td.content {
+    padding-left: 1.125em;
+    padding-right: 1.25em;
+    border-left: 1px solid #ddddd8;
+    color: white;
+  }
+}
