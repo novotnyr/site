@@ -359,6 +359,83 @@ Keďže máme nebufferovaný kanál, čítanie vždy čaká na zápis.
 2023/01/11 10:29:45 Consuming result 120
 ```
 
+== Rýchly producent, pomalý konzument
+
+Doteraz sme mali pomalého producenta a rýchleho konzumenta na nebufferovanom kanáli?
+
+Čo ak to bude naopak?
+
+```go
+func factorial(n int, result chan<- int) {
+	fac := 1
+	for i := 1; i <= n; i++ {
+		fac = fac * i
+		log.Printf("Producing %d! = %d", i, fac)
+		result <- fac //<1>
+	}
+	close(result)
+}
+
+func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	n := 5
+	result := make(chan int)
+	go factorial(n, result)
+	for fac := range result {
+		time.Sleep(1 * time.Second) //<2>
+		log.Printf("Consuming result %d", fac)
+	}
+}
+```
+<1> Producent chrlí medzivýsledky tak rýchlo, ako to ide.
+<2> Konzument je pomalý, trvá mu sekundu zožuť výsledok.
+
+Ako bude vyzerať beh?
+
+```
+2023/01/11 12:01:16.530831 Producing 1! = 1
+2023/01/11 12:01:16.530956 Producing 2! = 2
+2023/01/11 12:01:17.532070 Consumed result 1
+2023/01/11 12:01:17.532102 Producing 3! = 6
+2023/01/11 12:01:18.534279 Consumed result 2
+2023/01/11 12:01:18.534329 Producing 4! = 24
+2023/01/11 12:01:19.534741 Consumed result 6
+2023/01/11 12:01:19.535096 Producing 5! = 120
+2023/01/11 12:01:20.536281 Consumed result 24
+2023/01/11 12:01:21.538732 Consumed result 120
+```
+
+Riadky sú nateraz poprehadzované, ale to má dôvod.
+
+. Producent vyprodukuje výsledok `1` a čaká na konzumenta.
+. Prakticky okamžite sa spustí čítanie kanála cez operátor `range`, ale spracovanie načítaného prvku okamžite zaspí na sekundu. Tak či onak, prvok opustil kanál a producent môže produkovať ďalej výsledok pre `2!`.
+. Ihneď na to sa vyprodukuje výsledok pre faktoriál 2 a čaká sa konzumenta v druhej iterácii.
+. Konzument však paralelne sekundu spí a keď sa zobudí, skonzumuje výsledok `1`.
+. To odblokuje producenta, ktorý môže vyrátať `3!` a zapísať do do kanála.
+. Paralelne ubehne sekunda, keď konzument žul výsledok pre `2! = 1`.
+
+== Rýchly producent a rýchly konzument
+
+Čo ak je producent aj konzument taký rýchly, ako to ide?
+
+Odstráňme všetky spánky cez `sleep`.
+
+```
+2023/01/11 12:11:26.616269 Producing 1! = 1
+2023/01/11 12:11:26.616370 Producing 2! = 2
+2023/01/11 12:11:26.616372 Consumed result 1
+2023/01/11 12:11:26.616373 Consumed result 2
+2023/01/11 12:11:26.616374 Producing 3! = 6
+2023/01/11 12:11:26.616375 Producing 4! = 24
+2023/01/11 12:11:26.616376 Consumed result 6
+2023/01/11 12:11:26.616377 Consumed result 24
+2023/01/11 12:11:26.616378 Producing 5! = 120
+2023/01/11 12:11:26.616382 Consumed result 120
+```
+
+Filozofia je úplne rovnaká, producent paralelne produkuje hodnoty ale vždy čaká na konzumenta a naopak.
+
 == Sumár
 
 Zhrňme si veci:
