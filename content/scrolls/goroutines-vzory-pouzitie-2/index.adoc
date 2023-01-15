@@ -281,7 +281,7 @@ func main() {
 			time.Sleep(1 * time.Second)
 			log.Printf("%s\n", a)
 			results <- a.weight //<2>
-            wg.Done()
+			wg.Done()
 		}()
 	}
 	wg.Wait()
@@ -349,7 +349,7 @@ func main() {
 			time.Sleep(1 * time.Second)
 			log.Printf("%s\n", a)
 			results <- a.weight
-            wg.Done()
+			wg.Done()
 		}()
 	}
 	aggregateResults(results, animalCount) //<3>
