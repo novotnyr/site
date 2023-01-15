@@ -13,7 +13,8 @@ Spustime tisíc gorutín, ktoré si sekundu pospia a potom vypíšu bodku.
 
 Ukážme si zároveň, ako je možné spustiť anonymnú funkciu ako gorutinu.
 
-```go
+[source,go]
+----
 package main
 
 import (
@@ -29,7 +30,7 @@ func main() {
 		}()
 	}
 }
-```
+----
 <1> Spúšťame anonymnú funkciu ako gorutinu.
 
 Ak to však spustíme, neuvidíme nič.
@@ -57,7 +58,8 @@ Používané pri spustení novej gorutiny.
 - `Done`: gorutina po dobehnutí zníži počítadlo.
 - `Wait`: v hlavnej gorutine čakáme, kým sa počítadlo nezníži na nulu.
 
-```go
+[source,go]
+----
 package main
 
 import (
@@ -78,7 +80,7 @@ func main() {
 	}
 	wg.Wait() //<4>
 }
-```
+----
 <1> Pripravíme si premennú typu `WaitGroup`.
 <2> Pred každým spustením gorutiny navýšime počítadlo.
 <3> V rámci gorutiny indikujeme, že gorutina dobehla, čím znížime počítadlo.
@@ -88,7 +90,8 @@ Ak to spustíme, uvidíme desaťtisíc logovacích záznamov s bodkami.
 
 Ak chceme vidieť podrobnosti, upravme logovacie záznamy.
 
-```go
+[source,go]
+----
 package main
 
 import (
@@ -110,7 +113,7 @@ func main() {
 	}
 	wg.Wait()
 }
-```
+----
 <1> Vypisujme mikrosekundy pri logovacích záznamoch.
 <2> Vypíšme identifikátor gorutiny pomocou indexu, ktorý spôsobil jej spustenie.
 
@@ -124,7 +127,8 @@ Prostredie nás upozorní, že použitie premennej `i`, ktorá sa iteruje v cykl
 Opravme to!
 ====
 
-```go
+[source,go]
+----
 log.SetFlags(log.Ltime | log.Lmicroseconds)
 var wg sync.WaitGroup
 for i := 0; i < 10000; i++ {
@@ -137,7 +141,7 @@ for i := 0; i < 10000; i++ {
     }()
 }
 wg.Wait()
-```
+----
 <1> Vytvorme lokálnu premennú, ktorý vyrieši problém s použitím iteračnej premennej vo vnútri gorutiny.
 +
 Toto síce vyzerá zvláštne, ale je to https://go.dev/doc/faq#closures_and_goroutines[obvyklý trik] spomínaný v oficiálnom FAQ.
@@ -160,7 +164,8 @@ Poďme vážiť zvieratá paralelne.
 
 Najprv si pripravme dáta:
 
-```go
+[source,go]
+----
 type Animal struct {
 	species string
 	weight  int
@@ -174,7 +179,7 @@ var animals = []Animal{
 	Animal{"bizón", 2},
 	Animal{"veľryba", 190},
 }
-```
+----
 
 Pre každé zviera pustíme gorutinu a výsledok -- hmotnosť každého zvieraťa -- pošleme do spoločného kanála.
 
@@ -204,14 +209,16 @@ Každý gorutina zapíše výsledok do bufferovaného kanála.
 
 Bufferovaný kanál má kapacitu uvedenú v druhom argumente:
 
-```go
+[source,go]
+----
 results := make(chan int, len(animals)) //<1>
-```
+----
 <1> Pre 6 zvierat máme kapacitu kanála nastavenú na 6 prvkov.
 
 Potom jadro:
 
-```go
+[source,go]
+----
 func main() {
 	results := make(chan int, len(animals))
 
@@ -231,7 +238,7 @@ func main() {
 	close(results) //<5>
 	aggregateResults(results) //<6>
 }
-```
+----
 <1> Spustíme gorutinu pre každé zviera.
 <2> Do spoločného kanála zapíšeme výsledok.
 <3> Nezabudneme použiť trik s premennou cyklu používanej v gorutine.
@@ -241,7 +248,8 @@ func main() {
 
 Agregácia výsledkov znamená čítanie z kanála.
 
-```go
+[source,go]
+----
 func aggregateResults(results <-chan int) {
 	total := 0
 	for result := range results {
@@ -250,7 +258,7 @@ func aggregateResults(results <-chan int) {
 	}
 	log.Printf("Total: %d\n", total)
 }
-```
+----
 
 TIP: Nezabudnime zistiť, či čítame znižovaním počítadla s výsledkami alebo explicitným uzavretím kanála.
 V príklade zatvárame kanál explicitne a používame kombináciu `range` a `for`.
@@ -270,7 +278,8 @@ Na rozdiel od iných jazykov nemusíme používať mutexy či iné zámky.
 
 Dajme si prvý nefunkčný nástrel.
 
-```go
+[source,go]
+----
 func main() {
 	results := make(chan int) //<1>
 	var wg sync.WaitGroup
@@ -286,19 +295,20 @@ func main() {
 	}
 	wg.Wait()
 }
-```
+----
 <1> Vytvorme komunikačný _kanál_, ktorým budú tiecť celé čísla `int`.
 <2> Pre každé zviera zistíme jeho hmotnosť a zapíšeme do kanála.
 <3> Nezabudnime na trik s premennou iterácie, ktorá sa používa v gorutine.
 
 Ak spustíme kód, uvidíme 6 riadkov a nakoniec pád:
 
-```
+[source]
+----
 fatal error: all goroutines are asleep - deadlock!
 
 goroutine 6 [chan send]:
 main.main.func1()
-```
+----
 
 V programe sa deje viacero vecí.
 
@@ -323,20 +333,22 @@ Pripravme si funkciu, ktorá bude konzumovať výsledky čítaním z kanála.
 Začnime počítaním výsledkov.
 Ak vieme koľko riadkov pošleme do gorutiny, vieme tiež, koľko výsledkov očakávame.
 
-```go
+[source,go]
+----
 func aggregateResults(results <-chan int, expectedResults int) { //<1>
 	for i := expectedResults; i > 0; i-- { //<2>
 		log.Printf("%d\tPartial\n", <-results) //<3>
 	}
 }
-```
+----
 <1> Berieme kanál, z ktorého čítame a počet výsledkov, ktoré prídu.
 <2> Načítame toľko výsledkov, koľko treba.
 <3> Čítame z kanála (s blokovaním) a vypisujeme.
 
 Hlavná funkcia potom navyšuje počítadlo úloh a po spustení gorutín zavolá agregáciu:
 
-```go
+[source,go]
+----
 func main() {
 	results := make(chan int)
 	animalCount := 0 //<1>
@@ -355,7 +367,7 @@ func main() {
 	aggregateResults(results, animalCount) //<3>
 	wg.Wait()
 }
-```
+----
 <1> Inicializujeme počítadlo riadkov.
 <2> S každým načítaným riadkom zvýšime počítadlo.
 <3> Agregujeme výsledky.
@@ -391,7 +403,8 @@ Veľmi ľahko si vieme vyrobiť deadlock!
 
 Tento kód niekedy fungovať bude, niekedy nie.
 
-```go
+[source,go]
+----
 func main() {
 	results := make(chan int)
 	var wg sync.WaitGroup
@@ -408,12 +421,13 @@ func main() {
 	aggregateResults(results) //<1>
 	wg.Wait()
 }
-```
+----
 <1> Funkciu spustíme klasicky po spracovaní výsledkov.
 
 Uvedený kód sa správa nepredvídateľne, napríklad:
 
-```
+[source]
+----
 09:28:52.615693 slon: 12 tony
 09:28:52.615791 12      Partial
 09:28:52.615723 nosorožec: 4 tony
@@ -427,7 +441,7 @@ Uvedený kód sa správa nepredvídateľne, napríklad:
 09:28:52.615829 4       Partial
 09:28:52.615832 2       Partial
 fatal error: all goroutines are asleep - deadlock!
-```
+----
 
 Vidíme šesť podvýsledkov a potom deadlock.
 
@@ -459,7 +473,8 @@ NOTE: Riešenie je spustiť ešte jednu aktérku v gorutine.
 
 Jeden z trikov použije čakanie na _WaitGroup_ a následné uzavretie kanála v samostatnej gorutine.
 
-```go
+[source,go]
+----
 func main() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 
@@ -481,7 +496,7 @@ func main() {
 	}()
 	aggregateResults(results)
 }
-```
+----
 <1> Čakanie na dobehnutie _WaitGroup_ uskutočníme v gorutine.
 <2> Ak gorutiny dobehnú, máme garantovane všetky výsledky zapísané do výstupného kanála a môžeme ho zatvoriť.
 
@@ -507,19 +522,21 @@ Upracme ešte v kóde. Predovšetkým, kódy v korutinách odsuňme do samostatn
 
 Založme funkciu pre gorutinu:
 
-```go
+[source,go]
+----
 func worker(a Animal, results chan<- int, wg *sync.WaitGroup) { //<1>
 	time.Sleep(1 * time.Second)
 	log.Printf("%s: %d tony\n", a.species, a.weight)
 	results <- a.weight
 	wg.Done()
 }
-```
+----
 <1> Nezabudnime posielať `WaitGroup` ako pointer.
 
 Funkcia `aggregateResult` bude naozaj agregovať:
 
-```go
+[source,go]
+----
 func aggregateResults(results <-chan int) {
 	total := 0
 	for result := range results {
@@ -528,20 +545,23 @@ func aggregateResults(results <-chan int) {
 	}
 	log.Printf("%d\tTotal Weight\n", total) //<1>
 }
-```
+----
 <1> Vypíšeme celkový výsledok.
 
 Čakanie na `WaitGroup` bude v samostatnej grupe.
-```go
+
+[source,go]
+----
 func waitAndClose(wg *sync.WaitGroup, results chan<- int) {
 	wg.Wait()
 	close(results)
 }
-```
+----
 
 Hlavná funkcia sa sprehľadní.
 
-```
+[source]
+----
 func main() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds)
 
@@ -555,7 +575,7 @@ func main() {
 	go waitAndClose(wg, results) //<3>
 	aggregateResults(results) //<4>
 }
-```
+----
 <1> `WaitGroup` inicializujeme rovno ako pointer.
 <2> Funkciu pre váženie zavoláme ako gorutinu.
 <3> Čakanie na výsledky tiež pôjde v gorutine
