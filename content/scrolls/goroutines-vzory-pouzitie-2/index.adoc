@@ -457,7 +457,7 @@ NOTE: Riešenie je spustiť ešte jednu aktérku v gorutine.
 
 ==== Čakanie na gorutiny v gorutine
 
-Jeden z trikov použíje čakanie na _WaitGroup_ a následné uzavretie kanála v samostatnej gorutine.
+Jeden z trikov použije čakanie na _WaitGroup_ a následné uzavretie kanála v samostatnej gorutine.
 
 ```go
 func main() {
@@ -493,6 +493,13 @@ To je v poriadku.
 Slovom, `main` naposiela salvu údajov a obratom začne čakať na výsledky v `aggregateResult`.
 . Ak všetky vážiace gorutiny dobehli, zatvoríme kanál a tým odblokujeme čakanie na koniec vo funkcii `aggregateResults`.
 . Funkcia `aggregateResult` pri čakaní na koniec kanála zároveň zabraňuje predčasnému ukončeniu programu.
+
+[IMPORTANT]
+====
+Čítanie a zápis do kanála z rovnakej gorutiny vedie k deadlocku.
+
+Uzavretie kanála cez `close` je druh zápisu.
+====
 
 === Upratovanie v kóde
 
