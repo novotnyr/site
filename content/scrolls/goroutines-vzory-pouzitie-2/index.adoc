@@ -11,7 +11,7 @@ V minulom dieli sme spúšťali jedinú gorutinu, ale je čas pridať plyn.
 
 Spustime tisíc gorutín, ktoré si sekundu pospia a potom vypíšu bodku.
 
-Ukážme si zároveň, ako je možné spustiť anonymnú funkciu ako gorutinu.
+Ukážme si zároveň, ako je možné spustiť anonymnú funkciu v gorutine.
 
 [source,go]
 ----
@@ -313,7 +313,7 @@ main.main.func1()
 V programe sa deje viacero vecí.
 
 . Gorutiny zapisujú do spoločného kanála paralelne -- predstavujú producentov.
-. Kanál, ktorý používame, je nebufferovaný (_unbuffered_) a teda každý _producent_ čaká (_blokuje_) na zápis dovtedy, kým sa z kanála nečíta.
+. Kanál, ktorý používame, je nebufferovaný (_unbuffered_), a teda každý _producent_ čaká (_blokuje_) na zápis dovtedy, kým sa z kanála nečíta.
 
 Z kanála `results` však nikto nečíta -- keďže sme nič také nenaprogramovali -- a teda nastáva _deadlock_, pretože _producenti_ (_gorutiny_) čakajú so zápisom na *Go*-dotov, ktorí nikdy neprídu.
 
@@ -323,7 +323,7 @@ Tento fenomén Go dokázal identifikovať počas behu, a teda ukončil program s
 
 Pripravme si funkciu, ktorá bude konzumovať výsledky čítaním z kanála.
 
-Čítanie však musíme vedieť ukončiť a to:
+Čítanie však musíme vedieť ukončiť, a to:
 
 . buď počítaním výsledkov,
 . alebo uzatvorením kanála.
@@ -583,4 +583,4 @@ func main() {
 
 image::diagram-simplified.png[]
 
-Všimnime si, ako sme sa zbavili cyklov -- nestane sa, že aktér čaká na iného aktéra, ktorý naňho nepriamo tiež čaká.
+Všimnime si, ako sme sa zbavili cyklov; nestane sa, že aktér čaká na iného aktéra, ktorý naňho nepriamo tiež čaká.
