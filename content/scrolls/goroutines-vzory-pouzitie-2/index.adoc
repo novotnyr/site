@@ -581,6 +581,6 @@ func main() {
 <3> Čakanie na výsledky tiež pôjde v gorutine
 <4> Agregácia na výsledky nemusí ísť v gorutine, tá blokuje pri čakaní na zápis z gorutiny pre `worker`-ov.
 
-image::diagram-simplified.jpg[]
+image::diagram-simplified.png[]
 
 Všimnime si, ako sme sa zbavili cyklov -- nestane sa, že aktér čaká na iného aktéra, ktorý naňho nepriamo tiež čaká.
