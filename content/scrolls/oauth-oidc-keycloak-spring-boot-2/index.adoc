@@ -216,145 +216,35 @@ public BigDecimal getBalance(@PathVariable String accountId,                    
 <2> Objekt `Jwt` obsahuje všetky _claims_, teda údaje o používateľovi v podobe mapy.
 Claim `sub` obsahuje identifikátor `UUID` používateľa z Keycloaku.
 
-===
+=== Mapovanie mena používateľa
 
-== Práca s rolami z tokenu JWT
+Štandardne sa názov _principálu_ berie z claimu `sub`.
+To však môžeme prispôsobiť -- napríklad na claim `preferred_username`.
 
-Keycloak umožní priradiť každému používateľovi aj zoznam rolí.
-Aj náš používateľ `harald` má implicitné roly, schované v claime `realm_access` v podobe zanoreného JSONu.
-
-[source,json]
-----
-{"roles":[
-  "default-roles-master",
-  "offline_access",
-  "uma_authorization"]
-}
-----
-
-Tieto roly môžeme namapovať na roly v Spring Security.
-
-IMPORTANT: Do aplikačného kontextu v Springu dodáme objekt typu `Converter<Jwt, Collection<GrantedAuthority>>`, ktorý zmení token `JWT` na zoznam autorít (rolí) v Spring Security.
-
-[source,java]
-.KeycloakAuthoritiesConverter.java
-----
-package com.github.novotnyr.bank;
-
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Extracts Keycloak roles to authorities.
- * <p>
- *     Source:
- *     <pre>
- *         "realm_access : { "roles":["visitor"] }
- *     </pre>
- * </p>
- */
-public class KeycloakAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
-
-    public static final String REALM_ACCESS_CLAIM = "realm_access";
-
-    public static final String ROLES_CLAIM = "roles";
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Collection<GrantedAuthority> convert(Jwt source) {
-        if (!source.hasClaim(REALM_ACCESS_CLAIM)) {
-            return Collections.emptyList();
-        }
-        Object claim = source.getClaim(REALM_ACCESS_CLAIM);
-        if (!(claim instanceof Map)) {
-            return Collections.emptyList();
-        }
-        Map<String, Object> realmAccess = (Map<String, Object>) claim;
-        if (!realmAccess.containsKey(ROLES_CLAIM)) {
-            return Collections.emptyList();
-        }
-        Object rolesClaimObject = realmAccess.get(ROLES_CLAIM);
-        if (!(rolesClaimObject instanceof Collection<?> roleObjects)) {
-            return Collections.emptyList();
-        }
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        for (Object roleObject : roleObjects) {
-            String role = roleObject.toString();
-            SimpleGrantedAuthority simpleGrantedAuthority = new SimpleGrantedAuthority(role);
-            authorities.add(simpleGrantedAuthority);
-        }
-        return authorities;
-    }
-}
-----
-
-Do kontextu potom pridáme _bean_:
+TIP: Bean `JwtAuthenticationConverter` konvertuje token `Jwt` na objekt `Authentication` v Spring Security.
 
 [source,java]
 ----
 @Bean
 JwtAuthenticationConverter jwtAuthenticationConverter() {
     var authenticationConverter = new JwtAuthenticationConverter();
-    authenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakAuthoritiesConverter()); //<1>
-    authenticationConverter.setPrincipalClaimName("preferred_username"); //<2>
+    authenticationConverter.setPrincipalClaimName("preferred_username"); //<1>
     return authenticationConverter;
 }
 ----
-<1> Autority v Spring Security budeme prevádzať pomocou nášho konvertéra.
-<2> Ako bonus vieme nastaviť meno _principala_ z claimu, ktorý obsahuje meno používateľa namiesto jeho identifikátora UUID.
-
-[TIP]
-====
-Po tejto zmene dokážeme zapojiť mechanizmus pre `@Secured` na overenie rolí, či overovania pomocou `hasRole` v anotáciách `@PreAuthorize` nad metódami, napríklad:
+<1> Názov sa prevezme z claimu `preferred_username`.
+Ten obsahuje napríklad nášho `harald`-a.
 
 [source,java]
 ----
-@PreAuthorize("hasAnyAuthority('visitor')")
-----
-====
-
-== Roly a autorizácie
-
-Toto všetko môžeme skombinovať aj do overovania rolí pri volaní metód.
-
-- Zapneme podporu pre autorizáciu volania metód.
-- Dodáme nad metódu overovanie role.
-
-=== Podpora pre autorizáciu volania metód
-
-Od Spring Security 6.0 používame anotáciu `@EnableMethodSecurity`.
-
-[source,java]
-----
-@EnableMethodSecurity
-public class BankApplication {
-    //...
+public BigDecimal getBalance(
+        @PathVariable String accountId,
+        @CurrentSecurityContext(expression = "authentication.name") //<1>
+            String userName)) { //<2>
 }
 ----
+<1> Z objektu _Security Context_ v Spring Security vieme pomocou výrazu získať priamo názov principála, teda meno používateľa.
 
-NOTE: V starších Spring Security bola štandardom anotácia `@EnableGlobalMethodSecurity`.
-
-Teraz dodáme anotáciu `@PreAuthorize`, ktorá sa spustí iba ak má používateľ rolu `withdrawer` nastavenú v Keycloaku.
-V opačnom prípade získame stavový kód _503 (Forbidden)_.
-
-[source,java]
-----
-@PostMapping("/accounts/{accountId}/withdrawals")
-@PreAuthorize("hasAuthority('withdrawer')")
-public BigDecimal withdrawTenCrowns(@PathVariable String accountId,
-                                    @CurrentSecurityContext(expression = "authentication.name") String userName) {
-    logger.info("Withdrawing 10 SKK: account: {}, user {}", accountId, userName);
-    return BigDecimal.ZERO;
-}
-----
 
 == Repozitár
 
