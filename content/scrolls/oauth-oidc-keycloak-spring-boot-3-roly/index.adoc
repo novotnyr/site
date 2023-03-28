@@ -19,8 +19,8 @@ Ukážeme si:
 
 Prihlásme sa do http://localhost:8080/admin/master/console/[administrátorskej konzoly] Keycloaku ako administrátorky (obvykle konto `admin`).
 
-Rolu môžeme pridať buď pre celý _realm_ alebo len pre konkrétneho klienta.
-Skúsme pridať pre našu _megabanku_ z predošlých dielov rolu `withdrawer`, teda človeka, ktorý si dokáže vybrať peniaze.
+Rolu môžeme vytvoriť buď pre celý _realm_ alebo len pre konkrétneho klienta.
+Skúsme vytvoriť pre našu _megabanku_ z predošlých dielov rolu `withdrawer` pre človeka, ktorý si dokáže vybrať peniaze.
 
 image::client-role-add.png[]
 
@@ -36,7 +36,7 @@ V bočnej lište v sekcii `Users` kliknime na používateľa `harald` a pridajme
 
 image::assign-role.png[]
 
-Na karte *Role Mappinng* priraďme rolu tlačidlom *Assign Role*.
+Na karte *Role Mapping* priraďme rolu tlačidlom *Assign Role*.
 
 Uvidíme zoznam rolí -- ale keďže ide o zoznam rolí celého _realmu_ a nie klienta, musíme rolu vyhľadať cez textové pole -- ale predtým ešte prepnime vo filtri možnosť na _Filter by clients_.
 
