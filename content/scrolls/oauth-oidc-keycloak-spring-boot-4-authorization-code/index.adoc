@@ -1,10 +1,13 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot 4 -- Flow pre Authorization Code
-date: 2023-03-26
+title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Flow pre Authorization Code
+date: 2023-03-29
 ---
 :icons: font
 
 Ukážme si, ako je možné dodať do aplikácie v Spring Boote prihlásenie pomocou Keycloaku.
+
+Aplikácia bude ponúkať jednak REST API a jednak statickú stránku v HTML.
+Ktokoľvek, kto bude chcieť používať aplikáciu, sa bude môcť prihlásiť svojou identitou, ktorá je udržiavaná v Keycloaku, cez prihlasovací formulár zabezpečený Keycloakom.
 
 == Vytvorenie Spring Boot aplikácie
 
@@ -13,7 +16,7 @@ Vytvorme úplne novú aplikáciu v Spring Boote.
 Do závislostí dodajme
 
 - štartér pre _Spring Boot OAuth 2 Client_ (`org.springframework.boot:spring-boot-starter-oauth2-client`)
-- štartér pre web
+- štartér pre web (`org.springframework.boot:spring-boot-starter-web`)
 
 == Flow prihlásenia
 
@@ -156,7 +159,7 @@ Prispôsobme si to:
 image::mapper-details.png[]
 +
 .. Nastavme názov claimu v tokene: *Token Claim Name*. Ak uvedieme `realm_roles`, v tokene sa objaví _claim_ s týmto menom.
-.. Tento claim pridajme do oboch tokenov (_identifikačný token_ aj _prístupový token_) i do endpointu _userinfo_.
+.. Tento claim pridajme do identifikačného tokenu (_ID token_), keďže z neho bude Spring Boot načítavať údaje o autorizovanom používateľovi.
 
 Mapovanie vieme overiť cez Keycloak.
 . V ľavom menu vyberme _Clients_, a zvoľme klienta `gigabank`.
@@ -165,8 +168,24 @@ Mapovanie vieme overiť cez Keycloak.
 
 image::evaluate-scope.png[]
 
-Následne si vpravo vieme prezrieť generované tokeny: *Generated Access Token* (pre prístupový token), *Generated ID token* a *Generated User Info*.
+Následne si vpravo vieme prezrieť generované tokeny: ale nás zaujíma len *Generated ID token*.
 V každom bloku uvidíme claim `realm_roles` s rolami realmu.
+
+[source,json]
+----
+{
+  "exp": 1680097008,
+  "iat": 1680096948,
+  "preferred_username": "harald",
+  ...
+  "realm_roles": [
+    "default-roles-master",
+    "offline_access",
+    "creditor",
+    "uma_authorization"
+  ]
+}
+----
 
 === Mapovanie v Springu
 
