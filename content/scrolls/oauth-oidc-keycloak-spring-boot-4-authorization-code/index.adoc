@@ -1,0 +1,232 @@
+---
+title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot 4 -- Flow pre Authorization Code
+date: 2023-03-26
+---
+:icons: font
+
+Ukážme si, ako je možné dodať do aplikácie v Spring Boote prihlásenie pomocou Keycloaku.
+
+== Vytvorenie Spring Boot aplikácie
+
+Vytvorme úplne novú aplikáciu v Spring Boote.
+
+Do závislostí dodajme
+
+- štartér pre _Spring Boot OAuth 2 Client_ (`org.springframework.boot:spring-boot-starter-oauth2-client`)
+- štartér pre web
+
+== Flow prihlásenia
+
+Prihlásenie bude používať OAuth 2.0 / OpenID Connect, a flow _Authorization Code_.
+
+[NOTE]
+====
+Flow je dokumentovaný na viacerých miestach.
+
+Stručne:
+
+. Používateľ vymení login a heslo za autorizačný kód (_authorization code_).
+. Autorizačný kód prepošle do springovej backendovej aplikácie.
+. Springová aplikácia vymení autorizačný kód a citlivé tajomstvo klienta (_client secret_) za identifikačný token (_ID Token_), ktorý považuje za potvrdenie o prihlásení.
+. Informácia o prihlásení na strane servera je udržiavaná prostredníctvom HTTP Cookie.
+
+====
+
+== Vytvorenie nového klienta
+
+Vytvorme v administrátorskej konzole Keycloaku nového klienta.
+
+image::add-new-client.png[]
+
+Na rozdiel od ROPC klienta:
+
+- pomenujme ho `gigabank`,
+- zapnime *Client Authentication*: keďže aplikácia bude mať uzavretý zdrojový kód a bude bezpečne na serveri, bude vedieť bezpečne manipulovať s citlivým údajom _Client Secret_.
+- vypnime všetky flowy, okrem _Standard Flow_, čo je iné označenie pre _Authorization Code Flow_ v terminológii OAuth/OIDC.
+
+V ďalšom kroku vyplňme Root URL našej springovskej aplikácie, ktorým bude http://localhost:8888. (Na tejto adrese pobeží naša aplikácia.)
+
+Na karte *Credentials* získajme citlivý _Client Secret_, ktoré sa bude používať na získanie tokenu JWT.
+
+image::client-secret.png[]
+
+Uistime sa, že v *Client Authenticator* budeme používať _Client ID and Secret_, teda identifikátor klienta spolu s citlivým „tajomstvom“.
+
+IMPORTANT: _Client Secret_ použijeme v konfigurácii aplikácie v Spring Boot.
+
+== Konfigurácia Spring Boot
+
+Dokonfigurujme Spring Boot, najmä `application.properties`.
+
+[source]
+.application.properties
+----
+server.port=8888 //<1>
+spring.security.oauth2.client.registration.keycloak.client-id=gigabank //<2>
+spring.security.oauth2.client.registration.keycloak.client-secret=EzPgZowPLvDzY7fTylCD893W4Nh1UC4t //<3>
+spring.security.oauth2.client.registration.keycloak.scope=openid //<4>
+spring.security.oauth2.client.provider.keycloak.issuer-uri=http://localhost:8080/realms/master //<5>
+----
+<1> Port, na ktorom beží aplikácia.
+Pozor, tento port je už zaregistrovaný v Keycloaku ako _Root URL_.
+<2> Názov klienta z Keycloaku.
+<3> Citlivý _Secret Key_ z Keycloaku.
+<4> Budeme používať protokol OpenID, teda tokeny JWT a autentifikáciu podľa tohto protokolu.
+<5> Adresa URL ku Keycloaku, z ktorej sa stiahnu kľúče a ďalšie metadáta.
+
+== Spustenie aplikácie
+
+Spusťme Spring Boot a navštívme http://localhost:8888 z prehliadača.
+
+Prehliadač nás rovno presmeruje na prihlasovaciu stránku Keycloaku, kde môžeme vyplniť login a heslo (`harald` a príslušné heslo z predošlých dielov).
+Po úspešnom prihlásení sa ocitneme na ... chybovej stránke, keďže v našej aplikácii na adrese `/` nemáme nič.
+
+Aspoň sme sa prihlásili!
+
+Ak by sme zapli logovanie, uvideli by sme hlášky zodpovedajúce flowu:
+
+----
+FilterChainProxy                     : Securing GET /
+DefaultRedirectStrategy              : Redirecting to http://localhost:8888/oauth2/authorization/keycloak
+FilterChainProxy                     : Securing GET /oauth2/authorization/keycloak
+DefaultRedirectStrategy              : Redirecting to http://localhost:8080/realms/master/protocol/openid-connect/auth?response_type=code&client_id=gigabank&scope=openid&state=jaXNvQifZfNBTv7rhGsIDsP4yBPvY0UvkIo6bP_6i68%3D&redirect_uri=http://localhost:8888/login/oauth2/code/keycloak&nonce=RbvtU5VSAb_7XEClpkOzcvZCx_haCynK-ArhvVOmLJM
+FilterChainProxy                     : Securing GET /login/oauth2/code/keycloak?state=jaXNvQifZfNBTv7rhGsIDsP4yBPvY0UvkIo6bP_6i68%3D&session_state=656a1414-f9af-4312-9d49-e7746c757974&code=8fafbb12-36b6-4d6e-b68e-489a04e2b5bd.656a1414-f9af-4312-9d49-e7746c757974.daaff20b-b0e8-4b9b-bbcf-f73e0a5f636a
+HttpURLConnection                    : sun.net.www.MessageHeader@72ce10a18 pairs: {POST /realms/master/protocol/openid-connect/token HTTP/1.1: null}{Accept: application/json;charset=UTF-8}{Content-Type: application/x-www-form-urlencoded;charset=UTF-8}{Authorization: Basic Z2lnYWJhbms6RXpQZ1pvd1BMdkR6WTdmVHlsQ0Q4OTNXNE5oMVVDNHQ=}{User-Agent: Java/17.0.5}{Host: localhost:8080}{Connection: keep-alive}{Content-Length: 223}
+RestTemplate                         : HTTP GET http://localhost:8080/realms/master/protocol/openid-connect/userinfo
+HttpURLConnection                    : sun.net.www.MessageHeader@78367bd16 pairs: {GET /realms/master/protocol/openid-connect/userinfo HTTP/1.1: null}{Accept: application/json}{Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJVMEwtSUI3aGtOQUc4T3hPNVF2SEg4OHMxa24yRDN1d3dLN3haUlVfNkRFIn0.eyJleHAiOjE2ODAwMTI2MDcsImlhdCI6MTY4MDAxMjU0NywiYXV0aF90aW1lIjoxNjgwMDEyNTQ3LCJqdGkiOiI2MjA0YTZiNy1iMDY4LTQxZmQtOTc1MS1jZTMwZjZiMDE4ODQiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvcmVhbG1zL21hc3RlciIsImF1ZCI6WyJtZWdhYmFuayIsImFjY291bnQiXSwic3ViIjoiMGYwZDdmZTktOTI5My00ZWY0LWE0NzYtOWUyYWJhNzMwMjhjIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZ2lnYWJhbmsiLCJub25jZSI6IlJidnRVNVZTQWJfN1hFQ2xwa096Y3ZaQ3hfaGFDeW5LLUFyaHZWT21MSk0iLCJzZXNzaW9uX3N0YXRlIjoiNjU2YTE0MTQtZjlhZi00MzEyLTlkNDktZTc3NDZjNzU3OTc0IiwiYWNyIjoiMSIsImFsbG93ZWQtb3JpZ2lucyI6WyJodHRwOi8vbG9jYWxob3N0Ojg4ODgiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtbWFzdGVyIiwib2ZmbGluZV9hY2Nlc3MiLCJjcmVkaXRvciIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsibWVnYWJhbmsiOnsicm9sZXMiOlsid2l0aGRyYXdlciJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgZW1haWwgcHJvZmlsZSIsInNpZCI6IjY1NmExNDE0LWY5YWYtNDMxMi05ZDQ5LWU3NzQ2Yzc1Nzk3NCIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGFyYWxkIiwiZ2l2ZW5fbmFtZSI6IiIsImZhbWlseV9uYW1lIjoiIn0.ZDeIAMNl7GdQXaZXL-FYLrlhcvMjEbfBmEy4j-_Dv6NwD8E9YPevVModjaaYH5Bu0sUh3bb2FH5U2_NiHH2ab-fboCCRq15AweD7z80fJ2UqK6dU9pi1_Sc_23Wy18Rj4NcxMvbn6VndN3cWKcFdkFWI6HbfkxPfMVYB7Wq_pSHTtSS_SZ6EINYAWiYT5p9v08yNd2fQ37nWbUrcCnGe8bWruXfEINox3sRIiFEAgOi0Jf_REZUVGCs5VawdLYF5eP8iEl7iB0ifN2i5F4gBCsxeDDiuD0BWzjtYXJraVGe9GXYyZ5lxsPptHMHnZ3me6W96KEzFNfOzprNemTmixA}{User-Agent: Java/17.0.5}{Host: localhost:8080}{Connection: keep-alive}
+HttpURLConnection                    : sun.net.www.MessageHeader@3d34eab39 pairs: {null: HTTP/1.1 200 OK}{Referrer-Policy: no-referrer}{X-Frame-Options: SAMEORIGIN}{Strict-Transport-Security: max-age=31536000; includeSubDomains}{Cache-Control: no-cache}{X-Content-Type-Options: nosniff}{X-XSS-Protection: 1; mode=block}{Content-Type: application/json}{content-length: 132}
+RestTemplate                         : Response 200 OK
+RestTemplate                         : Reading to [java.util.Map<java.lang.String, java.lang.Object>]
+HttpSessionSecurityContextRepository : Stored SecurityContextImpl [Authentication=OAuth2AuthenticationToken [Principal=Name: [0f0d7fe9-9293-4ef4-a476-9e2aba73028c], Granted Authorities: [[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]], User Attributes: [{at_hash=ZyqDs4SxHW5wDGuAMUpriA, sub=0f0d7fe9-9293-4ef4-a476-9e2aba73028c, email_verified=false, iss=http://localhost:8080/realms/master, typ=ID, preferred_username=harald, given_name=, nonce=RbvtU5VSAb_7XEClpkOzcvZCx_haCynK-ArhvVOmLJM, sid=656a1414-f9af-4312-9d49-e7746c757974, aud=[gigabank], acr=1, azp=gigabank, auth_time=2023-03-28T14:09:07Z, exp=2023-03-28T14:10:07Z, session_state=656a1414-f9af-4312-9d49-e7746c757974, family_name=, iat=2023-03-28T14:09:07Z, jti=6b35b395-a159-435e-aa89-d3c12bbb92d5}], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=02A08225735D5D44D7B70B2B996B6298], Granted Authorities=[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]]] to HttpSession [org.apache.catalina.session.StandardSessionFacade@3f7daeac]
+OAuth2LoginAuthenticationFilter      : Set SecurityContextHolder to OAuth2AuthenticationToken [Principal=Name: [0f0d7fe9-9293-4ef4-a476-9e2aba73028c], Granted Authorities: [[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]], User Attributes: [{at_hash=ZyqDs4SxHW5wDGuAMUpriA, sub=0f0d7fe9-9293-4ef4-a476-9e2aba73028c, email_verified=false, iss=http://localhost:8080/realms/master, typ=ID, preferred_username=harald, given_name=, nonce=RbvtU5VSAb_7XEClpkOzcvZCx_haCynK-ArhvVOmLJM, sid=656a1414-f9af-4312-9d49-e7746c757974, aud=[gigabank], acr=1, azp=gigabank, auth_time=2023-03-28T14:09:07Z, exp=2023-03-28T14:10:07Z, session_state=656a1414-f9af-4312-9d49-e7746c757974, family_name=, iat=2023-03-28T14:09:07Z, jti=6b35b395-a159-435e-aa89-d3c12bbb92d5}], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=02A08225735D5D44D7B70B2B996B6298], Granted Authorities=[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]]
+DefaultRedirectStrategy              : Redirecting to http://localhost:8888/?continue
+HttpSessionSecurityContextRepository : Retrieved SecurityContextImpl [Authentication=OAuth2AuthenticationToken [Principal=Name: [0f0d7fe9-9293-4ef4-a476-9e2aba73028c], Granted Authorities: [[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]], User Attributes: [{at_hash=ZyqDs4SxHW5wDGuAMUpriA, sub=0f0d7fe9-9293-4ef4-a476-9e2aba73028c, email_verified=false, iss=http://localhost:8080/realms/master, typ=ID, preferred_username=harald, given_name=, nonce=RbvtU5VSAb_7XEClpkOzcvZCx_haCynK-ArhvVOmLJM, sid=656a1414-f9af-4312-9d49-e7746c757974, aud=[gigabank], acr=1, azp=gigabank, auth_time=2023-03-28T14:09:07Z, exp=2023-03-28T14:10:07Z, session_state=656a1414-f9af-4312-9d49-e7746c757974, family_name=, iat=2023-03-28T14:09:07Z, jti=6b35b395-a159-435e-aa89-d3c12bbb92d5}], Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=02A08225735D5D44D7B70B2B996B6298], Granted Authorities=[OIDC_USER, SCOPE_email, SCOPE_openid, SCOPE_profile]]]
+FilterChainProxy                     : Secured GET /?continue
+----
+
+[TIP]
+====
+Logovanie potrebuje:
+
+----
+logging.level.sun.net.www.protocol.http.HttpURLConnection=DEBUG
+logging.level.org.springframework.web.client.RestTemplate=DEBUG
+logging.level.org.springframework.security=DEBUG
+----
+====
+
+== Použitie tokenu v Spring Boote
+
+Token získaný knižnicou _Spring OAuth 2 Client_ je iný než v prípade knižnice _Spring OAuth 2 Resource Server_.
+Namiesto objektu typu `Jwt` získame _principal_ typu `org.springframework.security.oauth2.core.oidc.user.OidcUser`.
+
+[source,java]
+----
+@GetMapping("/accounts/{accountId}/balance")
+public BigDecimal getBalance(@PathVariable String accountId,
+                             @AuthenticationPrincipal OidcUser oicUser) { //<1>
+    String userId = oicUser.getPreferredUsername(); //<2>
+    logger.info("Retrieving bank account balance: account: {}, user {}", accountId, userId);
+    return BigDecimal.TEN;
+}
+----
+<1> Objekt _principal_ je typu `OidcUser`.
+<2> Namiesto _claimov_, ktoré sú uložené v mape, vieme používať priamo konkrétne metódy pre prístup k najdôležitejším údajom.
+
+== Roly v Spring Boote
+
+Vo flowe ROPC sa roly publikovali do claimu `realm_access` (pre roly z realmu), resp. `resource_access` (pre roly z klienta).
+
+Ak chceme publikovať roly do tokenu vo flowe _Authorization Code_, musíme ich prispôsobiť, keďže Spring Boot vyťahuje roly z identifikačného tokenu (_ID Token_), resp. z výsledkov volania endpointu _user_info_ v Keycloaku.
+Ani jeden z týchto spôsobov roly neobsahuje.
+
+Prispôsobme si to:
+
+- pridajme nové mapovanie medzi rolami a claimom v tokene
+- upravme Spring Boot, aby dokázal roly vytiahnuť.
+
+=== Mapovanie medzi rolami a claimom tokenu
+
+. V ľavom menu vyberme _Clients_, a zvoľme klienta `gigabank`.
+. Na karte _Client Scopes_ vyberme klientsky scope `gigabank-dedicated`, ktorý obsahuje mapovania do claimov pre klienta `gigabank`.
+. Dodajme nový preddefinovaný mapovač cez *Add predefined mapper*.
+. Zobrazí sa zoznam, kde sa musíme cez stránkovanie prepracovať k mapovaču pre roly realmu: *realm roles*.
+. Pridajme ho do zoznamu, ale následne ho cez hypertextový odkaz prispôsobíme.
++
+image::mapper-details.png[]
++
+.. Nastavme názov claimu v tokene: *Token Claim Name*. Ak uvedieme `realm_roles`, v tokene sa objaví _claim_ s týmto menom.
+.. Tento claim pridajme do oboch tokenov (_identifikačný token_ aj _prístupový token_) i do endpointu _userinfo_.
+
+Mapovanie vieme overiť cez Keycloak.
+. V ľavom menu vyberme _Clients_, a zvoľme klienta `gigabank`.
+. Na karte _Client Scopes_ vyberme kartu _Evaluate_.
+. Vyberme používateľa `harald`.
+
+image::evaluate-scope.png[]
+
+Následne si vpravo vieme prezrieť generované tokeny: *Generated Access Token* (pre prístupový token), *Generated ID token* a *Generated User Info*.
+V každom bloku uvidíme claim `realm_roles` s rolami realmu.
+
+=== Mapovanie v Springu
+
+Modul _Spring OAuth 2 Client_ potrebujeme prispôsobiť, aby vedel pristúpiť k rolám z tokenu.
+
+Štandardne sa totiž sprístupňujú len roly mapované na _scopes_ z OAuth.
+
+Využijeme existujúcu triedu https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/oauth2/client/oidc/userinfo/OidcUserService.html[`OidcUserService`], z ktorej vytiahneme existujúce roly, následne dotiahneme roly z claimu `realm_roles` a všetko dáme dohromady.
+
+[source,java]
+.RealmRoleUserService.java
+----
+public class RealmRoleUserService implements OAuth2UserService<OidcUserRequest, OidcUser> {
+    public static final String REALM_ROLES_CLAIM = "realm_roles";
+
+    private String realmRolesClaim = REALM_ROLES_CLAIM;
+
+    private final OidcUserService delegateUserService = new OidcUserService(); //<1>
+
+    @Override
+    public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+        OidcUser oidcUser = this.delegateUserService.loadUser(userRequest); //<2>
+
+        Set<GrantedAuthority> allAuthorities = new HashSet<>(oidcUser.getAuthorities());  //<3>
+        oidcUser.getClaimAsStringList(this.realmRolesClaim) //<4>
+                .stream()
+                .map(SimpleGrantedAuthority::new)
+                .forEach(allAuthorities::add);
+        return new DefaultOidcUser(allAuthorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
+    }
+}
+----
+<1> Pripravíme si delegáta, ktorý vyrieši štandardné spracovanie tokenu.
+<2> Vytiahneme používateľa z OIDC tokenu.
+<3> Prevezmeme roly zo scopes.
+<4> Vytiahneme roly z claimu `realm_roles`.
+
+Triedu potom dodáme do aplikačného kontextu ako _bean_, aby ju dohľadal Spring Security.
+
+[source,java]
+----
+@Bean
+OAuth2UserService<OidcUserRequest, OidcUser> oAuth2UserService() {
+    return new RealmRoleUserService();
+}
+----
+
+Následne môžeme používať autorizačné kontroly, napríklad:
+
+[source,java]
+----
+@PreAuthorize("hasAuthority('creditor')")
+----
+
+== Celý flow
+
+Celý flow s volaním endpointov medzi používateľským prehliadačom, Keycloakom a aplikáciou v Spring Boote je na nasledovnom obrázku.
+
+image::keycloak-spring-authorization-code-flow.jpg[]
+
+== Repozitár na GitHube
+
+Zdrojové kódy sú k dispozícii na GitHube, v repozitári https://github.com/novotnyr/bank-restapi-oidc-authorization-code[`novotnyr/bank-restapi-oidc-authorization-code`].
