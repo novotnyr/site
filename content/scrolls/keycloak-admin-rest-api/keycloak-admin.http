@@ -1,0 +1,40 @@
+###
+POST http://localhost:8080/realms/master/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=admin-cli&username=admin&password=admin&grant_type=password
+
+> {%
+    client.global.set("jwt", response.body.access_token)
+%}
+###
+
+http://localhost:8080/admin/realms/master/users/a7b49bea-260e-4a9c-89e4-12a6da472ee3
+Authorization: Bearer {{jwt}}
+
+
+### Create user
+POST http://localhost:8080/admin/realms/master/users/
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
+
+{
+  "username": "{{$random.alphabetic(10)}}",
+  "enabled": true,
+  "credentials": [
+     {
+       "type": "password",
+       "value": "passwordabc",
+       "temporary": false
+     }
+   ]
+}
+
+> {%
+    client.global.set("newUserUrl", response.headers.valueOf("Location"))
+%}
+
+### Verify
+GET {{newUserUrl}}
+Authorization: Bearer {{jwt}}
+Content-Type: application/json
