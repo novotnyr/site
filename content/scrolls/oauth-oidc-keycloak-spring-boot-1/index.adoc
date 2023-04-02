@@ -31,7 +31,7 @@ Keycloak je:
 == Typické prípady použitia s Keycloak-om
 
 . Používateľ sa prihlási cez prihlasovací formulár v Keycloaku a tým je automaticky autentifikovaný pre náš webový portál.
-. Používateľ pomocou loginu a hesla získa _token_, teda dôkaz o úspešnom prihlásení_ a prikladá ho ku každému volaniu REST API
+. Používateľ pomocou loginu a hesla získa _token_, teda dôkaz o úspešnom prihlásení a prikladá ho ku každému volaniu REST API
 . Používateľ sa prihlási v SPA (_Single Page App_) a jeho prihlasovanie sa automaticky propaguje na _backendovú_ aplikáciu.
 
 == Plán práce
@@ -50,12 +50,13 @@ Keycloak stiahneme z https://www.keycloak.org/downloads[domovskej stránky na Ke
 
 Rozbalíme ho:
 
-```
+[source,sh]
+----
 cp ~/Downloads/keycloak*.zip ~/Applications
 cd ~/Applications
 unzip keycloak*.zip
 cp ~/Applications/keycloak-21.0.1
-```
+----
 
 Keycloak spustíme na lokálnom stroji vo vývojárskom režíme:
 
