@@ -203,7 +203,7 @@ Spolupracuje s `ReactiveOAuth2AuthorizedClientManager`, ktorý rieši nízkoúro
 Ak tieto tri triedy prepojíme, získame klienta `WebClient`, ktorý vie automaticky kontaktovať Keycloak, získať token, a priložiť ho k požiadavkam smerovaným na REST API.
 
 [source,java]
-.filename.java
+.OAuthConfiguration.java
 ----
 @Bean
 public WebClient webClientSecurityCustomizer(
