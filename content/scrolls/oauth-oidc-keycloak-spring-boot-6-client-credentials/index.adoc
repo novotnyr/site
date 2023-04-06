@@ -1,6 +1,6 @@
 ---
 title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Flow pre Client Credentials
-date: 2023-04-04
+date: 2023-04-06
 ---
 :icons: font
 
@@ -9,7 +9,7 @@ Ukážeme si ako použiť aplikáciu v Spring Boote ako OAuth klientku, ktorá s
 ====
 
 OAuth podporuje aj situácie, kde sa prístup k údajom udeľuje aplikáciám, ktoré nemajú používateľa.
-Obvykle ide o servisné aplikácie, démonov, monitoringy a podobne. V týchto aplikáciách neexistuje používateľ, ktorý by schvaľoval prístup k zdrojom -- sama aplikácia sa považuje za _majiteľa zdrojov_.
+Obvykle ide o servisné aplikácie, démonov, monitoringy a podobne. V týchto aplikáciách neexistuje používateľ, ktorý by schvaľoval prístup k zdrojom -- sama aplikácia sa považuje za _vlastníka zdrojov_.
 
 IMPORTANT: Grant (flow) typu `client_credentials` slúži pre aplikácie, ktoré figurujú v dvojrole klienta (_OAuth Client_) i vlastníka zdrojov (_OAuth Resource Owner_).
 
@@ -29,6 +29,8 @@ NOTE: Klient je vždy dôverný (_confidential_), čiže má obvykle uzavretý k
 
 IMPORTANT: Klient kontaktuje priamo endpoint pre _token_.
 Kroky s endpointom pre autorizáciu sa v tomto flowe ignorujú.
+
+image::flow.png[]
 
 === Registrácia klienta
 
@@ -62,6 +64,18 @@ curl -X POST --location "http://localhost:8080/realms/master/protocol/openid-con
 Odpoveďou bude prístupový token (_access token_).
 Ak používame OpenID Connect, token bude vo formáte JWT.
 
+[source]
+----
+{
+  "access_token": "eyJh...",
+  "expires_in": 60,
+  "refresh_expires_in": 0,
+  "token_type": "Bearer",
+  "not-before-policy": 0,
+  "scope": "profile email"
+}
+----
+
 Token následne vieme priložiť ku volaniu _resource servera_, teda nejakého REST API.
 
 [source]
@@ -70,7 +84,53 @@ http://localhost:9999/accounts/1/balance
 Authorization: Bearer {{jwt}}
 ----
 
-image::flow.png[]
+****
+Pre Keycloak bude vyzerať JWT token nasledovne:
+
+[source]
+----
+{
+  "exp": 1680819148,
+  "iat": 1680819088,
+  "jti": "9f28ee20-7631-43f3-b3d8-5ca6d5c5222a",
+  "iss": "http://localhost:8080/realms/master",
+  "aud": "account",
+  "sub": "2ee74099-6f39-42e0-a3c4-f73b5fe03874", //<1>
+  "typ": "Bearer",
+  "azp": "techbank",
+  "acr": "1",
+  "allowed-origins": [
+    "http://localhost:9991"
+  ],
+  "realm_access": {
+    "roles": [
+      "default-roles-master",
+      "offline_access",
+      "uma_authorization"
+    ]
+  },
+  "resource_access": {
+    "account": {
+      "roles": [
+        "manage-account",
+        "manage-account-links",
+        "view-profile"
+      ]
+    }
+  },
+  "scope": "profile email",
+  "email_verified": false,
+  "clientId": "techbank",
+  "clientHost": "127.0.0.1",
+  "preferred_username": "service-account-techbank",
+  "clientAddress": "127.0.0.1"
+}
+----
+<1> Reprezentuje identifikátor technického používateľa.
+V Keycloaku vznikne používateľ `service-account-techbank`, ktorému je možné nastaviť roly a ďalšie oprávnenia.
+****
+
+
 
 == Klient v Spring Boote
 
@@ -107,6 +167,8 @@ Budeme potrebovať:
 . bean, ktorý bude udržiavať autorizovaný stav
 . HTTP klienta `WebClient`
 . funkciu, ktorá prepojí klienta s autorizačnými mechanizmami OAuth a bude automaticky posielať prihlasovacie požiadavky na Keycloak.
+
+image::beans.png[]
 
 === Bean pre autorizovaný stav
 
