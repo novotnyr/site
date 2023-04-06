@@ -30,6 +30,21 @@ NOTE: Klient je vždy dôverný (_confidential_), čiže má obvykle uzavretý k
 IMPORTANT: Klient kontaktuje priamo endpoint pre _token_.
 Kroky s endpointom pre autorizáciu sa v tomto flowe ignorujú.
 
+=== Registrácia klienta
+
+Klienta zaregistrujeme v Keycloaku (autorizačnom serveri).
+
+. Vytvoríme nového klienta s identifikátorom `techbank`.
+. Zapneme autentifikáciu klienta (_Client Authentication_), pretože ide o dôverného klienta (_confidential client_).
+. Vypneme všetky flowy a ponecháme len _Service accounts roles_, čo zodpovedá grantu _Client Credentials_ z OAuth 2.0.
+
+image::keycloak-registration.png[]
+
+
+=== Skúška správnosti
+
+Ak je klient registrovanný, môžeme overiť flow.
+
 Ukážka dopytu:
 
 [source,sh]
@@ -65,6 +80,7 @@ Použijeme závislosti:
 
 - _Spring OAuth 2 Client_: `spring-boot-starter-oauth2-client`
 - _Spring WebFlux_: `spring-boot-starter-webflux` s podporou pre reaktívne aplikácie
+
 
 === Konfigurácia aplikácie
 
