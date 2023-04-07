@@ -1,5 +1,5 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Flow pre Authorization Code s PKCE pre verejných klientov
+title: OAuth, OpenID Connect, Keycloak a Spring Boot V. -- Flow pre Authorization Code s PKCE pre verejných klientov
 date: 2023-03-30
 ---
 :icons: font

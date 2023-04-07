@@ -1,5 +1,5 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Spring Boot ochránená tokenmi JWT
+title: OAuth, OpenID Connect, Keycloak a Spring Boot II. -- Spring Boot ochránená tokenmi JWT
 date: 2023-03-25
 ---
 :icons: font

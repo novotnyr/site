@@ -1,5 +1,5 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Rozbiehame Keycloak, získavame tokeny
+title: OAuth, OpenID Connect, Keycloak a Spring Boot I. -- Rozbiehame Keycloak, získavame tokeny cez flow ROPC
 date: 2023-03-24
 ---
 :icons: font

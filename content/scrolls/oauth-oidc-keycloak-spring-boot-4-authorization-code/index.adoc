@@ -1,5 +1,5 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Flow pre Authorization Code
+title: OAuth, OpenID Connect, Keycloak a Spring Boot IV. -- Flow pre Authorization Code
 date: 2023-03-29
 ---
 :icons: font

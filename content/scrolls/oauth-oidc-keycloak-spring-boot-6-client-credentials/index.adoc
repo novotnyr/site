@@ -1,5 +1,5 @@
 ---
-title: OAuth 2.0, OpenID Connect, Keycloak a Spring Boot -- Flow pre Client Credentials
+title: OAuth, OpenID Connect, Keycloak a Spring Boot VI. -- Flow pre Client Credentials
 date: 2023-04-06
 ---
 :icons: font
