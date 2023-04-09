@@ -1,0 +1,533 @@
+---
+title: OAuth, OpenID Connect -- Všetko, čo potrebujú vývojárky vedieť
+date: 2023-04-08
+---
+:icons: font
+
+Predstavme si webovú aplikáciu s REST API, ktorá spravuje používateľkine chránené údaje -- napríklad databázu domácich kvetín.
+
+Takáto aplikácia:
+
+- beží napr. na https://domacekvetiny.io/api
+- prístup k údajom vyžaduje *autorizáciu*, čiže schválený prístup
+
+IMPORTANT: Takáto aplikácia nazýva _Resource Server_.
+Chránené údaje sú _zdroje_, teda _protected resources_.
+
+image::resource-server.png[]
+
+A predstavme si druhú aplikáciu, ktorá chce automatizovane zalievať domáce kvetiny používateľky.
+
+Na to potrebuje prístup ku používateľkiným chráneným údajom, teda zoznamu jej kvetín.
+
+IMPORTANT: OAuth 2.0 je protokol, ktorý umožní používateľke *delegovať prístup* k svojim chráneným zdrojom na vybranú aplikáciu.
+Táto aplikácia sa volá *klient* a pristupuje k chráneným zdrojom *v mene používateľky* (_on behalf of_).
+
+Používateľka tak vie delegovať prístup k svojim domácim kvetinám na automatizovaný zalievač.
+
+image::access-on-behalf-of.png[]
+
+NOTE: Klientom môže byť webová aplikácia, mobilná aplikácia, či napríklad frontendová aplikácia typu SPA.
+
+== Autorizačný server ako centrálny bod
+
+Delegovanie prístupu spravuje *autorizačný server*, ktorý zodpovedá _hotelovej recepcii_.
+
+image::authorization-server.png[]
+
+Registrovaní klienti:: autorizačný server pozná registrovaných klientov
+Používatelia a ich prihlasovacie údaje:: autorizačný server slúži ako databáza používateľov a hesiel
+Prístupové tokeny:: autorizačný server vydáva autorizovaným klientom *tokeny*, niečo ako šatňové žetóny či metaforické karty, ktoré umožňujú prístup k chráneným zdrojom.
+
+== Autorizačné tance
+
+OAuth 2.0 podporuje štyroch participantov, ktorí vzájomne „tancujú“ pri delegovaní prístupu.
+
+Ak chce klient-zalievač pristúpiť k zoznamu kvetov:
+
+. Požiada používateľa o autorizáciu.
+. Používateľ poskytne autorizačný kód.
+. Klient vezme autorizačný kód a požiada autorizačný server o výmenu za prístupový token.
+. Autorizačný server vydá prístupový token.
+. Klient priloží prístupový token k volaniam databázového servera.
+
+image::four-participants.png[]
+
+Inými slovami:
+
+[source]
+----
+Zalievač:           Hej, Miriamin skleník! Potrebujem zaliať kvety!
+Miriamin skleník:   A Miriam o tom vie?
+Zalievač:           Nie, idem sa jej spýtať.
+Zalievač:           Hej, Miriam, potrebujem ti zaliať tvoje kvety!
+                    Si s tým OK?
+Miriam:             Jasné, tu máš autorizačný kód.
+Zalievač:           Hej, autorizačný server, potrebujem Miriam zaliať kvety!
+                    Povolila mi to, tu mi dala autorizačný kód!
+Autorizačný server: Kód vyzerá dobre. Tu je plechový žetón, choď s ním do
+                    jej skleníka.
+Zalievač:           Hej, Miriamin skleník! Potrebujem zaliať kvety!
+                    Tu je token od autorizačného servera,
+                    že to môžem spraviť!
+----
+
+IMPORTANT: Toto je najvšeobecnejší „tanec“.
+Vzájomná komunikácia medzi rolami a postupnosť krokov závisí hlavne od typu klienta (mobil? SPA?)
+Konkrétny tanec sa nazýva *grant* (terminológia OAuth 2.0) alebo *flow* (terminológia OpenID Connect 1.0).
+
+== OAuth 2.0
+
+OAuth 2.0 je oficiálne:
+
+> *OAuth 2.0 Authorization Framework* (https://www.rfc-editor.org/rfc/rfc6749[RFC 6749]) umožní získať aplikáciam tretích strán získať prístup k službe nad HTTP v mene používateľky po získaní jej súhlasu.
+
+=== OAuth 2.0 je o autorizácii!
+
+NOTE: V OAuth 2.0 sa nič nehovorí o autentifikácii -- prihlásení. Tento protokol je len o delegovaní prístupu!
+
+=== OAuth 2.0 je „len OAuth“.
+
+NOTE: Existuje zastaralá špecifikácia OAuth 1.0, ktorá je odlišná a nepoužívaní.
+Odteraz už „OAuth“ znamená vždy „OAuth 2.0“.
+
+=== Tokeny sú netransparentné
+
+OAuth nehovorí nič o podobe či formáte prístupového tokenu.
+
+== OpenID Connect 1.0 (OIDC)
+
+OIDC je nadstavba nad OAuth, ktorá:
+
+- umožní autentifikovať používateľku.
+- dokáže vydať preukaz identity používateľky, v mene ktorej sa získavajú chránené zdroje.
+- do odpovede HTTP po zavolaní endpointu pre získanie tokenu pridá ešte jeden token -- _identity token_ ako dôkaz prihlásenej používateľky.
+- umožní získať základné informácie o používateľskom profile z autorizačného servera cez REST API
+- určuje, že autorizačný token (_access token_) sa pri volaniach prikladá do hlavičky `Authorization`.
+
+TIP: _OpenID Connect_ je o autentifikácii používateľky.
+Je dokonca ho možné použiť na jednotné prihlasovanie (_Single Sign On_) do viacerých klientov či serverov zdrojov.
+
+OIDC používa alternatívne pojmy:
+
+flow:: ekvivalent _grant_ v OAuth. Reprezentuje konkrétny „tanec“ medzi entitami a postupnosť krokov
+OpenID Provider či Identity Provider (IdP):: autorizačný server, ktorý dokáže autentifikovať používateľku a poskytnúť informácie o jej identite.
+
+NOTE: Mnoho článkov automaticky používa „flow“ namiesto „grantu“ aj pre tance z OAuth.
+
+== Typické situácie
+
+=== „Prihlás ma cez Google“
+
+Naša backendová aplikácia môže podporovať prihlásenie cez autorizačný server tretej strany.
+
+Používateľka sa tak napríklad prihlási svojim kontom na GMaili a naša backendová aplikácia nemusí vôbec spravovať heslá.
+
+image::login-with-apple.png[]
+
+Naša aplikácia je _klientom_ zaregistrovaným v autorizačnom serveri.
+
+Veľkí internetoví hráči poskytujú vlastné autorizačné servery:
+
+- Google poskytuje certifikovaný https://developers.google.com/identity/openid-connect/openid-connect[OIDC server].
+- Facebook dáva k dispozícii https://developers.facebook.com/docs/facebook-login/[OIDC Facebook Login]
+- GitHub poskytuje https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps[protokol OAuth]
+
+TIP: Toto je spôsob dosiahnutia _Single Sign On_, teda jednotného prihlasovania. Klient si nemusí pamätať žiadne loginy ani heslá.
+
+=== Chcem mať databázu používateľov, ale nechcem ju programovať
+
+Môžeme si vybrať existujúci autorizačný server:
+
+- https://www.keycloak.org/[Keycloak], open source, Java, sponzoruje RedHat
+- https://developer.okta.com[Okta], cloud, bezplatný do 100 mesačných aktívnych používateliek
+- https://shibboleth.atlassian.net/wiki/spaces/IDPPLUGINS/pages/1376878976/OIDC+OP[Shibboleth IdP] s OIDC pluginom, open source, Java
+
+=== Potrebujem klienta či _resource server_?
+
+==== Client
+
+_Client_ je typicky webová aplikácia bežiaca na serveri, alebo mobilná appka, prípadne webový frontend, ktorý beží v prehliadači ako aplikácia SPA. Klient *konzumuje* chránené zdroje, obvykle v mene používateľky.
+
+IMPORTANT: Klient musí byť evidovaný v autorizačnom serveri.
+
+==== Resource Server
+_Resource Server_ je typicky REST API, ktoré *produkuje* chránené zdroje.
+
+Prístup k nemu vyžaduje prístupový token. Ak využívame OIDC a token je vo formáte JWT, takýto server dokáže:
+
+- získať verejné kľúče z autorizačného servera a overiť digitálny podpis tokenu
+- vyčítať z tokenu jednotlivé tvrdenia (_claims_) a získať informácie o rolách či dodatočných prístupových oprávneniach.
+
+NOTE: _Resource Server_ nepotrebuje byť evidovaný v autorizačnom serveri.
+
+image::client-server.png[]
+
+== Klienti
+
+Ak potrebujeme aplikáciu, ktorá konzumuje chránené zdroje, musíme:
+
+. Programovať klienta (_client_).
+. Zaevidovať ho v autorizačnom serveri.
+. Získať jeho jednoznačný identifikátor: _Client ID_.
+. Tento identifikátor použiť v konfigurácii klienta.
+
+=== Typ klienta?
+
+OAuth rozoznáva dva druhy klientov:
+
+confidential:: klienti s uzavretým kódom, ktoré bežia na serveri.
+Dokáže bezpečne udržiavať citlivý údaj „client secret“, ktorým sa sám identifikuje a autorizuje voči autorizačnému serveru.
++
+Dôverný klient dokáže posielať na autorizačný server dvojicu _Client ID_ + _Client Secret_, ktorá vystupuje v role loginu a hesla samotného klienta.
+Autorizačný server tak dokáže overiť identitu samotného klienta.
+public:: klienti s otvoreným kódom, ktorí nedokážu bezpečne preukázať svoju identitu, ani spravovať svoje klientske tajomstvo.
+
+Príklady:
+
+- backendová aplikácia v Java/Spring Boot uzavretá na serveri je *confidential* -- klientske tajomstvo _client secret_ nie je možné zistiť ani odhaliť pri dodržaní bezpečnostných zásad.
+- frontend v Reacte je *public* -- nie je technicky možné ochrániť klientske tajomstvo, ktoré je možné triviálne získať z webového prehliadača
+- mobilná aplikácia je *public* -- jej dekompiláciou je totiž možné získať _client secret_ a zneužiť ho.
+- servisná aplikácia v Go uzavretá na serveri je *confidential*.
+
+=== Aký flow?
+
+Oauth historicky špecifikoval viacero grantov (flowov).
+
+Ktorý z nich zvoliť?
+
+Zistime, čo je náš klient zač a potom:
+
+Je to React/Angular aplikácia typu SPA v prehliadači?:: Authorization Code with PKCE, verejný klient
+Je to mobilná appka?:: Authorization Code with PKCE, verejný klient
+Je to mobilná appka, ktorej naozaj dôverujeme a dokážeme jej zveriť používateľkin login a heslo?:: Resource Owner Password Credentials, verejný klient
+Je to webová backendová aplikácia?:: Authorization Code with PKCE, dôverný klient
+Je to servisná aplikácia / démon / monitorovacia aplikácia na serverovom backende, kde nie je potrebné prihlásenie používateľky?:: Client Credentials, dôverný klient
+Je to serverová backendová aplikácia, ktorej vieme zveriť používateľkin login a heslo?:: Resource Owner Password Credentials, dôveryhodný klient
+Používame autorizačný server ako databázu používateľov, lebo migrujeme na OAuth?:: Resource Owner Password Credentials; klient podľa typu aplikácie.
+Beží aplikácia na televízore, hernej konzole, či inom zariadení, kde nevieme rozumne zadávať text?:: Device Authorization, verejný klient
+
+== Tri tokeny v OIDC
+
+OIDC vracia v odpovedi z tokenového endpointu tri tokeny:
+
+identity token:: token s údajmi o identite prihlásenej používateľky. Ide o token *autentifikácie*.
+Je vždy vo formáte JWT a musí byť podpísaný privátnym kľúčom servera.
+access token:: prístupový token reprezentujúci autorizáciu. Ide o token *autorizácie*.
+refresh token:: dlhotrvajúci token umožňujúci predĺžiť vydať nový prístupový token, ak predošlý vyprší.
+
+image::id-access-refresh.png[]
+
+[IMPORTANT]
+====
+OIDC prikazuje _identifikačné tokeny_ vo formáte JWT.
+
+O formáte prístupových tokenoch nehovorí nič, ale konvencia mnohých autorizačných serverov aj tieto tokeny poskytuje vo formáte JWT.
+====
+
+.Odpoveď endpointu pre tokeny z autorizačného servera Keycloak
+[source,json]
+----
+{
+  "id_token": "eyJh...", <1>
+  "access_token": "eyJh....", <2>
+  "expires_in": 60,
+  "scope": "openid profile email", <3>
+  "token_type": "Bearer",
+  "not-before-policy": 0,
+  "session_state": "074ffb5f-f0ea-4182-b93d-023e9669f010"
+}
+----
+<1> Token s identitou v JWT formáte.
+<2> Prístupový token, tiež v JWT.
+<3> Scopes, ktoré umožnil autorizačný server.
+
+=== Identity Token -- Identitný token
+
+IMPORTANT: Identity Token dokazuje, že autorizačný server prihlásil  používateľku.
+
+image::id-token.png[]
+
+.Identitný token vydaný autorizačným serverom Keycloak, telo formátu JWT
+[source]
+----
+{
+  "exp" : 1681033070,
+  "iat" : 1681033010,
+  "auth_time" : 1681033010,
+  "jti" : "eadb5025-870b-4fdc-b17d-4996d8820b6e",
+  "iss" : "http://localhost:8080/realms/master",
+  "aud" : "exabank",
+  "sub" : "212aa1c7-667e-4c2b-a99b-4c050ea94644",
+  "typ" : "ID",
+  "azp" : "exabank",
+  "nonce" : "9qYmGQT4z6llfQuDgt5FyOexIz2SKsDL-LScEOwtpvo",
+  "session_state" : "3b71e2a2-f8fb-43e3-aa8a-45ee0a6d7afd",
+  "at_hash" : "KJq8-LeZZ35yNmpAzg7xrw",
+  "acr" : "1",
+  "sid" : "3b71e2a2-f8fb-43e3-aa8a-45ee0a6d7afd",
+  "email_verified" : true,
+  "name" : "Jane Doe",
+  "preferred_username" : "janedoe",
+  "given_name" : "Jane",
+  "family_name" : "Doe",
+  "email" : "jane.doe@example.com"
+}
+----
+
+=== Access Token -- Prístupový token
+
+[IMPORTANT]
+====
+Prístupový token je preukaz oprávnenia prístupu k chráneným dátam.
+====
+
+Prístupový token má obmedzenú platnosť, obvykle pol minúty, minútu, či inú krátku dobu.
+
+Hoci to OIDC štandard nevyžaduje, často je vo formáte JWT, podpísaný privátnym kľúčom servera.
+
+image::access-token.png[]
+
+.Access Token (prístupový token) vydaný Keycloakom.
+[source]
+----
+{
+  "exp" : 1681033070,
+  "iat" : 1681033010,
+  "auth_time" : 1681033010,
+  "jti" : "46892562-a643-4186-bba9-dee3ab2bd735",
+  "iss" : "http://localhost:8080/realms/master",
+  "sub" : "212aa1c7-667e-4c2b-a99b-4c050ea94644",
+  "typ" : "Bearer",
+  "azp" : "exabank",
+  "nonce" : "9qYmGQT4z6llfQuDgt5FyOexIz2SKsDL-LScEOwtpvo",
+  "session_state" : "3b71e2a2-f8fb-43e3-aa8a-45ee0a6d7afd",
+  "acr" : "1",
+  "allowed-origins" : [ "http://localhost:9999" ],
+  "realm_access" : {
+    "roles" : [ "default-roles-master", "offline_access", "uma_authorization" ]
+  },
+  "resource_access" : {
+    "account" : {
+      "roles" : [ "manage-account", "manage-account-links", "view-profile" ]
+    }
+  },
+  "email_verified" : true, //<1>
+  "name" : "Jane Doe",
+  "preferred_username" : "janedoe",
+  "given_name" : "Jane",
+  "family_name" : "Doe",
+  "email" : "jane.doe@example.com"
+}
+----
+<1> Tento prístupový token obsahuje aj údaje o profile.
+Nie je to však pravidlo!
+Keycloak tu len opakuje údaje z identifikačného profilu.
+
+[IMPORTANT]
+====
+Identifikačný token a prístupový token slúžia na odlišné prípady!
+Najdôležitejšie je ich nepopliesť!
+
+Identifikačný token::
+* Dôkaz o autentifikácii vo formáte JWT.
+* Obsahuje profilové údaje používateľky ako tvrdenia v JWT.
+* *Nie sú* v ňom žiadne údaje o oprávneniach: ani scopes z OAuth, ani prípadné roly pridelené autorizačným serverom.
+
+Prístupový token (_Access Token_)::
+* Preukaz autorizácie k chráneným dátam.
+* Obsahuje _scopes_, či vlastné role.
+* Slúži na volanie API.
+====
+
+=== Refresh Token -- Obnovovací token
+
+Prístupové tokeny majú krátku platnosť, obvykle v desiatkach sekúnd.
+
+IMPORTANT: _Refresh Token_ (_Obnovovací token_) slúži na získanie nového platného autorizačného tokenu.
+
+Autorizačný server môže pri vydávaní prístupového tokenu vydať aj _refresh token_ s dlhou platnosťou.
+
+Klient potom dokáže v autorizačnom serveri vymeniť neplatný prístupový token a obnovovací token za nový autorizačný token.
+
+[TIP]
+====
+Niektoré autorizačné servery vracajú aj obnovovací token v tvare JWT.
+
+.Obnovovací token (_Refresh Token_) z Keycloaku
+[source]
+----
+{
+  "exp" : 1681045903,
+  "iat" : 1681044103,
+  "jti" : "f1dcea45-dde6-4901-ad33-ffbe5cc95e2b",
+  "iss" : "http://localhost:8080/realms/master",
+  "aud" : "http://localhost:8080/realms/master",
+  "sub" : "212aa1c7-667e-4c2b-a99b-4c050ea94644",
+  "typ" : "Refresh",
+  "azp" : "exabank",
+  "nonce" : "KB3jrEkl-U8p_u6RHRlwgWkblRlfCCw3eha3bLLstVw",
+  "session_state" : "074ffb5f-f0ea-4182-b93d-023e9669f010",
+  "scope" : "openid profile email",
+  "sid" : "074ffb5f-f0ea-4182-b93d-023e9669f010"
+}
+----
+====
+
+=== Odovzdávanie prístupového tokenu medzi klientom a serverom zdrojov
+
+OIDC určuje, že prístupový token (_Access Token_) sa vždy prikladá k volaniam API s chránenými údajmi do hlavičky HTTP `Authorization` vo formáte:
+
+    Authorization: Bearer <access_token>
+
+image::authorization-bearer.png[]
+
+=== Čo sú scopes
+
+Klient môže pri autorizácii žiadať o rozličné *scopes*, čo je rozsah platnosti tokenu.
+
+IMPORTANT: _Scopes_ je možné použiť na aplikačné oprávnenia, či uvedenie druhu údajov, ktoré klient túži získať.
+
+Keycloak:: dokáže poskytnúť _scope_ pre používateľkin e-mail (`email`), používateľkin profil (`profile`), či pridelené roly (`roles`).
+GitHub:: poskytuje _scope_ pre https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps[jednotlivé privilégiá], napr. scope `repo` autorizuje pre úplný prístup k používateľkinym repozitárom, či scope `user:read` umožní čítať údaje z používateľkinho profilu.
+
+Na technickej úrovni je _scopes_ ľubovoľná množina reťazcov, kde význam je na dohode medzi klientom a autorizačným serverom.
+
+- *Autorizačný server* má pri evidovanom klientovi povedané, aké scopy mu dokáže poskytnúť.
+- *Klient* dokáže pri autorizácii požiadať o konkrétnu množinu scopov a autorizačný server usúdi, ktoré z nich dokáže splniť.
+
+IMPORTANT: Pri použití OIDC sa očakáva, že klient požiada pri autorizácii o scope `openid`.
+Bez neho sa použije len štandardný protokol OAuth bez nadstavby OpenID Connect.
+
+Na obrázku vidíme, ako klient (Spring Boot OAuth Client) požiadal autorizačný server o _scope_ `openid`, ale získal autorizačný kód s rozšírenou množinou _scopes_:
+
+- `openid` kvôli protokolu OIDC
+- `profile` s používateľkiným profilom
+- `email` s možnosťou získať e-mail používateľky
+
+Autorizačný server môže pridelené _scopes_ uviesť aj do prístupového tokenu -- ak ide o token vo formáte JWT, tak do niektorého z tvrdení _claims_.
+
+image::scopes.png[]
+
+=== Consent -- výslovný súhlas s delegovaním
+
+Autorizačný server môže v evidencii klienta určiť, že pri autorizácii je nutný explicitný súhlas používateľky so získavaním chránených zdrojov v jej mene.
+
+Dialóg potom vyzerá zhruba nasledovne:
+
+[source]
+----
+Zalievač:           Hej, Miriamin skleník! Potrebujem zaliať kvety!
+Miriamin skleník:   A Miriam o tom vie?
+Zalievač:           Nie, idem sa jej spýtať.
+Zalievač:           Hej, Miriam, potrebujem ti zaliať tvoje kvety!
+                    Si s tým OK?
+Autorizačný server: Hej, Miriam, mám tu Zalievača, chceš ho autorizovať
+                    a umožniť mu prístup?
+Miriam:             Áno, autorizačný server, som s tým OK.
+Autorizačný server: Zalievač, nech sa páči tu máš autorizačný kód.
+----
+
+Pri prvom prístupe si tak autorizačný server vyžiada explicitný súhlas -- *consent*.
+
+image::keycloak-consent.png[]
+
+V prípade Keycloaku sa jednotlivé položky zo súhlasu sa priamo mapujú na _scopes_, ktoré poskytuje autorizačný server:
+
+User profile:: mapovaný na scope `profile`.
+Email address:: mapovaný na scope `email`.
+User roles:: mapovaný na scope `roles` obsahujúci používateľské roly konfigurovateľné v Keycloaku.
+
+V prípade GitHubu v role autorizačného servera vyzerá súhlas nasledovne:
+
+image::github-consent.png[]
+
+Vidíme, že klient `spring-boot-repo-browser` požaduje autorizáciu.
+V GitHube je prístup k verejnému profilu súčasťou automatického _scope_, v prípade, že oň klient nežiada, ale i napriek tomu je ho vidno v sekcii _Personal user data_.
+
+=== Metadáta autorizačného servera
+
+Autorizačný server môže poskytovať viacero endpointov cez REST či HTTP.
+Minimalistická verzia očakáva:
+
+- autorizačný endpoint pre získanie autorizačného kódu
+- endpoint pre získanie tokenu
+
+Ak používame OIDC, pribudne viacero endpointov, napr.:
+
+- získanie informácií o používateľke (_userinfo_)
+- získanie verejných kľúčov pre overenie digitálnych podpisov tokenov JWT
+
+IMPORTANT: Špecifikácia https://openid.net/specs/openid-connect-discovery-1_0.html[_OpenID Connect Discovery_] určuje endpoint, ktorý poskytne jednotný formát pre uvedené endpointy.
+
+Google:: autorizačný server Google ponúka endpoint https://accounts.google.com/.well-known/openid-configuration s jednotlivými údajmi
+Facebook:: autorizačný server Facebooku tiež ponúka endpoint https://www.facebook.com/.well-known/openid-configuration/
+Keycloak:: k dispozícii je endpoint, napr. na adrese http://localhost:8080/realms/master/.well-known/openid-configuration
+
+Endpoint podporovaný Googlom vyzerá napríklad nasledovne:
+[source,json]
+----
+{
+  "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth", <1>
+  "token_endpoint": "https://oauth2.googleapis.com/token",  <2>
+  "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs",  <3>
+  "scopes_supported": [ "openid", "email", "profile" ],  <5>
+  "grant_types_supported": [  <4>
+    "authorization_code",
+    "refresh_token",
+    "urn:ietf:params:oauth:grant-type:device_code",
+    "urn:ietf:params:oauth:grant-type:jwt-bearer"
+  ]
+}
+----
+<1> Endpoint pre získanie autorizačného kódu.
+<2> Endpoint pre získanie prístupového tokenu (JWT)
+<3> Endpoint, ktorý poskytne informácie o verejných kľúčoch, ktorými sa podpísali tokeny JWT.
+<4> Zoznam podporovaných flowov.
+<5> Scopes, ktoré tento autorizačný server podporuje.
+
+TIP: Spring Boot a jeho integrácia s OAuth dokáže nastaviť aplikáciu podľa tohto metadátového endpointu.
+
+== JWT
+
+IMPORTANT: JSON Web Token (https://www.rfc-editor.org/rfc/rfc7519[JWT]) je špecifikácia pre tokeny.
+
+JSON pozostáva z 3 častí:
+
+. hlavička: *JOSE Header*
+. telo tokenu: *payload*
+. digitálny podpis: *signature*
+
+Všetky časti sú kódované pomocou Base64 a vzájomne oddelené bodkou.
+
+Telo tokenu i hlavička sú vo formáte JSON, kde jednotlivé kľúče a ich hodnoty sa nazývajú *claim* (tvrdenia).
+
+.Minimalistický JWT
+[source]
+----
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2ODEwNTQxNzd9.SURFKdNgESGuubuvN9FgzBT929SjFmqXKJ29SSGM0vM
+----
+
+Druhý blok medzi dvoma bodkami je telo s jediným tvrdením:
+
+[source,json]
+----
+{
+  "iat" : 1681054177 <1>
+}
+----
+<1> Tvrdenie `iat` obsahuje dátum vydania tokenu.
+
+Prvý blok po bodku je hlavička a v nej claimy `alg` ako algoritmus pre podpis a `typ` tokenu.
+
+[source]
+----
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+----
+
+Tretí blok obsahuje digitálny podpis hlavičky a tela správy.
+
+NOTE: Algoritmus _HMAC with SHA-256_ využíva symetrickú šifru a spolieha sa na to, že autor i overovateľ tokenu poznajú spoločné heslo.
