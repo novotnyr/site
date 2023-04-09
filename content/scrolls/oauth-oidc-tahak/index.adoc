@@ -1,0 +1,197 @@
+---
+title: OAuth, OpenID Connect -- Ťahák
+date: 2023-04-09
+---
+:icons: font
+
+Predstavme si webovú aplikáciu s REST API, ktorá spravuje používateľkine chránené údaje -- napríklad databázu domácich kvetín.
+
+Takáto aplikácia:
+
+- beží napr. na https://domacekvetiny.io/api
+- prístup k údajom vyžaduje *autorizáciu*, čiže schválený prístup
+
+IMPORTANT: Takáto aplikácia nazýva _Resource Server_.
+Chránené údaje sú _zdroje_, teda _protected resources_.
+
+image::resource-server.png[]
+
+A predstavme si druhú aplikáciu, ktorá chce automatizovane zalievať domáce kvetiny používateľky.
+
+Na to potrebuje prístup ku používateľkiným chráneným údajom, teda zoznamu jej kvetín.
+
+IMPORTANT: OAuth je protokol, ktorý umožní používateľke *delegovať prístup* k svojim chráneným zdrojom na vybranú aplikáciu.
+Táto aplikácia sa volá *klient* a pristupuje k chráneným zdrojom *v mene používateľky* (_on behalf of_).
+
+Používateľka tak vie delegovať prístup k svojim domácim kvetinám na automatizovaný zalievač.
+
+image::access-on-behalf-of.png[]
+
+NOTE: Klientom môže byť webová aplikácia, mobilná aplikácia, či napríklad frontendová aplikácia typu SPA.
+
+== Identity Provider (IdP) ako centrálny bod
+
+IMPORTANT: Keycloak je analógiou recepcie v hoteli. Oficiálne je to _autorizačný server_ (_Authorization Server_) alebo aj _poskytovateľ identít_ (_Identity Provider_).
+
+Registrovaní klienti:: Keycloak eviduje klientov.
+Používatelia a ich prihlasovacie údaje:: Keycloak slúži ako databáza používateľov a hesiel.
+Prístupové tokeny:: Keycloak vydáva klientom *tokeny*: preukazy identity a preukazy autorizujúce prístup k chráneným dátam.
+
+== Klienti a servery zdrojov
+
+Mám REST API?:: Je to _resource server_.
+Aplikácia _produkuje_ alebo _obsahuje_ dáta, ktoré chcem nazdieľať?:: Je to _resource server_.
+Mám mobilnú appku?:: Je to klient.
+Mám Angular/React v prehliadači?:: Je to klient.
+Mám Java backend konzumujúci dáta?:: Je to klient.
+
+
+== Flows: Autorizačné tance
+
+*Flow* je postupnosť krokov komunikácie medzi:
+
+- klientom
+- Keycloakom
+- REST API s dátami
+- používateľkou
+
+=== Aký flow zvoliť?
+
+Je to React/Angular aplikácia typu SPA v prehliadači?:: Authorization Code with PKCE, verejný klient
+Je to mobilná appka?:: Authorization Code with PKCE, verejný klient
+Je to mobilná appka, ktorej naozaj dôverujeme a dokážeme jej zveriť používateľkin login a heslo?:: Resource Owner Password Credentials, verejný klient
+Je to backendová aplikácia v Jave/PHP/Go?:: Authorization Code with PKCE, dôverný klient
+Je to servisná aplikácia / démon / monitorovacia aplikácia na serverovom backende, kde nie je potrebné prihlásenie používateľky?:: Client Credentials, dôverný klient
+Je to serverová backendová aplikácia, ktorej vieme zveriť používateľkin login a heslo?:: Resource Owner Password Credentials, dôveryhodný klient
+Používame autorizačný server ako databázu používateľov, lebo migrujeme na OAuth?:: Resource Owner Password Credentials; klient podľa typu aplikácie.
+Beží aplikácia na televízore, hernej konzole, či inom zariadení, kde nevieme rozumne zadávať text?:: Device Authorization, verejný klient
+Ešte stále som zmätený?:: Flow _Authorization Code with PKCE_, verejný klient.
+
+== Klient alebo server?
+
+Produkujem chránené dáta?:: _Resource Server_
+Konzumujem chránené dáta?:: _Client_
+Chcem „prihlásiť pomocou Google / Facebook / GitHub“?:: _Client_
+
+== Klienti
+
+Ak potrebujeme aplikáciu, ktorá konzumuje chránené zdroje, musíme:
+
+. Programovať klienta (_client_).
+. Zaevidovať ho v autorizačnom serveri.
+. Získať jeho jednoznačný identifikátor: _Client ID_.
+. Tento identifikátor použiť v konfigurácii klienta.
+
+=== Typ klienta?
+
+confidential:: klienti s uzavretým kódom, ktoré bežia na serveri.
+Poznajú „klientske heslo“ (_client secret_), ktoré nikdy nesmie uniknúť.
++
+Klient sa Keycloaku preukáže identifikátorom a klientskym heslom, čo je jeho login a heslo.
+public:: klienti s otvoreným kódom, ktorí nedokážu bezpečne preukázať svoju identitu, ani spravovať svoje klientske tajomstvo.
++
+Akákoľvek aplikácia sa dokáže prevteliť do akéhokoľvek verejného klienta.
+
+== Tri tokeny v OIDC
+
+Súčasťou flowov je REST endpoint Keycloaku -- obvykle `/token` -- ktorý vracia tri tokeny vo formáte JWT.
+
+Všetky tokeny sú súčasťou JSONu v tele odpovede.
+
+identity token:: Preukaz autentifikácie -- úspešného prihlásenia.
+Obsahuje údaje o používateľke (login, meno, e-mail)
+access token:: Preukaz autorizácie k chráneným dátam.
+Prikladá sa k volaniam REST API do hlavičky `Authorization: Bearer`.
++
+Obsahuje roly, oprávnenia, či _scopes_.
++
+Má obmedzenú platnosť, obvykle pol minúty, minútu, či inú krátku dobu.
++
+Môže obsahovať aj používateľkine údaje.
+refresh token:: Dlhotrvajúci token umožňujúci predĺžiť vydať nový prístupový token, ak predošlý vyprší.
++
+Klient vie v Keycloaku vymeniť starý prístupový token a obnovovací token za nový prístupový token.
+
+=== Čo sú scopes
+
+IMPORTANT: _Scopes_ je ľubovoľná množina reťazcov, obvykle pre roly, či oprávnenia.
+
+Keycloak dokáže poskytnúť _scope_ pre používateľkin e-mail (`email`), používateľkin profil (`profile`), či pridelené roly (`roles`).
+
+- *Keycloak* má pri evidovanom klientovi povedané, aké scopy mu dokáže poskytnúť.
+- *Klient* dokáže pri autorizácii požiadať o konkrétnu množinu scopov a Keycloak usúdi, ktoré z nich dokáže splniť.
+Scope `openid` je povinný.
+
+_Scopes_ sa vedia mapovať na GUI, ktoré vyžaduje súhlas používateľky s delegáciou.
+
+=== Consent -- výslovný súhlas s delegovaním
+
+Klient môže vyžadovať explicitný súhlas používateľky so získavaním chránených zdrojov v jej mene.
+
+Pri prvom prístupe si tak Keycloak od používateľky vyžiada explicitný súhlas -- *consent*.
+
+image::keycloak-consent.png[]
+
+V prípade Keycloaku sa jednotlivé položky zo súhlasu sa priamo mapujú na _scopes_, ktoré poskytuje autorizačný server:
+
+User profile:: mapovaný na scope `profile`.
+Email address:: mapovaný na scope `email`.
+User roles:: mapovaný na scope `roles` obsahujúci používateľské roly konfigurovateľné v Keycloaku.
+
+=== Metadáta autorizačného servera
+
+Keycloak poskytuje JSON s metadátami OIDC:
+
+- autorizačný endpoint pre získanie autorizačného kódu
+- endpoint, ktorým získame tokeny
+- endpoint pre získanie informácií o používateľke (_userinfo_)
+- endpoint pre získanie verejných kľúčov pre overenie digitálnych podpisov tokenov JWT
+
+Dostupná je na adrese http://localhost:8080/realms/master/.well-known/openid-configuration
+
+== JWT
+
+JWT pozostáva z 3 častí. Prvé dve časti sú vo formáte JSON, všetky časti sú kódované cez Base64.
+
+JSON obsahuje _claims_, teda tvrdenia.
+
+. hlavička: *JOSE Header*.
++
+.Hlavička JOSE s dvoma tvrdeniami
+[source]
+----
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+----
++
+Hlavička indikuje algoritmus pre elektronický podpis.
+. telo tokenu: *payload*
++
+.Hlavička JOSE so 4 tvrdeniami
+[source]
+----
+{
+  "exp" : 1681045903,
+  "iat" : 1681044103,
+  "sub" : "212aa1c7-667e-4c2b-a99b-4c050ea94644",
+  "scope" : "openid profile email",
+}
+----
+- `exp`: tvrdenie s dátumom expirácie tokenu
+- `iat`: _Issued At_ -- tvrdenie s dátumom vydania
+- `sub`: identifikátor používateľky z Keycloaku
+- `scope`: zoznam scopovv
+
+. digitálny podpis: *signature*
+Hlavička a telo sú podpísané algoritmom a symetrickou/asymetrickou šifrou.
+Podpis je kódovaný Base64.
+
+.Minimalistický JWT
+[source]
+----
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2ODEwNTQxNzd9.SURFKdNgESGuubuvN9FgzBT929SjFmqXKJ29SSGM0vM
+----
+Vidíme 3 zložky oddelené bodkami.
+

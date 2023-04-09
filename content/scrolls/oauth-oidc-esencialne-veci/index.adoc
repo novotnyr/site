@@ -492,7 +492,7 @@ TIP: Spring Boot a jeho integrácia s OAuth dokáže nastaviť aplikáciu podľa
 
 IMPORTANT: JSON Web Token (https://www.rfc-editor.org/rfc/rfc7519[JWT]) je špecifikácia pre tokeny.
 
-JSON pozostáva z 3 častí:
+Token JWT pozostáva z 3 častí:
 
 . hlavička: *JOSE Header*
 . telo tokenu: *payload*
