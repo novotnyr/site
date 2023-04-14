@@ -10,11 +10,11 @@ Viacfázové zostavenie -- *multistage build* -- umožňuje optimalizovať veľk
 
 Typická situácia v mnohých projektoch:
 
-Fáza 1: kompilácia::
+Fáza 1: image pre kompiláciu::
 - stiahnu sa nástroje na zostavenie projektu: kompilátory, správcovia balíčkov
 - zostaví sa projekt z binárok, zbehne kompilácia
 Fáza 2: finálny image::
-- vytvorí sa image obsahujúci len samotné binárky, a ak treba, tak platformu (Java, Node.js)
+- vytvorí sa image obsahujúci len samotné binárky, a ak treba, tak aj príslušnú platformu (Java, Node.js)
 
 == Implementácia (Typescript nad Node.js)
 
@@ -71,6 +71,8 @@ ENTRYPOINT [ "zero" ]  <5>
 Používame _exec_ formu, ktorá nevolá kompilátor zo shellu, ale priamo.
 <4> Používame minimalistický image bez shellu a nástrojov.
 <5> Nastavíme binárku `zero` ako vstupný bod, ktorý sa zavolá automaticky pri _docker run_.
+
+TIP: V tomto prípade ušetríme zhruba 100 MB, a tento jednopríkazový image má zhruba 22MB.
 
 == Implementácia (Java)
 
