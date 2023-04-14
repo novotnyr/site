@@ -1,0 +1,120 @@
+---
+title: Docker a viacfázové zostavenie (_multistage builds_).
+date: 2023-04-14
+---
+
+:source-highlighter: pygments
+:icons: font
+
+Viacfázové zostavenie -- *multistage build ** -- umožňuje optimalizovať veľkosť dockerovských imagov.
+
+Typická situácia v mnohých projektoch:
+
+Fáza 1: kompilácia::
+- stiahnu sa nástroje na zostavenie projektu: kompilátory, správcovia balíčkov
+- zostaví sa projekt z binárok, zbehne kompilácia
+Fáza 2: finálny image::
+- vytvorí sa image obsahujúci len samotné binárky, a ak treba, tak platformu (Java, Node.js)
+
+== Implementácia (Typescript nad Node.js)
+
+Každá fáza je reprezentovaná inštrukciou `FROM`.
+
+[source,dockerfile]
+.Dockerfile
+----
+FROM node:19-alpine3.17 AS builder <1>
+RUN npm install -g typescript <2>
+COPY hello.ts . <3>
+RUN tsc hello.ts <4>
+
+FROM node:19-alpine3.17 <5>
+WORKDIR /opt
+COPY --from=builder hello.js . <6>
+CMD [ "hello.js" ]
+----
+<1> Budujeme cez Node.js.
+Direktíva `AS` dá fáze meno, aby sme sa na ňu v ďalších fázach vedeli odkázať.
+<2> Spustíme inštaláciu balíčkov.
+<3> Skopírujeme zdrojáky z kontextu do imagu.
+<4> Spustíme kompilačný krok.
+
+<5> Fáza dva: tvorba finálneho imagu.
+<6> Inštrukcia `COPY` dokáže kopírovať súbory z predošlých fáz.
+`--from=builder` kopíruje hotové výsledky kompilácie z predošlej fázy do pracovného adresára (bodka `.`).
+
+Buildujeme štandardne:
+
+    docker build --tag novotnyr/hello-ts $PWD
+
+IMPORTANT: Výsledný image je omnoho menší než celý image s Typescriptom -- ušetrí sa zhruba 80 MB.
+
+== Implementácia (jazyk C)
+
+Ukážme si projekt pre jazyk C:
+
+[source,dockerfile]
+.Dockerfile
+----
+FROM gcc:12.2.0 AS builder <1>
+WORKDIR /tmp/src  <2>
+COPY zero.c .
+RUN [ "gcc", "zero.c", "-o", "zero" ] <3>
+
+FROM gcr.io/distroless/cc  <4>
+COPY --from=builder /tmp/src/zero /usr/bin
+ENTRYPOINT [ "zero" ]  <5>
+----
+<1> Používame image pre kompilátor `gcc`
+<2> Pracovný adresár, do ktorého skopírujeme zdrojáky.
+<3> Spustíme kompiláciu.
+Používame _exec_ formu, ktorá nevolá kompilátor zo shellu, ale priamo.
+<4> Používame minimalistický image bez shellu a nástrojov.
+<5> Nastavíme binárku `zero` ako vstupný bod, ktorý sa zavolá automaticky pri _docker run_.
+
+== Implementácia (Java)
+
+[source,dockerfile]
+.Dockerfile
+----
+ARG WD="/tmp" <1>
+ARG TARGET=$WD/target <1>
+
+FROM maven:3.9.1-eclipse-temurin-17 AS builder <2>
+ARG WD <3>
+ARG TARGET <3>
+WORKDIR $WD <4>
+COPY src/ src/ <5>
+COPY pom.xml . <5>
+RUN mvn package
+RUN mv $TARGET/*.jar $TARGET/app.jar <6>
+
+FROM eclipse-temurin:17.0.6_10-jdk-ubi9-minimal <7>
+ARG WD <3>
+ARG TARGET <3>
+WORKDIR /opt
+COPY --from=builder $TARGET/*.jar . <8>
+CMD [ "java", "-jar", "app.jar" ] <9>
+----
+<1> Definujeme argument pre adresár so zdrojákmi a adresár pre binárky.
+Táto inštrukcia sa bude znovupoužívať vo fázach.
+<2> Budujeme cez Maven.
+<3> Deklarujeme argumenty, ktoré sme definovali v spoločnej sekcii pred prvou inštrukciou `FROM`.
+<4> Definujeme pracovný adresár.
+<5> Skopírujeme zdrojáky.
+Pozor na to, že kopírovanie adresára kopíruje len jeho obsah, nie adresár samotný!
+<6> Premenujeme binárku tak, aby sme z nej odstránili číslo verzie, ktoré do nej dá Maven.
+<7> Fáza 2: bežíme nad Javou.
+<8> Skopírujeme binárku (JAR) z predošlej fázy
+<9> Nastavíme vstupný bod do kontajnera.
+
+Budujeme:
+
+    docker build --tag docker-java-build $PWD
+
+Spúšťame:
+
+    docker run --rm -it docker-java-build
+
+
+
