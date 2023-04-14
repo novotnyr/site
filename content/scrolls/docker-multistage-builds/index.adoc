@@ -1,12 +1,12 @@
 ---
-title: Docker a viacfázové zostavenie (_multistage builds_).
+title: Docker a viacfázové zostavenie (_multistage builds_)
 date: 2023-04-14
 ---
 
 :source-highlighter: pygments
 :icons: font
 
-Viacfázové zostavenie -- *multistage build ** -- umožňuje optimalizovať veľkosť dockerovských imagov.
+Viacfázové zostavenie -- *multistage build* -- umožňuje optimalizovať veľkosť dockerovských imagov.
 
 Typická situácia v mnohých projektoch:
 
