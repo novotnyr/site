@@ -47,7 +47,7 @@ knižnice. Do `pom.xml` stačí pridať závislosť pre Metro.
 <dependency>
   <groupId>com.sun.xml.ws</groupId><!--1-->
   <artifactId>jaxws-rt</artifactId>
-  <version>4.0.0</version>
+  <version>4.0.1</version>
 </dependency>
 ----
 <1> Netreba sa čudovať, hoci názov skupiny (_group id_) pochádza zo starého projektu `com.sun.xml.ws`, samotný kód verzie už pochádza z nadácie Eclipse.
@@ -59,8 +59,7 @@ V `pom.xml` nezabudnime zapnúť podporu pre Javu 17:
 [source,xml]
 ----
 <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
 </properties>
 ----
 
@@ -171,7 +170,7 @@ Dodajme závislosť na Metre:
 <dependency>
     <groupId>com.sun.xml.ws</groupId>
     <artifactId>jaxws-rt</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
 </dependency>
 ----
 
