@@ -7,7 +7,7 @@ date: 2024-01-07
 ====
 Ukážme si delenie úlohy na paralelné výpočty s použitím kotlinovských korutín.
 
-Počítajme slová v samostatných korutinách bežiacich paralelne a spočítavajme celkové výsledky§
+Počítajme slová v samostatných korutinách bežiacich paralelne a spočítavajme celkové výsledky.
 ====
 
 
