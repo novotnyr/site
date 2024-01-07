@@ -1,6 +1,6 @@
 ---
 title: Paralelná dekompozícia v kotlinovských korutinách
-date: 2024-06-07
+date: 2024-01-07
 ---
 :icons: font
 
