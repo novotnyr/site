@@ -26,7 +26,7 @@ Ak chceme počítať súbory v adresári, vytvorme si pomocnú funkciu:
 
 [source,kotlin]
 ----
-fun File.children(): Array<out File> {
+fun File.children(): Array<File> {
     return listFiles { child: File -> child.isFile } ?: emptyArray()
 }
 ----
@@ -54,7 +54,7 @@ Paralelné spustenie potrebuje najmä:
 - spustenie úlohy v sekcii `async`,
 - získanie objektu s úlohou `Deferred`,
 - vyčkanie na dobehnutie úloh pomocou a získanie výsledkov cez `awaitAll`,
-- spravovanie chýb cez `coroutineScope`
+- spravovanie chýb a rozsah platnosti cez `coroutineScope`
 
 [source,kotlin]
 ----
@@ -115,15 +115,28 @@ coroutineScope {
 }
 ----
 
-TIP: Filozofia `async`-`awaitAll` skôr pripomína filozofiu „fork-join“ či „map-reduceH, kde sa v bloku `async` spustia paralelné úlohy a v bloku `awaitAll` pozbierajú výsledky.
-+
-Sekcia `coroutineScope` dbá na to, aby v prípade chýb sa celá operácia rovno zrušila.
+TIP: Filozofia `async`-`awaitAll` skôr pripomína filozofiu „fork-join“ či „map-reduce“, kde sa v bloku `async` spustia paralelné úlohy a v bloku `awaitAll` pozbierajú výsledky.
 
-Kombinácia `coroutineScope`, `async` a `awaitAll` umožňuje _štruktúrovanú konkurentnosť_ (*structured concurrency*).
+Sekcia `coroutineScope` dbá na to, aby sa v prípade chýb celá operácia rovno zrušila.
+
+Kombinácia `coroutineScope`, `async` a `awaitAll` umožňuje _štruktúrovanú konkurentnosť_ (*structured concurrency*):
 
 - Nové korutiny sa spúšťajú v rámci konkrétneho _scope_, ktorý určuje ich životnosť.
 - Dbá sa na to, aby beh korutiny „neunikol“ mimo životnosti rodiča.
 - Výnimky sa korektne spracujú tak, aby sa nenarušili životnosti korutín a rodičovského scopu.
+
+Na našom konkrétnom príklade:
+
+- `coroutineScope` hovorí, že sa počká na dobehnutie korutín v bloku.
+Životnosť korutín pre počítanie slov v bloku `coroutineScope { ... }` je teda vždy kratšia ako životnosť celého scope `coroutineSCope`.
+- samotný `coroutineScope` má takú životnosť ako rodič.
+Rodičom `coroutineScope` je scope v `runBlocking` a jeho životnosť je vždy kratšia ako životnosť celej aplikácie.
+
+A výnimky?
+
+- Ak nastane výnimka v ktorejkoľvek korutine, nesmie sa stať, že pravidlo o „matrioškových životnostiach“ sa poruší.
+Rodič sa nesmie zrušiť, kým bežia deti a naopak: ak sa zruší rodič, musia sa zrušiť aj jeho deti.
+Okrem toho rodič vyčkáva na dobehnutie svojich detí!
 
 == Výnimky a korutiny
 
@@ -141,11 +154,12 @@ coroutineScope {
         }
         .awaitAll()
     println(wordCounts)
+}
 ----
 
 Obratom uvidíme výnimku:
 
-```
+----
 Exception in thread "main" java.io.FileNotFoundException: src/test/resources/bible999.txt (No such file or directory)
 	at java.base/java.io.FileInputStream.open0(Native Method)
 	at java.base/java.io.FileInputStream.open(FileInputStream.java:216)
@@ -160,7 +174,7 @@ Exception in thread "main" java.io.FileNotFoundException: src/test/resources/bib
 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:793)
 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:697)
 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:684)
-```
+----
 
 V prípade výnimky v ktorejkoľvek z korutín spúšťaných v `async` bloku sa ostatné súrodenecké korutiny zrušia.
 
@@ -169,7 +183,7 @@ V prípade výnimky v ktorejkoľvek z korutín spúšťaných v `async` bloku sa
 Nezabudnime, že `coroutineScope` plní dva účely:
 
 . Pozastaví sa (_suspend_), kým korutiny, ktoré sú v ňom deklarované, nedobehnú.
-. Ak tento scope zlyhá - či kvôli zrušeniu (_cancel_) alebo výnimke -- všetky vnorené korutiny sa tiež zrušia.
+. Ak tento scope zlyhá — či kvôli zrušeniu (_cancel_) alebo výnimke — všetky vnorené korutiny sa tiež zrušia.
 ====
 
 === Supervisor Scope
@@ -178,7 +192,7 @@ Supervízorský scope je podobný ako `coroutineScope`, ale rušenie potomkov pr
 
 . Ak ktorýkoľvek potomok zlyhá, _scope_ sa nezruší.
 . Pozastaví sa (_suspend_), kým korutiny, ktoré sú v ňom deklarované, nedobehnú.
-. Ak _scope_ zlyhá - či kvôli zrušeniu (_cancel_) alebo výnimke -- všetky vnorené korutiny sa tiež zrušia.
+. Ak _scope_ zlyhá — či kvôli zrušeniu (_cancel_) alebo výnimke — všetky vnorené korutiny sa tiež zrušia.
 
 
 ==== Vyčkávanie na dobehnutie potomkov
@@ -189,7 +203,7 @@ To sme videli vo výnimke hore.
 Namiesto toho budeme vyčkávať jednotlivo a ošetrovať prípadné výnimky, ktoré korutiny vyhodia.
 
 Každý výsledok volania `async` typu `Deferred` vyčkáme pomocou samostatného volania `await`.
-Toto volanie buď uspeje a vráti výsledok -- teda počet slov v súbore -- alebo zlyhá s výnimkou, ktorú odchytíme a vhodne spracujeme.
+Toto volanie buď uspeje a vráti výsledok — teda počet slov v súbore — alebo zlyhá s výnimkou, ktorú odchytíme a vhodne spracujeme.
 
 [source,kotlin]
 ----
@@ -212,7 +226,7 @@ supervisorScope {
 ----
 <1> Prúd objektov `Deferred` postupne spracujeme po jednom.
 <2> Na každý `Deferred` vyčkáme cez `await`.
-<3> Ak nastane výnimka, odchytíme ju a vrátime `null`>
+<3> Ak nastane výnimka, odchytíme ju a vrátime `null`.
 
 Výsledkom bude zoznam, kde niektoré prvky budú obsahovať počet slov v súbore a pre nedostupné veľkosti kvôli výnimkám bude v zozname `null`.
 
@@ -223,7 +237,7 @@ Výsledkom bude zoznam, kde niektoré prvky budú obsahovať počet slov v súbo
 == Bloky `runBlocking` a `coroutineScope`
 
 Blok `runBlocking` je _coroutine builder_, teda nástroj na zostrojenie a spustenie korutiny.
-Jeho jediné použitie je pri premostení sveta bežného programovania a sveta, v ktorom je možné spúšťať `suspend` funkcie -- typicky len v metóde `main`, historických knižniciach a testoch.
+Jeho jediné použitie je pri premostení sveta bežného programovania a sveta, v ktorom je možné spúšťať `suspend` funkcie — typicky len v metóde `main`, historických knižniciach a testoch.
 
 `coroutineScope` sa používa len vo svete `suspend` funkcií. (Samotná funkcia `coroutineScope` je označená ako `suspend`). Tento blok _nevytvára_ a _nespúšťa_ novú korutinu.
 
